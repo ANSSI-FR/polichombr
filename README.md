@@ -1,4 +1,5 @@
-# polichombr
+# Polichombr
 Collaborative malware analysis framework
 
-# To be released @ SSTIC 2016
+# Warning
+This is a beta version, use at your own risk!
