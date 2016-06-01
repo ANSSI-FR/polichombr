@@ -1,7 +1,7 @@
 #!/bin/bash
 
 #Prerequisites, on a ubuntu* distribution.
-sudo apt-get install -y git virtualenv ruby libffi-dev python-dev graphviz gcc libssl-dev python-pip
+#sudo apt-get install -y git virtualenv ruby libffi-dev python-dev graphviz gcc libssl-dev python-pip
 git submodule init metasm # or clone github.com/jjyg/metasm
 git submodule update metasm
 
@@ -19,8 +19,3 @@ pip install Flask-Misaka
 pip install Flask-Testing
 pip install graphviz
 pip install yara-python
-
-export PYTHONPATH=`pwd`:$PYTHONPATH
-./utils/db_create.py
-
-#./run.py
