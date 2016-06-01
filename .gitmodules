@@ -1,0 +1,3 @@
+[submodule "metasm"]
+	path = metasm
+	url = https://github.com/jjyg/metasm.git
