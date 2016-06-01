@@ -1,0 +1,44 @@
+{% extends "main.html" %}
+
+{% block content %}
+    {{super()}}
+	<div class="page-header">
+		<h1>Polichombr settings</h1>
+	</div>
+    <div class="row">
+        <div class="panel panel-primary">
+            <div class="panel-heading">
+                <h3 class="panel-title">Users list</h3>
+            </div>
+            <div class="panel-body">
+                {% for u in users %}
+                    <a href="/user/{{u.id}}/" class="btn btn-info">{{u.nickname}}</a>
+                {% endfor %}
+                <a class="btn btn-default">Create new</a>
+            </div>
+        </div>
+    </div>
+    <div class="row">
+        <div class="panel panel-primary">
+            <div class="panel-heading">
+                <h3 class="panel-title">CheckLists</h3>
+            </div>
+        <div class="panel-body">
+            {{wtf.quick_form(addchecklistform)}}
+            <br />
+            {% for c in checklists %}
+               <div class="panel panel-default">
+                   <div class="panel-heading">
+                        <h3 class="panel-title">
+                            <a href="/settings/deletechecklist/{{c.id}}" onclick="javascript: return confirm('Delete checklist item?')" class="btn btn-danger btn-xs">delete</a> <a href="" class="btn btn-default btn-xs">edit</a>&nbsp;
+                            {{c.title}}
+                        </h3>
+                   </div>
+                   <div class="panel-body">
+                       {{c.description}}
+                   </div>
+               </div>
+            {% endfor %}
+        </div>
+    </div>
+{% endblock%} 

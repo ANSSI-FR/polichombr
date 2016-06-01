@@ -1,0 +1,69 @@
+{% extends "main.html" %}
+
+{% block content %}
+	{{ super() }}
+	<div class="page-header">
+		<h1>Diff</h1>
+	</div>
+    
+    <div class="row">
+        <div class="panel panel-primary">
+            <div class="panel-heading">
+                <h2 class="panel-title">Diff</h2>
+            </div>
+    	    <div class="panel-body">
+            {{printsample(sample1)}} &lt;-&gt; {{printsample(sample2)}}<br />
+            <br />
+            You can import the 2nd sample's names into the first here. Functions will not be renamed in the following cases:<br />
+            <ul>
+                <li>The destination function has a non sub-prefixed name (sub_XXXXXX)</li>
+                <li>The source function has a sub-prefixed name (sub_XXXXXX)</li>
+            </ul>
+	        </div>
+        </div>
+    </div>
+    <div class="row">
+        <div class="panel panel-primary">
+            <div class="panel-heading">
+                <h2 class="panel-title">Diff information</h2>
+           </div>
+           <div class="panel-body">
+                <form action="." method="POST">
+                <input type="submit" name="OK" value="IMPORT" class="btn btn-default" />
+                <table class="table">
+                    <thead>
+                        <tr>
+                            <th colspan="2">{{printsample(sample1)}} (DESTINATION)</th>
+                            <th colspan="2">{{printsample(sample2)}} (SOURCE)</th>
+                        </tr>
+                        <tr>
+                            <th>Address</th>
+                            <th>Name</th>
+                            <th>Address</th>
+                            <th>Name</th>
+                            <th>Share</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for i in sdiff %}
+                            <tr>
+                                <td>{{i['dst'].address}}</td>
+                                <td>{{i['dst'].name}}</td>
+                                <td>{{i['src'].address}}</td>
+                                <td>{{i['src'].name}}</td>
+                                <td>
+                                    {% if i['src'] and i['dst'] %}
+                                        <input type="checkbox" name="selectl" value="{{i['dst'].id}}_{{i['src'].id}}" checked />
+                                    {% else %}
+                                        Not found
+                                    {% endif %}
+                                </td>
+                            </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+                </form>
+            </div>
+        </div>
+    </div>
+{% endblock %}

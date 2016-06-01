@@ -1,0 +1,79 @@
+{% extends "main.html" %}
+{% block content %}
+	{{super()}}
+	{{graph|safe}}
+ <div id="toolbox" style="padding: 7px;border: 2px solid gray;margin: 0;background-color:#FFFFFF;visibility:hidden;"><div id="commAddr"></div><input id="newDatas" /></div>
+
+        <script>
+            window.onload = init;
+            var x_value = 0;
+            var y_value = 0;
+            var toolbox = document.getElementById("toolbox");
+            var commAddr = document.getElementById("commAddr");
+            var newDatas = document.getElementById("newDatas");
+            function init() {
+                if (window.Event) {
+                document.captureEvents(Event.MOUSEMOVE);
+                }
+                document.onmousemove = getCursorXY;
+            }
+            function httpGet(theUrl)
+            {
+                var xmlHttp = null;
+                xmlHttp = new XMLHttpRequest();
+                xmlHttp.open( "GET", theUrl, false );
+                xmlHttp.send( null );
+                if (xmlHttp.responseText.indexOf("ERROR_ANALYZE") > -1){
+                    alert(xmlHttp.responseText);
+                }
+                try { xmlHttp.abort(); } catch(e){}
+                return;
+            }
+            function getCursorXY(e) {
+                x_value = (window.Event) ? e.pageX : event.clientX + (document.documentElement.scrollLeft ? document.documentElement.scrollLeft : document.body.scrollLeft);
+                y_value = (window.Event) ? e.pageY : event.clientY + (document.documentElement.scrollTop ? document.documentElement.scrollTop : document.body.scrollTop);
+            }
+            function displayCommBox(addr){
+                toolbox.style.visibility = "visible";
+                toolbox.style.position = "absolute";
+                toolbox.style.top = y_value+8;
+                toolbox.style.left = x_value;
+                commAddr.innerHTML = "0x"+addr.toString(16)+":";
+                document.body.onclick=hideBox;
+                newDatas.onkeydown=submitComment;
+                newDatas.focus();
+            }
+            function displayRenameBox(addr){
+                toolbox.style.visibility = "visible";
+                toolbox.style.position = "absolute";
+                toolbox.style.top = y_value+8;
+                toolbox.style.left = x_value;
+                commAddr.innerHTML = "0x"+addr.toString(16)+":";
+                document.body.onclick=hideBox;
+                newDatas.onkeydown=submitRename;
+                newDatas.focus();
+            }
+            function submitRename(){
+                if (event.keyCode != 13)
+                    return;
+                // document.location = document.location+"&commaddr="+commAddr.outerText.substr(0,commAddr.outerText.length - 1)+"&rename="+encodeURIComponent(newDatas.value);
+                httpGet(document.location+"&commaddr="+commAddr.outerText.substr(0,commAddr.outerText.length - 1)+"&rename="+encodeURIComponent(newDatas.value));
+                location.reload(true);
+            }
+            function submitComment(){
+                if (event.keyCode != 13)
+                    return;
+                // document.location = document.location+"&commaddr="+commAddr.outerText.substr(0,commAddr.outerText.length - 1)+"&comment="+encodeURIComponent(newDatas.value);
+                httpGet(document.location = document.location+"&commaddr="+commAddr.outerText.substr(0,commAddr.outerText.length - 1)+"&comment="+encodeURIComponent(newDatas.value));
+                location.reload(true);
+            }
+            function hideBox(){
+                if ((y_value > (parseInt(toolbox.style.top.substr(0,toolbox.style.top.length-2)) + 60)) || (y_value < (parseInt(toolbox.style.top.substr(0,toolbox.style.top.length-2))))){
+                    toolbox.style.visibility = "hidden";
+                }
+                if ((x_value > (parseInt(toolbox.style.left.substr(0,toolbox.style.left.length-2)) + 200)) || (x_value < (parseInt(toolbox.style.left.substr(0,toolbox.style.left.length-2))))){
+                    toolbox.style.visibility = "hidden";
+                }
+            }
+        </script></div>
+{% endblock %}

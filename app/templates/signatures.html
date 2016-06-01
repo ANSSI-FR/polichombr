@@ -1,0 +1,166 @@
+{% extends "main.html" %}
+{% block content %}
+    {{super()}}
+    <div class="modal fade" id="createyara" tabindex="-1" role="dialog">
+        <div class="modal-dialog" role="document">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <button type="button" class="close" data-dismiss="modal" aria-label="Close">
+                        <span aria-hidden="true">&times;</span>
+                    </button>
+                    <h4 class="modal-title">Create yara rule</h4>
+                </div>
+                <div class="modal-body">
+                    {{wtf.quick_form(yaraform)}}
+                </div>
+            </div>
+        </div>
+    </div>
+
+	<div class="page-header">
+		<h1>
+		    Yara rules
+		</h1>
+	</div>
+    
+	<ul class="nav nav-tabs">
+		<li role="presentation"> <a data-toggle="tab" href='#index'>Index</a></li>
+		<li role="presentation"> <a data-toggle="tab" href='#help'>Help</a></li>
+	</ul>
+    
+	<div class="tab-content">
+        <div class="tab-pane" id="help">
+            <br />
+            <div class="row">
+                <div class="panel panel-primary">
+                    <div class="panel-heading">
+                        <h2 class="panel-title">Improved Yara help</h2>
+                    </div>
+                    <div class="panel-body">
+                <p>You can add MACHOC CFG hashes in your regular Yara rules. MACHOC prefix are set as regular comments on top of the rule (before the "rule" identifier). They allow a pre-selection on samples on which the rule will run.</p>
+                <p>For instance, the folowing rule will only be ran on samples which contain functions with the "deadbeef" and "00c0ffee" MACHOC hashes, and not the "baadf00d" one.</p>
+                <div style="padding:5px;margin:5px;border:solid 1px white;">
+                    /* machoc==00c0ffee */<br />
+                    /* machoc!=baadf00d */<br />
+                    /* machoc==deadbeef */<br />
+                    rule test<br />
+                    {<br />
+                    &nbsp;&nbsp;&nbsp;&nbsp;strings:<br />
+                    &nbsp;&nbsp;&nbsp;&nbsp;$a="MACHOC test" wide ascii<br />
+                    &nbsp;&nbsp;&nbsp;&nbsp;$b="This string must be present" wide<br />
+                    &nbsp;&nbsp;&nbsp;&nbsp;condition:<br />
+                    &nbsp;&nbsp;&nbsp;&nbsp;$a and $b<br />
+                    }
+                </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+		<div class="tab-pane active" id="index">
+            <br />
+            <div class="row">
+                <div class="panel panel-primary">
+                    <div class="panel-heading">
+                        <h2 class="panel-title">Quicklist</h2>
+                    </div>
+                     <div class="panel-body">
+                    {% for y in myyaras %}
+                        <a href="#{{y.id}}" class="btn btn-primary">{{y.name}}</a>
+                    {% endfor %}
+                        <a data-toggle="modal" data-target="#createyara" class="btn btn-default">Create new</a>
+                    </div>
+                </div>
+            </div>
+            <div class="row">
+                <div class="panel panel-primary">
+                    <div class="panel-heading">
+			            <h2 class="panel-title">Yara rules list</h2>
+                    </div>
+                    <div class="panel-body">
+
+   {% for y in myyaras %}
+        <a name="{{y.id}}" />
+        <div class="panel panel-default">
+            <div class="panel-heading">
+				<h3 class="panel-title">{{y.name}}</h3>
+            </div>
+            <div class="panel-body">    
+                <div class="row">
+                <div class="col-xs-6">
+                    <a data-toggle="collapse" data-target="#yara{{y.id}}" class="btn btn-default">View</a>
+                    <a data-toggle="collapse" data-target="#rename{{y.id}}" class="btn btn-default">Rename</a>
+                    <a href="/signatures/delete/{{y.id}}" class="btn btn-danger" onclick="javascript: return confirm('Remove yara rule, are you sure?');">delete</a>
+                    <div id="rename{{y.id}}" class="collapse">
+                        <form class="form form-horizontal" method="post" role="form">
+                            {% for x in renameform %}
+                                {% if x.name == "item_id" %}
+                                    {{ x(value=y.id) }}
+                                {% elif x.name == "newname" %}
+                                    {{ x(value=y.name, class="form-control") }}
+                                {% elif x.name != "rename" %}
+                                    {{ x(class="form-control") }}
+                                {% else %}
+                                    {{ x(class="btn btn-default")}}
+                                {% endif %}
+                            {% endfor %}
+                        </form>
+                    </div>
+                </div>
+                <div class="col-xs-6">
+                    <h3 class="pull-right">
+				    {% if y.TLP_sensibility == 1 %}
+    					<span class="text-muted">TLP WHITE
+    				{% elif y.TLP_sensibility == 2 %}
+    					<span class="text-success">TLP GREEN
+    				{% elif y.TLP_sensibility == 3 %}
+    					<span class="text-warning">TLP AMBER
+    				{% elif y.TLP_sensibility == 4 %}
+    					<span class="text-danger">TLP RED
+    				{% elif y.TLP_sensibility == 5 %}
+    					<span>TLP BLACK
+    				{% endif %}
+                        </span>
+                        <a data-toggle="collapse" data-target="#changetlp{{y.id}}" class="btn">change</a>
+                        <div id="changetlp{{y.id}}" class="collapse">
+                            <form class="form form-horizontal" method="post" role="form">
+                            {% for x in changetlpform %}
+                                {% if x.name == "item_id" %}
+                                    {{ x(value=y.id) }}
+                                {% elif x.name != "changetlp" %}
+                                    {{ x(class="form-control") }}
+                                {% else %}
+                                    {{ x(class="btn btn-default")}}
+                                {% endif %}
+                            {% endfor %}
+                            </form>
+                        </div>
+    			    </h3>
+                </div>
+                </div>
+                    <div class="row">
+                        <div class="col-xs-11">
+        				    <div style="border:solid 1px white; width:100%; margin:10px;padding: 5px;" class="collapse" id="yara{{y.id}}">
+        				        <h4>Raw rule</h4>
+        				        {% for i in y.raw_rule.splitlines() %}
+        					        {{i}}<br />
+        	    			     {% endfor %}
+            				    </div>
+            				    <h4>Matchs</h4>
+            				    {% for s in y.samples %}
+                                    {{printsample(s)}}<br />
+            				    {%endfor%}
+            				    <h4>Families</h4>
+            				    {% for s in y.families %}
+            					    <a class="btn btn-{{familycolorbystatus(s)}}" data-toggle="collapse" href="family/{{s.id}}">{{s.name}}</a>
+            				    {%endfor%}
+                            </div>
+                        </div>
+                  </div>
+			</div>
+			{% endfor %}
+		</div>
+        </div>
+	</div>
+	</div>
+
+{% endblock %}

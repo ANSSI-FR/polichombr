@@ -1,0 +1,344 @@
+{% extends "main.html" %}
+{% block content %}
+    {{super()}}
+    <div class="modal fade" id="addyara" tabindex="-1" role="dialog">
+        <div class="modal-dialog" role="document">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <button type="button" class="close" data-dismiss="modal" aria-label="Close">
+                        <span aria-hidden="true">&times;</span>
+                    </button>
+                    <h4 class="modal-title">Associate yara rule</h4>
+                </div>
+                <div class="modal-body">
+                    {{wtf.quick_form(yaraform)}}
+                </div>
+            </div>
+        </div>
+    </div>
+    <div class="modal fade" id="changestatus" tabindex="-1" role="dialog">
+        <div class="modal-dialog" role="document">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <button type="button" class="close" data-dismiss="modal" aria-label="Close">
+                        <span aria-hidden="true">&times;</span>
+                    </button>
+                    <h4 class="modal-title">Change family status</h4>
+                </div>
+                <div class="modal-body">
+                    {{wtf.quick_form(changestatusform)}}
+                </div>
+            </div>
+        </div>
+    </div>
+    <div class="modal fade" id="changetlp" tabindex="-1" role="dialog">
+        <div class="modal-dialog" role="document">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <button type="button" class="close" data-dismiss="modal" aria-label="Close">
+                        <span aria-hidden="true">&times;</span>
+                    </button>
+                    <h4 class="modal-title">Change family TLP level</h4>
+                </div>
+                <div class="modal-body">
+                        {{wtf.quick_form(changetlpform)}}
+                </div>
+            </div>
+        </div>
+    </div>
+    <div class="modal fade" id="addsubfam" tabindex="-1" role="dialog">
+        <div class="modal-dialog" role="document">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <button type="button" class="close" data-dismiss="modal" aria-label="Close">
+                        <span aria-hidden="true">&times;</span>
+                    </button>
+                    <h4 class="modal-title">Create sub-family</h4>
+                </div>
+                <div class="modal-body">
+                        {{wtf.quick_form(addsubfamform)}}
+                </div>
+            </div>
+        </div>
+    </div>
+    <div class="page-header">
+        <div class="row">
+            <div class="col-xs-8">
+                <h1>
+                    {# Recursive macros did not work... #}
+                    {% for x in [1,family.parents] recursive %}
+                        {% if x != 1 %}
+                            {% if x.parents %}
+                                {{ loop([1,x.parents]) }}
+                            {% endif %}
+                            {% if x != None %}
+                            <a href="/family/{{x.id}}">{{ x.name }}</a>&nbsp;&gt;
+                            {% endif %}
+                        {% endif %}
+                    {% endfor %}
+                    {{family.name}}
+                    &nbsp;
+                <a data-toggle="modal" data-target="#changestatus" class="btn btn-{{familycolorbystatus(family)}}">
+                {% if family.status == 1 %}
+                    Finished
+                {% elif family.status == 2 %}
+                    Currently analyzed
+                {% elif family.status == 3 %}
+                    Not started
+                {% endif %}</a>
+                    <a class="btn btn-danger btn-xs" href="/family/{{family.id}}/delete" onclick="javascript: return confirm('Confirm family deletion and all of its subfamilies?');">remove</a>
+                </h1>
+            </div>
+            <div class="col-xs-4">
+                <h1 class="pull-right">
+                    {% if family.TLP_sensibility == 1 %}
+                    <p class=text-muted>TLP WHITE
+                    {% elif family.TLP_sensibility == 2 %}
+                    <p class=text-success>TLP GREEN
+                    {% elif family.TLP_sensibility == 3 %}
+                    <p class=text-warning>TLP AMBER 
+                    {% elif family.TLP_sensibility == 4 %}
+                    <p class=text-danger>TLP RED
+                    {% elif family.TLP_sensibility == 5 %}
+                    <p>TLP BLACK
+                    {% endif %}
+                    <a data-toggle="modal" data-target="#changetlp" class="btn">change</a>
+                    </p>
+                </h1>
+            </div>
+        </div>
+    </div>
+
+    <ul class="nav nav-tabs">
+        <li role="presentation"> <a href='#index' data-toggle="tab">Index</a></li>
+        <li role="presentation"> <a href='#yaras' data-toggle="tab">Yara rules</a></li>
+        <li role="presentation"> <a href='#samples' data-toggle="tab">Related Samples</a></li>
+        <li role="presentation"> <a href='#detection' data-toggle="tab">Detection</a></li>
+        <li role="presentation"> <a href='#files' data-toggle="tab">Files</a></li>
+        <li role="presentation"> <a href='#export' data-toggle="tab">Export</a></li>
+    </ul>
+
+    
+    <div class="tab-content">
+        <br />
+        <div class="tab-pane" id="export">
+            <div class="panel panel-primary">
+                <div class="panel-heading">
+                    <h3 class="panel-title">Export</h3>
+                </div>
+                <div class="panel-body">
+                {{wtf.quick_form(expform)}}
+                </div>  
+            </div>
+        </div>
+
+        <div class="tab-pane" id="yaras">
+            <div class="panel panel-primary">
+                <div class="panel-heading">
+                    <h3 class="panel-title">Associated rules</h3>
+                </div>
+                <div class="panel-body">
+                    {% for yara in family.yaras %}
+                        <a data-toggle="collapse" data-target="#yara_{{yara.id}}" class="btn btn-primary">{{yara.name}}</a><a href="/family/{{family.id}}/deleteyara/{{yara.id}}" onclick="javascript: return confirm('remove yara rule?');" class="btn btn-danger">X</a>&nbsp;&nbsp;
+                        <div class="collapse" style="border: solid 1px white; padding: 5px; margin: 5px;" id="yara_{{yara.id}}">
+                            {% for line in yara.raw_rule.splitlines() %}
+                                {{line}}<br />
+                            {% endfor %}
+                        </div>
+                    {% endfor %}
+                    &nbsp;&nbsp;<a data-toggle="modal" data-target="#addyara" class="btn btn-default">Add new</a>
+                </div>
+            </div>
+        </div>
+
+        <div class="tab-pane active" id="index">
+        <div class="row">
+            <div class="col-lg-6">
+                <div class="panel panel-primary">
+                    <div class="panel-heading">
+                        <h3 class="panel-title">Sub-families</h3>
+                    </div>
+                    <div class="panel-body">
+                        {% if family.subfamilies %}
+                            {% for f in family.subfamilies %}
+                                <a class="btn btn-{{familycolorbystatus(f)}}" href="/family/{{f.id}}">{{f.name}}</a>
+                            {% endfor %}
+                        {% endif %}
+                        <a data-toggle="modal" data-target="#addsubfam" class="btn btn-default">Create new</a>
+                    </div>
+                </div>
+            </div>
+            <div class="col-lg-6">
+                <div class="panel panel-primary">
+                    <div class="panel-heading">
+                        <h3 class="panel-title">Referents</h3>
+                    </div>
+                    <div class="panel-body">
+                        {% if family.users %}
+                            {% for u in family.users %}
+                                <a class="btn btn-info" href="/user/{{u.id}}">{{u.nickname}}</a>&nbsp;
+                            {% endfor %}
+                            <a class="btn btn-default" href="/family/{{family.id}}/addreme">Add/remove me</a>
+                        {% endif %}
+                    </div>
+                </div>
+                <div class="panel panel-primary">
+                    <div class="panel-heading">
+                        <h3 class="panel-title">Regular users</h3>
+                    </div>
+                    <div class="panel-body">
+                        {% for u in famusers %}
+                            <a class="btn btn-info" href="/user/{{u.id}}">{{u.nickname}}</a>&nbsp;
+                        {% endfor %}
+                    </div>
+                </div>
+            </div>
+        </div>
+        <div class="panel panel-primary">
+            <div class="panel-heading">
+                <h3 class="panel-title">Abstract</h3>
+            </div>
+            <div class="panel-body">
+                <a class="btn btn-default" role="button" data-toggle='collapse' data-target="#editabstract">Edit</a>
+                <div class="well">
+                    {% if family.abstract %}
+                        {{family.abstract|markdown}}
+                    {% endif %}
+                </div>
+                <div id='editabstract' class='collapse'>
+                    {{wtf.quick_form(abstractform)}}
+                </div>
+            </div>
+        </div>
+        </div>
+    
+        <div class="tab-pane" id="samples">
+        <div class="panel panel-primary">
+            <div class="panel-heading">
+              <h3 class="panel-title">Related samples</h3>
+            </div>
+            <div class="panel-body">
+                <table class="table">
+                    <thead>
+                        <tr>
+                            <th>Date</th><th>Sample</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                    {% for sample in family.samples %}
+                        <tr>
+                            <td>{{sample.file_date}}</td><td>{{printsample(sample)}}</td>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        </div>
+        </div>
+
+        <div class="tab-pane" id="detection">
+            <div class="panel panel-primary">
+                <div class="panel-heading">
+                    <h3 class="panel-title">New detection item</h3>
+                </div>
+                <div class="panel-body">
+                    <a class="btn btn-default" data-target="#newitem" data-toggle="collapse">Create a new item</a>
+                    <div class="collapse" id="newitem">
+                        {{wtf.quick_form(createdetectionitemform)}}
+                    </div>
+                </div>
+            </div>
+            {% for item in family.detection_items %}
+            <div class="panel panel-primary">
+                <div class="panel-heading">
+                    <h3 class="panel-title">
+                    <a onclick="javascript: return confirm('Delete detection item?');" href="/family/{{family.id}}/deleteitem/{{item.id}}/" class="btn btn-danger btn-xs">delete</a>
+                    {% if item.item_type == 1 %}
+                        CUSTOM DETECTION ITEM
+                    {% elif item.item_type == 2 %}
+                        OPENIOC
+                    {% elif item.item_type == 3 %}
+                        SNORT RULE
+                    {% endif %} : {{item.name}}
+                    </h3>
+                </div>
+                <div class="panel-body">
+                    <div class="row">
+                        <div class="col-lg-10">
+                            <div class="well">
+                                <h4>
+                                {% for line in item.abstract.splitlines() %}
+                                    {{line}}<br />
+                                {% endfor %}
+                                </h4>
+                            </div>
+                        </div>
+                        <div class="col-lg-2">
+                           <h3 class="pull-right">
+                              {% if item.TLP_sensibility == 1 %}
+                              <p class=text-muted>TLP WHITE
+                              {% elif item.TLP_sensibility == 2 %}
+                              <p class=text-success>TLP GREEN
+                              {% elif item.TLP_sensibility == 3 %}
+                              <p class=text-warning>TLP AMBER 
+                              {% elif item.TLP_sensibility == 4 %}
+                              <p class=text-danger>TLP RED
+                              {% elif item.TLP_sensibility == 5 %}
+                              <p>TLP BLACK
+                              {% endif %}
+                              </p>
+                          </h3>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            {% endfor %}
+        </div>
+
+        <div class="tab-pane" id="files">
+            <div class="panel panel-primary">
+                <div class="panel-heading">
+                    <h3 class="panel-title">Upload new file</h3>
+                </div>
+                <div class="panel-body">
+                    {{wtf.quick_form(uploadform)}}
+                </div>
+            </div>
+            {% for i in family.associated_files %}
+            <div class="panel panel-primary">
+                <div class="panel-heading">
+                  <h3 class="panel-title">{{i.filename}}</h3>
+                </div>
+                <div class="panel-body">
+                    <div class="row">
+                        <div class="col-xs-8">
+                            <h3>
+                                <a href="/family/{{family.id}}/downloadfile/{{i.id}}" class="glyphicon glyphicon-download-alt"></a>&nbsp;
+                                <a href="/family/{{family.id}}/deletefile/{{i.id}}" class="btn btn-danger btn-xs" onclick="javascript: return confirm('Confirm file deletion?');">delete</a>
+                            </h3>
+                        </div>
+                        <div class="col-xs-4">
+                            <h3 class="pull-right">
+                                {% if i.TLP_sensibility == 1 %}
+                                <p class=text-muted>TLP WHITE
+                                {% elif i.TLP_sensibility == 2 %}
+                                <p class=text-success>TLP GREEN
+                                {% elif i.TLP_sensibility == 3 %}
+                                <p class=text-warning>TLP AMBER 
+                                {% elif i.TLP_sensibility == 4 %}
+                                <p class=text-danger>TLP RED
+                                {% elif i.TLP_sensibility == 5 %}
+                                <p>TLP BLACK
+                                {% endif %}
+                                </p>
+                            </h3>
+                        </div>
+                    </div>
+                    <div class="well">
+                        {{i.description}}
+                    </div>
+                </div>  
+            </div>
+            {% endfor %}
+        </div>
+    </div>
+{% endblock %}

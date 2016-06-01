@@ -1,0 +1,497 @@
+{% extends "main.html" %}
+
+{% block content %}
+	{{ super() }}
+
+<div class="modal fade" id="ModalFormFamily" tabindex="-1" role="dialog">
+	<div class="modal-dialog" role="document">
+		<div class="modal-content">
+			<div class="modal-header">
+				<button type="button" class="close" data-dismiss="modal" aria-label="Close"><span aria-hidden="true">&times;</span></button>
+				<h4 class="modal-title" id="myModalLabel">Choose family</h4>
+			</div>
+			<div class="modal-body">
+				{{wtf.quick_form(addfamilyform)}}
+			</div>
+		</div>
+	</div>
+</div>
+
+
+	<div class="page-header">
+		<div class="row">
+				<div class="col-xs-6">
+					<h1>
+                    	<p class=text-muted> Sample #{{sample.id}}
+						<a href='/sample/{{sample.id}}/download'>
+							<span class='glyphicon glyphicon-download-alt'>
+							</span>
+						</a>
+                        &nbsp;
+                        <a class="btn btn-danger btn-xs" href="/sample/{{sample.id}}/delete" onclick="javascript: return confirm('Confirm sample deletion?');">remove</a>    
+						</p>
+					</h1>
+				</div>
+				<div class="col-xs-6">
+					<h1 class="pull-right">
+			            {% if sample.TLP_sensibility == 1 %}
+						<p class='text-muted'> TLP WHITE 
+			            {% elif sample.TLP_sensibility == 2 %}
+						<p class='text-success'> TLP GREEN 
+			            {% elif sample.TLP_sensibility == 3 %}
+						<p class='text-warning'> TLP AMBER 
+			            {% elif sample.TLP_sensibility == 4 %}
+						<p class='text-danger'> TLP RED 
+			            {% elif sample.TLP_sensibility == 5 %}
+						<p class=''> TLP BLACK 
+                        {% endif %}
+                        <a data-toggle="collapse" data-target="#changetlp" class="btn">change</a>
+                        <div id="changetlp" class="collapse">
+                            {{wtf.quick_form(changetlpform)}}
+                        </div>
+                        </p>
+					</h1>
+				</div>
+		</div>
+	</div>
+	<ul class="nav nav-tabs nav-justified" >
+		<li role="presentation"><a data-toggle="tab" href='#index'>Index</a></li>
+        {% if sample.s_metadata %}
+		    <li role="presentation"><a data-toggle="tab" href='#meta'>File metadata</a></li>
+        {% endif %}
+        {% if sample.strings %}
+		<li role="presentation"><a data-toggle="tab" href='#strings'>Strings</a></li>
+        {% endif %}
+		<li role="presentation"><a data-toggle="tab" href='#checklist'>Checklist</a></li>
+        {% if sample.yaras %}
+		    <li role="presentation"><a data-toggle="tab" href='#yara'>Yara</a></li>
+        {% endif %}
+		<li role="presentation"><a data-toggle="tab" href='#export'>Export</a></li>
+		<li role="presentation"><a data-toggle="tab" href='#matches'>Classification</a></li>
+		<li role="presentation"><a data-toggle="tab" href='#poli_infos'>Reverse info</a></li>
+        {% if sample.analysis_data %}
+		<li role="presentation"><a data-toggle="tab" href='#analyses'>Analyses</a></li>
+        {% endif %}
+        {% if graph %}
+		    <li role="presentation" class="active"><a data-toggle="tab" href='#disass'>Disassembly</a></li>
+        {% endif %}
+	</ul>
+	
+	<div class="tab-content">
+		<div class="tab-pane{% if not graph %} active{% endif %}" id="index">
+            <br />
+            <div class="panel panel-primary">
+                <div class="panel-heading">
+                    <h3 class="panel-title">Sample information</h3>
+                </div>
+                <div class="panel-body">
+				    <table class="table">
+                    <thead>
+                        <tr><th>Metadata</th><th>Value</th></tr>
+                    </thead>
+					<tbody>
+					<tr class="table-hover">
+						<td>Type </td>
+						<td>{{sample.full_mime_type}} </td>
+					</tr>
+					<tr>
+						<td>File's date</td>
+						<td>{{sample.file_date}} </td>
+					</tr>
+					<tr>
+						<td>Size </td>
+						<td>{{sample.size|filesizeformat(sample.size)}} </td>
+					</tr>
+					<tr>
+						<td>MD5 </td>
+						<td>{{sample.md5}} </td>
+					</tr>
+					<tr>
+						<td>SHA1 </td>
+						<td>{{sample.sha1}} </td>
+					</tr>
+					<tr>
+						<td>SHA256 </td>
+						<td>{{sample.sha256}} </td>
+					</tr>
+					<tr>
+						<td>Analysis status </td>
+						<td>
+						{% if sample.analysis_status == 3 %}
+							<a class="btn btn-danger">NOT STARTED</a>
+						{% elif sample.analysis_status == 2 %}
+							<a class="btn btn-warning">RUNNING</a>
+						{% elif sample.analysis_status == 1 %}
+							<a class="btn btn-success">FINISHED</a>
+						{% endif %}
+						</td>
+					</tr>
+					<tr>
+						<td>Filenames </td>
+						<td>
+                        {% for f in sample.filenames %}
+                            {{f.name}}<br />
+                        {% endfor %}
+                        </td>
+					</tr>
+
+					<tr>
+						<td>Users </td>
+						<td>
+							{% for u in sample.users %}
+							<a class="btn btn-info" href='/user/{{u.id}}'>{{u.nickname}}</a>
+							{% endfor %}
+							<a class="btn btn-default" href='/sample/{{sample.id}}/addreme'>Add/remove me</a>
+						</td>
+					</tr>
+					<tr>
+						<td> Families</td>
+						<td>
+							{% for f in sample.families %}
+							        <a class="btn btn-{{familycolorbystatus(f)}}" href='/family/{{f.id}}'>{{f.name}}</a><a class="btn btn-danger" href="/sample/{{sample.id}}/removefam/{{f.id}}" onclick="javascript: return confirm('Remove the associated family?');">X</a>&nbsp;&nbsp;
+							{% endfor %}
+							    <button type="button"
+								    class="btn btn-default"
+								    data-toggle="modal"
+								    data-target="#ModalFormFamily">
+									Add a family
+							    </button>
+						</td>
+					</tr>
+					</tbody>
+				    </table>
+                </div>
+			</div>
+            <div class="panel panel-primary">
+                <div class="panel-heading">
+                    <h3 class="panel-title">Abstract</h3>
+                </div>
+                <div class="panel-body">
+			        <div class="well">
+				    {% if sample.abstract %}
+					    {{sample.abstract|markdown}}
+				    {% else %}
+					    No abstract!
+				    {% endif %}
+				    <a class="btn btn-default" role="button" data-toggle='collapse' data-target="#editabstract">Edit</a>
+			        <div id='editabstract' class='collapse'>
+				        {{wtf.quick_form(abstractform)}}
+			        </div>
+			        </div>
+                </div>
+            </div>
+            <div class="panel panel-primary">
+                <div class="panel-heading">
+                    <h3 class="panel-title">Machoc signature</h3>
+                </div>
+                <div class="panel-body" style="word-break: break-all;">
+                    {% for i in sample.functions %}{{"%08x"%i.machoc_hash}}{%endfor%}
+                </div>
+            </div>
+		</div>
+
+
+		<div class="tab-pane" id="export">
+            <br />
+			<div class="well">
+                Select the information you want to share:<br />
+				{{wtf.quick_form(expform,method='POST', action='/machexport/')}}
+			</div>
+		</div>
+
+
+		<div class="tab-pane" id="poli_infos">
+            <br />
+                <div class="panel panel-primary">
+                    <div class="panel-heading">
+                        <h3 class="panel-title">IDA PRO commands <a class="btn btn-xs btn-default" style="color:black;" data-toggle="collapse" data-target="#idapro">collapse</a></h3>
+                    </div>
+                    <div class="panel-body">
+                        <div class="well collapse" id="idapro">
+                            <table class="table">
+                                <thead>
+                                    <tr><th>Date</th><th>Address</th><th>Action</th><th>Value</th><th>User</th><th>Delete</th></tr>
+                                </thead>
+                                <tbody>
+                                    {% for act in sample.actions %}
+                                        <tr>
+                                            <td>{{act.timestamp}}</td>
+                                            <td>{{"0x%x"|format((act.address|int))}}</td>
+                                            <td>{{act.type}}</td>
+                                            <td>{{act.data}}</td>
+                                            <td>Analyst</td>
+					    <td><button type="button" class="warning" aria-label="Close">Delete</span></button> </td>
+                                        </tr>
+                                    {% endfor %}
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="panel panel-primary">
+                    <div class="panel-heading">
+                        <h3 class="panel-title">Functions <a class="btn btn-xs btn-default" data-toggle="collapse" style="color: black;" data-target="#functioninfo">collapse</a></h3>
+                    </div>
+                    <div class="panel-body">
+                        <div class="well collapse" id="functioninfo">
+                            <table class="table">
+                                <thead>
+                                    <tr><th>Address</th><th>Name</th><th>Machoc hash</th><th>Open in disassembler</th></tr>
+                                </thead>
+                                <tbody>
+                                    {% for f in sample.functions %}
+                                        <tr>
+                                            <td>{{"0x%x"|format((f.address)|int)}}</td>
+                                            <td>{{f.name}}</td>
+                                            <td>{{"%08x" % f.machoc_hash}}</td>
+                                            <td><a href="/sample/{{sample.id}}/disassemble/{{"%x"|format(f.address|int)}}" class="btn btn-info">Open</a></td>
+                                        </tr>
+                                    {% endfor %}
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                </div>
+        </div>
+
+        <div class="tab-pane" id="analyses">
+            <br />
+			{% for analysis in sample.analysis_data %}
+                <div class="panel panel-primary">
+                    <div class="panel-heading">
+                        <h3 class="panel-title">{{analysis.title}}</h3>
+                    </div>
+                    <div class="panel-body">
+                        <div class="well">
+							{{analysis.data|markdown }}	
+                        </div>
+                    </div>
+                </div>
+            {% endfor %}
+		</div>
+
+
+		<div class="tab-pane" id="strings">
+		    <br />
+            <div class="well">
+                <table class="table">
+                    <thead>
+        			    <tr><th>Type</th><th>Value</th></tr>
+        			</thead>
+        			<tbody>
+        				{% for item in sample.strings %}
+        					<tr><td>{% if item.string_type ==1 %}wide{% elif item.string_type == 2 %}ascii{% elif item.string_type == 3 %}builded{% endif %}</td><td>{{item.string_value}}</td></tr>
+        				{% endfor %}
+        			</tbody>
+        		</table>
+    		</div>
+        </div>
+
+
+		<div class="tab-pane" id="yara">
+            <br />
+            <div class="well">
+			    {% for yara in sample.yaras %}
+				    <a data-toggle="collapse" data-target="#yara_{{yara.id}}" class="btn btn-default">{{yara.name}}</a>
+                    <div class="collapse" style="border: solid 1px white; padding: 5px; margin: 5px;" id="yara_{{yara.id}}">
+					    {% for line in yara.raw_rule.splitlines() %}
+						    {{line}}<br />
+					    {% endfor %}
+                    </div>
+			    {% endfor %}
+             </div>
+		</div>
+
+
+		<div class="tab-pane" id="meta">
+        <br />
+		<div class="well">
+		<table class="table">
+			<thead>
+			    <tr><th>FIELD</th><th>VALUE</th></tr>
+			</thead>
+			<tbody>
+		        {% for meta in metasample%}
+                    <tr>
+                        <td>{{meta.type}}</td>
+                        <td>{{meta.value}}</td>
+                    </tr>
+	        	{% endfor %}
+		    </tbody>
+		</table>
+		</div>
+		</div>
+
+
+		<div class="tab-pane" id="checklist">
+            <br />
+            <div class="well">
+			{% for cl in checklists %}
+                {% if cl in sample.check_list %}
+                <div class="panel panel-success">
+                {% else %}
+                <div class="panel panel-danger">
+                {% endif%}
+                    <div class="panel-heading">
+                        <h3 class="panel-title">
+                            <a class="btn btn-default btn-xs" href="/sample/{{sample.id}}/checkfield/{{cl.id}}">toggle</a>
+                            {{cl.title}}
+                        </h3>
+                    </div>
+                    <div class="panel-body">
+                        {{cl.description}}
+                    </div>
+                </div>
+			{% endfor %}
+            </div>
+		</div>
+
+
+		<div class="tab-pane" id="matches">
+            <br />
+            <div class="panel panel-primary">
+                <div class="panel-heading">
+                    <h3 class="panel-title">Machoc compare</h3>
+                </div>
+                <div class="panel-body">
+                    {{wtf.quick_form(compareform, action="/sample/"+sample.id|string()+"/#matches")}}
+                    {% if hresults %}
+			        <table class="table">
+                        <thead>
+                            <tr>    
+                                <th>Percent</th>
+                                <th>Sample</th>
+                                <th>Diff</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+        			    {% for match in hresults %}
+        			        <tr>
+                                <td>{{match[1]*100}}</td>
+                                <td>{{printsample(match[0])}}</td>
+                                <td><a href="/machocdiff/{{sample.id}}/{{match[0].id}}" class="btn btn-default">Diff</a></td>
+                            </tr>
+                        {% endfor %}
+                        </tbody>
+                    </table>
+                    {% endif %}
+                </div>
+            </div>
+            <div class="panel panel-primary">
+                <div class="panel-heading">
+                    <h3 class="panel-title">Automatic identification</h3>
+                </div>
+                <div class="panel-body">
+			        <table class="table">
+                        <thead>
+                            <tr>
+                                <th>Match type</th>
+                                <th>Sample</th>
+                                <th>Diff</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+			    {% for match in sample.linked_samples %}
+        			        <tr>
+                                <td>{{match.match_type}}</td>
+                                <td>{{match.sid_2}}</td>
+                                <td><a href="/machocdiff/{{sample.id}}/{{match.sid_2}}/">Diff</a></td>
+                            </tr>
+        			    {% endfor %}
+        			    </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+        {% if graph %}
+		<div class="tab-pane active" id="disass">
+            <br />
+            <div class="panel panel-primary">
+                <div class="panel-heading">
+                    <h3 class="panel-title">Disassembly at {{fctaddr}}</h3>
+                </div>
+                <div class="panel-body">
+        	        <p class="text-center">{{graph|safe}}</p>
+                     <div id="toolbox" style="padding: 7px;border: 2px solid gray;margin: 0;background-color:#FFFFFF;visibility:hidden;">
+                        <div id="commAddr"></div>
+                        <input id="newDatas" />
+                    </div>
+                    <script language="javascript">
+window.onload = init;
+var x_value = 0;
+var y_value = 0;
+var toolbox = document.getElementById("toolbox");
+var commAddr = document.getElementById("commAddr");
+var newDatas = document.getElementById("newDatas");
+function init() {
+    if (window.Event) {
+        document.captureEvents(Event.MOUSEMOVE);
+    }
+    document.onmousemove = getCursorXY;
+}
+function httpGet(theUrl)
+{
+    var xmlHttp = null;
+    xmlHttp = new XMLHttpRequest();
+    xmlHttp.open( "GET", theUrl, false );
+    xmlHttp.send( null );
+    if (xmlHttp.responseText.indexOf("ERROR_ANALYZE") > -1){
+        alert(xmlHttp.responseText);
+    }
+    try { xmlHttp.abort(); } catch(e){}
+    return;
+}
+function getCursorXY(e) {
+    x_value = (window.Event) ? e.pageX : event.clientX + (document.documentElement.scrollLeft ? document.documentElement.scrollLeft : document.body.scrollLeft);
+    y_value = (window.Event) ? e.pageY : event.clientY + (document.documentElement.scrollTop ? document.documentElement.scrollTop : document.body.scrollTop);
+}
+function displayCommBox(addr){
+    toolbox.style.visibility = "visible";
+    toolbox.style.position = "absolute";
+    toolbox.style.top = y_value+8;
+    toolbox.style.left = x_value;
+    commAddr.innerHTML = "0x"+addr.toString(16)+":";
+    document.body.onclick=hideBox;
+    newDatas.onkeydown=submitComment;
+    newDatas.focus();
+}
+function displayRenameBox(addr){
+    toolbox.style.visibility = "visible";
+    toolbox.style.position = "absolute";
+    toolbox.style.top = y_value+8;
+    toolbox.style.left = x_value;
+    commAddr.innerHTML = "0x"+addr.toString(16)+":";
+    document.body.onclick=hideBox;
+    newDatas.onkeydown=submitRename;
+    newDatas.focus();
+}
+function submitRename(){
+    if (event.keyCode != 13)
+        return;
+    // document.location = document.location+"&commaddr="+commAddr.outerText.substr(0,commAddr.outerText.length - 1)+"&rename="+encodeURIComponent(newDatas.value);
+    httpGet(document.location+"&commaddr="+commAddr.outerText.substr(0,commAddr.outerText.length - 1)+"&rename="+encodeURIComponent(newDatas.value));
+    location.reload(true);
+}
+function submitComment(){
+    if (event.keyCode != 13)
+        return;
+    // document.location = document.location+"&commaddr="+commAddr.outerText.substr(0,commAddr.outerText.length - 1)+"&comment="+encodeURIComponent(newDatas.value);
+    httpGet(document.location = document.location+"&commaddr="+commAddr.outerText.substr(0,commAddr.outerText.length - 1)+"&comment="+encodeURIComponent(newDatas.value));
+    location.reload(true);
+}
+function hideBox(){
+    if ((y_value > (parseInt(toolbox.style.top.substr(0,toolbox.style.top.length-2)) + 60)) || (y_value < (parseInt(toolbox.style.top.substr(0,toolbox.style.top.length-2))))){
+       toolbox.style.visibility = "hidden";
+    }
+    if ((x_value > (parseInt(toolbox.style.left.substr(0,toolbox.style.left.length-2)) + 200)) || (x_value < (parseInt(toolbox.style.left.substr(0,toolbox.style.left.length-2))))){
+        toolbox.style.visibility = "hidden";
+    }
+}
+                    </script>
+                </div>
+            </div>
+        </div>
+       {% endif %}
+   </div>
+{% endblock %}

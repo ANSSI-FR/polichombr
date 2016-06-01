@@ -1,0 +1,102 @@
+{% extends "main.html" %}
+
+{% block content %}
+	{{ super() }}
+	<div class="page-header">
+		<h1>Search</h1>
+	</div>
+    
+    <div class="row">
+        <div class="col-lg-6">
+            <div class="panel panel-primary">
+                <div class="panel-heading">
+                    <h2 class="panel-title">Hash search</h2>
+                </div>
+    	        <div class="panel-body">
+                    Search a sample's hash. For file md5, sha1 or sha256 hashes, you can start from 5 bytes hash chunk. For machoc hashes, you must specify the 8 characters.<br />
+        		    {{wtf.quick_form(hform)}}
+	            </div>
+            </div>
+        </div>
+        <div class="col-lg-6">
+            <div class="panel panel-primary">
+                <div class="panel-heading">
+                    <h2 class="panel-title">Full text search</h2>
+                </div>
+    	        <div class="panel-body">
+                    Search in the database text information (abstracts, functions names, strings, file names, analyses results). No wildwards, no split.<br />
+        		    {{wtf.quick_form(tform)}}
+            	</div>
+            </div>
+        </div>
+    </div>
+    <div class="row">
+        <div class="col-lg-6">
+            <div class="panel panel-primary">
+                <div class="panel-heading">
+                    <h2 class="panel-title">Machoc search</h2>
+                </div>
+    	        <div class="panel-body">
+                    Search samples with similar full-machoc hashes.<br />
+        		    {{wtf.quick_form(mhform)}}
+                </div>
+            </div>
+        </div>
+    </div>
+    {% if hresults %}
+    <div class="row">
+        <div class="panel panel-primary">
+            <div class="panel-heading">
+                <h2 class="panel-title">Search results</h2>
+            </div>
+    	    <div class="panel-body">
+                <table class="table">
+                    <thead>
+                        <tr><th>Percent hit</th><th>Sample</th></tr>
+                    </thead>
+                    <tbody>
+                       {% for i in hresults %}
+                            <tr><td>{{i[1]*100}}%</td><td>{{printsample(i[0])}}</td></tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+    	    </div>
+         </div>
+     </div>
+    {% endif %}
+    {% if mresults %}
+    <div class="row">
+        <div class="panel panel-primary">
+            <div class="panel-heading">
+                <h2 class="panel-title">Search results (machoc functions)</h2>
+            </div>
+    	    <div class="panel-body">
+                <table class="table">
+                    <thead>
+                        <tr><th>Function name</th><th>Sample</th></tr>
+                    </thead>
+                    <tbody>
+                       {% for i in mresults %}
+                            <tr><td>{{i.name}}</td><td>{{printsample(i.sample)}}</td></tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+    	    </div>
+         </div>
+     </div>
+    {% endif %}
+    {% if results %}
+    <div class="row">
+        <div class="panel panel-primary">
+            <div class="panel-heading">
+                <h2 class="panel-title">Search results</h2>
+            </div>
+    	    <div class="panel-body">
+               {% for i in results %}
+                    {{printsample(i)}}<br />
+               {% endfor %}
+    	    </div>
+         </div>
+     </div>
+    {% endif %}
+{% endblock %}

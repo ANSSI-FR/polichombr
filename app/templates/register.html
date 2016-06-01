@@ -1,0 +1,16 @@
+{% extends "main.html" %}
+
+{% block content %}
+<div class="container-fluid">
+	{{ super() }}
+	<div class="page-header">
+		<h2>Register</h2>
+
+		Your account will need to be activated by an administrator to use it.
+	</div>
+	<div class="well">
+		{{wtf.quick_form(form)}}
+	</div>
+
+</div>
+{% endblock %}

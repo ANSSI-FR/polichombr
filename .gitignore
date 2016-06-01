@@ -1,0 +1,8 @@
+flask
+*.swp
+*.swo
+*.pyc
+*.db
+*.db-journal
+app/storage/*
+db_repository

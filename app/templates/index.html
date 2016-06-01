@@ -1,0 +1,102 @@
+{% extends "main.html" %}
+{% block content %}
+    {{super()}}
+    <div class="modal fade" id="uploadmachex" tabindex="-1" role="dialog">
+        <div class="modal-dialog" role="document">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <button type="button" class="close" data-dismiss="modal" aria-label="Close">
+                        <span aria-hidden="true">&times;</span>
+                    </button>
+                    <h4 class="modal-title">Upload a MACHEX file</h4>
+                </div>
+                <div class="modal-body">
+		            {{wtf.quick_form(impform, method='POST', action='/import/', button_map={'submit':'primary'})}}
+                </div>
+            </div>
+        </div>
+    </div>
+    <div class="modal fade" id="uploadnewfile" tabindex="-1" role="dialog">
+        <div class="modal-dialog" role="document">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <button type="button" class="close" data-dismiss="modal" aria-label="Close">
+                        <span aria-hidden="true">&times;</span>
+                    </button>
+                    <h4 class="modal-title">Upload a new sample/ZIP</h4>
+                </div>
+                <div class="modal-body">
+		            {{wtf.quick_form(form, method='POST', action='/samples/', button_map={'submit':'primary'})}}
+                </div>
+            </div>
+        </div>
+    </div>
+    
+	<div class="page-header">
+		<h1> Welcome to Polichombr </h1>
+	</div>
+
+	{% if g.user.id %}
+        <a data-toggle="modal" data-target="#uploadnewfile" class="btn btn-default">Upload sample</a>
+        <a data-toggle="modal" data-target="#uploadmachex" class="btn btn-default">Machex import</a>
+        <br />
+        <br />
+	    <div class="row">
+		    <div class="col-lg-6">
+		    <div class="panel panel-primary">
+                <div class="panel-heading">
+			        <h3 class="panel-title"> Currently analyzed families</h3>
+                </div>
+	            <div class="panel-body">
+            {% for f in families %}
+                {% if f.status == 2 %}
+                    <a href="{{url_for('view_family',family_id=f.id)}}" class="btn btn-{{familycolorbystatus(f)}}">{{f.name}}</a>&nbsp;
+                {% endif %}
+            {% endfor %}
+                </div>
+		    </div>
+		    </div>
+		    <div class="col-lg-6">
+		    <div class="panel panel-primary">
+                <div class="panel-heading">
+			        <h3 class="panel-title">15 last samples</h3>
+                </div>
+	            <div class="panel-body">
+				{% for s in g.samples[-15:]|reverse%}
+                    {{printsample(s)}}<br />
+				{% endfor %}
+                </div>
+		    </div>
+		    </div>
+	    </div>
+	    <div class="row">
+		    <div class="col-lg-6">
+            <div class="panel panel-primary">
+                <div class="panel-heading">
+			        <h3 class="panel-title">Your last samples</h3>
+                </div>
+	            <div class="panel-body">
+			  {% for sample in g.user.samples[:15]%}
+                {{printsample(sample)}}<br />
+			  {% endfor %}
+                </div>
+            </div>
+		    </div>
+		    <div class="col-lg-6">
+            <div class="panel panel-primary">
+                <div class="panel-heading">
+			        <h3 class="panel-title">Your uncategorized samples</h3>
+                </div>
+	            <div class="panel-body">
+					{% if uncategorized|length == 0 %}
+						<p class="text-center"><img class="img-rounded" src="/static/gg.png" width='500' heighth='400' /></p>
+					{% else %}
+						{% for sample in uncategorized %}
+                            {{printsample(sample)}}<br />
+						{% endfor %}
+					{% endif %}
+             </div>
+             </div>
+		  </div>
+	{% endif %}
+{% endblock%}
