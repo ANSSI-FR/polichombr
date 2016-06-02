@@ -1,10 +1,10 @@
 from flask import Flask, render_template
 
-from flask.ext.sqlalchemy import SQLAlchemy
+from flask_sqlalchemy import SQLAlchemy
 from flask_bootstrap import Bootstrap
 from flask_login import LoginManager
 from flask_marshmallow import Marshmallow
-from flask.ext.misaka import Misaka
+from flask_misaka import Misaka
 app = Flask(__name__)
 
 app.config.from_object('config')
