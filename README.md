@@ -1,7 +1,7 @@
 # Polichombr
 Collaborative malware analysis framework
 
-Originally presented at SSTIC 2016 ( https://www.sstic.org/2016/presentation/demarche_d_analyse_collaborative_de_codes_malveillants/ )
+Originally presented at [SSTIC 2016] ( https://www.sstic.org/2016/presentation/demarche_d_analyse_collaborative_de_codes_malveillants/ )
 
 # Warning
 This is a beta version, use at your own risk!
@@ -19,7 +19,7 @@ Tasks are loaded from the app/controllers/tasks directory, and must inherit from
 In particular, several tasks are already implemented:
  * AnalyzeIt, a ruby script based on metasm, wich is used to identify interesting points in the binary.
    The goal is to help the analyst by giving hints about where to start. For example,
-   we try to identify crypto loops, functions wich calls sensitive API (file, process, network, ...)0000
+   we try to identify crypto loops, functions wich calls sensitive API (file, process, network, ...)
 
  * Peinfo : We load the PE metadata with the peinfo library.
  * Strings : extract ASCII and Unicode strings
