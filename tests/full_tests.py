@@ -17,8 +17,10 @@ class MainTestCase(unittest.TestCase):
         app.app.config['SQLALCHEMY_DATABASE_URI'] = "sqlite:///"+self.fname
         app.app.config['TESTING'] = True
         app.app.config['WTF_CSRF_ENABLED'] = False
+
         self.app = app.app.test_client()
-        app.db.create_all()
+        with app.app.app_context():
+            app.db.create_all()
 
         api = APIControl()
         api.usercontrol.create("john", "password")
@@ -73,7 +75,7 @@ class MainTestCase(unittest.TestCase):
                            follow_redirects=True)
 
         # XXX : put a callback here to be notified when the analysis is ended
-        sleep(5)
+        sleep(4)
         return retval
 
     def test_create_sample(self):
@@ -133,32 +135,23 @@ class MainTestCase(unittest.TestCase):
         self.login("john", "password")
         retval = self.create_family("THISISATEST", level=1)
         retval = self.get_family(1)
-        self.assertIn('TLP WHITE', retval.data)
+        self.assertIn('TLP White', retval.data)
 
         retval = self.create_family("THISISATEST2", level=2)
         retval = self.get_family(2)
-        self.assertIn('TLP GREEN', retval.data)
+        self.assertIn('TLP Green', retval.data)
 
         retval = self.create_family("THISISATEST3", level=3)
         retval = self.get_family(3)
-        self.assertIn('TLP AMBER', retval.data)
+        self.assertIn('TLP Amber', retval.data)
 
         retval = self.create_family("THISISATEST4", level=4)
         retval = self.get_family(4)
-        self.assertIn('TLP RED', retval.data)
+        self.assertIn('TLP Red', retval.data)
 
         retval = self.create_family("THISISATEST5", level=5)
         retval = self.get_family(5)
-        self.assertIn('TLP BLACK', retval.data)
-
-    def test_family_display_parents(self):
-        self.login("john", "password")
-        retval = self.create_family()
-        self.assertIn("TOTO hierarchy", retval.data)
-
-        retval = self.create_family("TITI", parent_family=1)
-        self.assertIn("TOTO hierarchy", retval.data)
-        self.assertIn("TOTO.TITI", retval.data)
+        self.assertIn('TLP Black', retval.data)
 
     def test_family_abstract(self):
         self.login("john", "password")
@@ -200,10 +193,10 @@ class MainTestCase(unittest.TestCase):
         self.assertIn("TESTABSTRACT", retval.data)
         self.assertNotIn("My beautiful sample", retval.data)
 
-        ret_val = self.set_sample_abstract(1, "TESTABSTRACT DOUBLE")
+        ret_val = self.set_sample_abstract(1, "TEST DOUBLE ABSTRACT")
         self.assertTrue(ret_val)
         retval = self.app.get("/sample/1/")
-        self.assertNotIn("TESTABSTRACT DOUBLE", retval.data)
+        self.assertIn("TEST DOUBLE ABSTRACT", retval.data)
         self.assertNotIn("TESTABSTRACT", retval.data)
         self.assertNotIn("My beautiful sample", retval.data)
 
