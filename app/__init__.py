@@ -24,7 +24,7 @@ login_manager.init_app(app)
 
 from app.controllers.api import APIControl
 
-api = APIControl(db)
+api = APIControl()
 
 from app.models import models
 from app.views import webui, apiview

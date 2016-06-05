@@ -32,7 +32,6 @@ class APIControl(object):
     samplecontrol = None
     usercontrol = None
     analysiscontrol = None
-    dbhandle = None
 
     familycontrol = FamilyController()
     yaracontrol = YaraController()
@@ -42,7 +41,7 @@ class APIControl(object):
         app.config['ANALYSIS_PROCESS_POOL_SIZE'])
     idacontrol = IDAActionsController()
 
-    def __init__(self, dbhandle=None):
+    def __init__(self):
         """
             Initiate controllers.
         """
