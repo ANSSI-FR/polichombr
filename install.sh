@@ -7,15 +7,4 @@ git submodule update metasm
 
 virtualenv flask
 source flask/bin/activate
-pip install future
-pip install flask flask-login flask-sqlalchemy flask-wtf flask-bootstrap
-pip install sqlalchemy-migrate
-pip install flask-marshmallow marshmallow-sqlalchemy # marshalling for the API
-pip install python-magic
-pip install requests
-pip install pefile
-pip install markdown
-pip install Flask-Misaka
-pip install Flask-Testing
-pip install graphviz
-pip install yara-python
+pip install -r requirements.txt
