@@ -1975,7 +1975,7 @@ dasm.function.each{|addr, symb|
             currFunc += ";"
         }
         @fullFuncSign += currFunc
-        @fullHashSign += Digest::MD5.hexdigest(currFunc)[-8..-1]+":#{addr.to_s(16)};"
+        @fullHashSign += ("%08x" % murmur3_32_str_hash(currFunc))+":#{addr.to_s(16)};"
     end
 }
 
