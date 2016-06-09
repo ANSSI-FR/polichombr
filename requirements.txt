@@ -1,0 +1,17 @@
+flask
+flask-bootstrap
+flask-login
+flask-marshmallow
+Flask-Misaka
+flask-sqlalchemy
+Flask-Testing
+flask-wtf
+future
+graphviz
+markdown
+marshmallow-sqlalchemy
+pefile
+python-magic
+requests
+sqlalchemy-migrate
+yara-python
