@@ -626,12 +626,7 @@ class SampleController(object):
                         src_addresses_identified.append(src_function.address)
                         dst_addresses_identified.append(dst_function.address)
                     else:
-                        print "NGRAM ERROR"
-                        print i
-                        print src_function
-                        print dst_function
-                        print src_ngrams_hashes.count(i)
-                        print dst_ngrams_hashes.count(i)
+                        app.logger.error("NGram diff error")
         src_cpt = 0
         dst_cpt = 0
         for i in sample_src.functions:
@@ -646,10 +641,10 @@ class SampleController(object):
             if i.address not in dst_addresses_identified:
                 retv.append({"src": None, "dst": i})
                 dst_cpt += 1
-        print "USING " + str(ngrams_length) + "-GRAMS"
-        print "SRC sample not found count : " + str(src_cpt)
-        print "DST sample not found count : " + str(dst_cpt)
-        print "TOOK " + str(time.time() - start) + " seconds"
+        app.logger.debug("USING " + str(ngrams_length) + "-GRAMS")
+        app.logger.debug("SRC sample not found count : " + str(src_cpt))
+        app.logger.debug("DST sample not found count : " + str(dst_cpt))
+        app.logger.debug("TOOK " + str(time.time() - start) + " seconds")
         return retv
 
     @staticmethod

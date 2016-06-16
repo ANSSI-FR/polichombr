@@ -139,7 +139,7 @@ class YaraController(object):
         try:
             yara.compile(source=raw_data)
         except Exception as e:
-            print "%s" % (e)
+            app.logger.exception(e)
             return None
         yar = YaraRule(name, raw_data, tlp_level)
         db.session.add(yar)
