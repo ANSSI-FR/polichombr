@@ -6,3 +6,4 @@ flask
 *.db-journal
 app/storage/*
 db_repository
+skelsettings.json
