@@ -1,0 +1,23 @@
+engines:
+  csslint:
+    enabled: true
+  duplication:
+    enabled: true
+    config:
+      languages:
+      - python
+  fixme:
+    enabled: true
+  pep8:
+    enabled: true
+  radon: 
+    enabled: true
+    config: 
+      python_version: 2
+ratings:
+  paths:
+  - "app/**"
+  - "tests/**"
+  - "**.py"
+exclude_paths:
+- "**.rb"
