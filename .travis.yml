@@ -1,0 +1,25 @@
+sudo: true
+
+language: python
+
+python:
+  - 2.7
+
+before_install:
+  - sudo apt-get -qq update
+  - sudo apt-get install -y ruby libffi-dev python-dev graphviz gcc libssl-dev
+
+install:
+  - wget https://github.com/jjyg/metasm/archive/master.zip
+  - unzip master.zip
+  - mv metasm-master metasm
+  - pip install .
+  - pip install -r requirements.txt
+
+# We need MongoDB 2.6
+# https://github.com/travis-ci/travis-ci/issues/2246
+#services: mongodb
+
+before_script:
+
+script: cd tests/ && python full_tests.py
