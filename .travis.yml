@@ -1,4 +1,4 @@
-sudo: true
+sudo: required
 
 language: python
 
@@ -7,7 +7,7 @@ python:
 
 before_install:
   - sudo apt-get -qq update
-  - sudo apt-get install -y ruby libffi-dev python-dev graphviz gcc libssl-dev
+  - sudo apt-get install -qq -y ruby libffi-dev python-dev graphviz gcc libssl-dev
 
 install:
   - wget https://github.com/jjyg/metasm/archive/master.zip
@@ -16,10 +16,7 @@ install:
   - pip install .
   - pip install -r requirements.txt
 
-# We need MongoDB 2.6
-# https://github.com/travis-ci/travis-ci/issues/2246
-#services: mongodb
-
 before_script:
+  - python utils/db_create.py
 
 script: cd tests/ && python full_tests.py
