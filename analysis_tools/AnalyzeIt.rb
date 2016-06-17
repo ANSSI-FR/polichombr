@@ -32,7 +32,7 @@ ori_renamed_functions = {}
 ori_comments = {}
 knownCfg = {}
 
-checkedFunc = ["CreateProcessW", "CreateProcessA", "MoveFileW", "MoveFileA", "CopyFileW", "CopyFileA", "CopyFile", "DeleteFileA", "DeleteFileW", "RegCreateKeyA", "RegCreateKeyW", "RegSetValueA", "RegSetValueExA", "RegSetValueExW", "CreateDirectoryA", 'CreateDirectoryExA', 'CreateDirectoryExW', 'CreateDirectoryW','CreateServiceA' ,'CreateServiceW','RegOpenKeyA' ,'RegOpenKeyExA' ,'RegOpenKeyExW' ,'RegOpenKeyW', 'InternetCheckConnectionA', 'InternetCheckConnectionW','InternetOpenA', 'InternetOpenUrlA', 'InternetOpenUrlW', 'InternetOpenW', 'InternetConnectA', 'InternetConnectW', 'HttpAddRequestHeadersA', 'HttpAddRequestHeadersW','WSAAddressToStringA', 'WSAAddressToStringW', 'WSAAsyncGetHostByAddr', 'WSAAsyncGetHostByName','CheckRemoteDebuggerPresent','DbgBreakPoint','SHRegSetUSValueA','SHRegSetUSValueW','VirtualProtect','VirtualProtectEx','URLDownloadToFile','WinExec','send','connect','system','OpenServiceA','OpenServiceW','OpenSCManagerA','OpenSCManagerW','CoCreateInstance','gethostbyname','SHGetValueA','SHGetValueW','inet_addr','IoCreateSymbolicLink','IoCreateDevice','RtlAppendUnicodeToString','ZwCreateFile','ZwQueryInformationFile','ZwQuerySystemInformation','ZwOpenKey','ZwEnumerateKey','RtlWriteRegistryValue','RtlInitUnicodeString','OpenProcess', 'CreateRemoteThread', 'WriteProcessMemory','OpenEventA','OpenEventW','CreateEventA','CreateEventW']
+checkedFunc = ["CreateProcessW", "CreateProcessA", "MoveFileW", "MoveFileA", "CopyFileW", "CopyFileA", "CopyFile", "DeleteFileA", "DeleteFileW", "RegCreateKeyA", "RegCreateKeyW", "RegSetValueA", "RegSetValueExA", "RegSetValueExW", "CreateDirectoryA", 'CreateDirectoryExA', 'CreateDirectoryExW', 'CreateDirectoryW','CreateServiceA' ,'CreateServiceW','RegOpenKeyA' ,'RegOpenKeyExA' ,'RegOpenKeyExW' ,'RegOpenKeyW', 'InternetCheckConnectionA', 'InternetCheckConnectionW','InternetOpenA', 'InternetOpenUrlA', 'InternetOpenUrlW', 'InternetOpenW', 'InternetConnectA', 'InternetConnectW', 'HttpAddRequestHeadersA', 'HttpAddRequestHeadersW','WSAAddressToStringA', 'WSAAddressToStringW', 'WSAAsyncGetHostByAddr', 'WSAAsyncGetHostByName','CheckRemoteDebuggerPresent','DbgBreakPoint','SHRegSetUSValueA','SHRegSetUSValueW','VirtualProtect','VirtualProtectEx','URLDownloadToFile','WinExec','send','connect','system','OpenServiceA','OpenServiceW','OpenSCManagerA','OpenSCManagerW','CoCreateInstance','gethostbyname','SHGetValueA','SHGetValueW','inet_addr','IoCreateSymbolicLink','IoCreateDevice','RtlAppendUnicodeToString','ZwCreateFile','ZwQueryInformationFile','ZwQuerySystemInformation','ZwOpenKey','ZwEnumerateKey','RtlWriteRegistryValue','RtlInitUnicodeString','OpenProcess', 'CreateRemoteThread', 'WriteProcessMemory','OpenEventA','OpenEventW','CreateEventA','CreateEventW','CreateFileA','CreateFileW','WriteFile']
 @tbFuncName = {}
 @tbComments = {}
 
@@ -1041,6 +1041,46 @@ def checkCall(strFunc, xrefCall)
         AddTagFunction(basefunc, "Net_") if basefunc != nil
         if arg1 != ''
             log("  *   #{poliLinkAddr(xrefCall)} -> connect(#{arg1})")
+        end
+        return
+    end
+    if strFunc == "CreateFileA"
+        arg1 = getArg(xrefCall,1)
+        if $gdasm.decode_strz(arg1)
+            arg1 = $gdasm.decode_strz(arg1)
+        else
+            arg1 = ''
+        end
+        AddTagFunction(basefunc, "File_") if basefunc != nil
+        if arg1 != ''
+            log("  *   #{poliLinkAddr(xrefCall)} -> CreateFileA('#{arg1}')")
+        end
+        return
+    end
+    if strFunc == "CreateFileW"
+        arg1 = getArg(xrefCall,1)
+        if $gdasm.decode_wstrz(arg1)
+            arg1 = $gdasm.decode_wstrz(arg1)
+        else
+            arg1 = ''
+        end
+        AddTagFunction(basefunc, "File_") if basefunc != nil
+        if arg1 != ''
+            log("  *   #{poliLinkAddr(xrefCall)} -> CreateFileW('#{arg1}')")
+        end
+        return
+    end
+    if strFunc == "WriteFile"
+        arg2 = getArg(xrefCall,2)
+        arg3 = getArg(xrefCall,3)
+        if $gdasm.read_raw_data(arg2,0x10)
+            arg2 = $gdasm.read_raw_data(arg2,0x10).unpack("C*").map{|a| "\\x"+a.to_s(16)}.join()
+        else
+            arg2 = ''
+        end
+        AddTagFunction(basefunc, "File_") if basefunc != nil
+        if arg2 != '' or (arg3 != nil and arg3.to_s =~ /^[0-9a-f]+$/)
+            log("  *   #{poliLinkAddr(xrefCall)} -> WriteFile('#{arg2}',#{arg3})")
         end
         return
     end
