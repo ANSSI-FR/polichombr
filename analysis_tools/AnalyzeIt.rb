@@ -1837,8 +1837,9 @@ if (@strAntiVM.length > 0)
     @strAntiVM.each{|addr, str|
         basefunc = find_start_of_function(addr)
         basefunc = 0 if basefunc == nil
-        if defined?($gdasm.di_at(addr).block) and defined?($gdasm.di_at(addr).block.list[0]) and defined?($gdasm.di_at(addr).block.list[0].address)
-            tbloc = $gdasm.di_at(addr).block.list[0].address
+        di = $gdasm.di_at(addr)
+        if defined?(di.block) and defined?(di.block.list[0]) and defined?(di.block.list[0].address)
+            tbloc = di.block.list[0].address
         else
             tbloc = 0
         end
@@ -1853,8 +1854,9 @@ if (@strAntiDBG.length > 0)
     @strAntiDBG.each{|addr, str|
         basefunc = find_start_of_function(addr)
         basefunc = 0 if basefunc == nil
-        if defined?($gdasm.di_at(addr).block) and defined?($gdasm.di_at(addr).block.list[0]) and defined?($gdasm.di_at(addr).block.list[0].address)
-            tbloc = $gdasm.di_at(addr).block.list[0].address
+        di = $gdasm.di_at(addr)
+        if defined?(di.block) and defined?(di.block.list[0]) and defined?(di.block.list[0].address)
+            tbloc = di.block.list[0].address
         else
             tbloc = 0
         end
@@ -1870,8 +1872,9 @@ if (@strAntiAV.length > 0)
     @strAntiAV.each{|addr, str|
         basefunc = find_start_of_function(addr)
         basefunc = 0 if basefunc == nil
-        if defined?($gdasm.di_at(addr).block) and defined?($gdasm.di_at(addr).block.list[0]) and defined?($gdasm.di_at(addr).block.list[0].address)
-            tbloc = $gdasm.di_at(addr).block.list[0].address
+        di = $gdasm.di_at(addr)
+        if defined?(di.block) and defined?(di.block.list[0]) and defined?(di.block.list[0].address)
+            tbloc = di.block.list[0].address
         else
             tbloc = 0
         end
@@ -1887,8 +1890,9 @@ if (@strEXE.length > 0)
     @strEXE.each{|addr, str|
         basefunc = find_start_of_function(addr)
         basefunc = 0 if basefunc == nil
-        if defined?($gdasm.di_at(addr).block) and defined?($gdasm.di_at(addr).block.list[0]) and defined?($gdasm.di_at(addr).block.list[0].address)
-            tbloc = $gdasm.di_at(addr).block.list[0].address
+        di = $gdasm.di_at(addr)
+        if defined?(di.block) and defined?(di.block.list[0]) and defined?(di.block.list[0].address)
+            tbloc = di.block.list[0].address
         else
             tbloc = 0
         end
@@ -1903,8 +1907,9 @@ if (@strREG.length > 0)
     @strREG.each{|addr, str|
         basefunc = find_start_of_function(addr)
         basefunc = 0 if basefunc == nil
-        if defined?($gdasm.di_at(addr).block) and defined?($gdasm.di_at(addr).block.list[0]) and defined?($gdasm.di_at(addr).block.list[0].address)
-            tbloc = $gdasm.di_at(addr).block.list[0].address
+        di = $gdasm.di_at(addr)
+        if defined?(di.block) and defined?(di.block.list[0]) and defined?(di.block.list[0].address)
+            tbloc = di.block.list[0].address
         else
             tbloc = 0
         end
@@ -1919,8 +1924,9 @@ if (@strWEB.length > 0)
     @strWEB.each{|addr, str|
         basefunc = find_start_of_function(addr)
         basefunc = 0 if basefunc == nil
-        if defined?($gdasm.di_at(addr).block) and defined?($gdasm.di_at(addr).block.list[0]) and defined?($gdasm.di_at(addr).block.list[0].address)
-            tbloc = $gdasm.di_at(addr).block.list[0].address
+        di = $gdasm.di_at(addr)
+        if defined?(di.block) and defined?(di.block.list[0]) and defined?(di.block.list[0].address)
+            tbloc = di.block.list[0].address
         else
             tbloc = 0
         end
@@ -1935,8 +1941,9 @@ if (@strDNS.length > 0)
     @strDNS.each{|addr, str|
         basefunc = find_start_of_function(addr)
         basefunc = 0 if basefunc == nil
-        if defined?($gdasm.di_at(addr).block) and defined?($gdasm.di_at(addr).block.list[0]) and defined?($gdasm.di_at(addr).block.list[0].address)
-            tbloc = $gdasm.di_at(addr).block.list[0].address
+        di = $gdasm.di_at(addr)
+        if defined?(di.block) and defined?(di.block.list[0]) and defined?(di.block.list[0].address)
+            tbloc = di.block.list[0].address
         else
             tbloc = 0
         end
@@ -1951,8 +1958,9 @@ if (@strFIL.length > 0)
     @strFIL.each{|addr, str|
         basefunc = find_start_of_function(addr)
         basefunc = 0 if basefunc == nil
-        if defined?($gdasm.di_at(addr).block) and defined?($gdasm.di_at(addr).block.list[0]) and defined?($gdasm.di_at(addr).block.list[0].address)
-            tbloc = $gdasm.di_at(addr).block.list[0].address
+        di = $gdasm.di_at(addr)
+        if defined?(di.block) and defined?(di.block.list[0]) and defined?(di.block.list[0].address)
+            tbloc = di.block.list[0].address
         else
             tbloc = 0
         end
@@ -1967,8 +1975,9 @@ if (strings.length > 0)
     strings.each{|addr, str|
         basefunc = find_start_of_function(addr)
         basefunc = 0 if basefunc == nil
-        if defined?($gdasm.di_at(addr).block) and defined?($gdasm.di_at(addr).block.list[0]) and defined?($gdasm.di_at(addr).block.list[0].address)
-            tbloc = $gdasm.di_at(addr).block.list[0].address
+        di = $gdasm.di_at(addr)
+        if defined?(di.block) and defined?(di.block.list[0]) and defined?(di.block.list[0].address)
+            tbloc = di.block.list[0].address
         else
             tbloc = 0
         end
