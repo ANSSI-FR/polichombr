@@ -78,6 +78,14 @@ class MainTestCase(unittest.TestCase):
         sleep(4)
         return retval
 
+    def add_sample_to_family(self, sid=1, fid=1):
+        self.login("john", "password")
+        retval = self.app.post("/sample/"+str(sid)+ "/",
+                data = dict(parentfamily=fid),
+                follow_redirects=True)
+        return retval
+
+
     def test_create_sample(self):
         retval = self.create_sample()
         self.assertTrue(retval)
@@ -160,7 +168,44 @@ class MainTestCase(unittest.TestCase):
         self.assertIn("TEST ABSTRACT", retval.data)
 
     def test_family_sample(self):
-        self.assertTrue(False)
+        self.login("john", "password")
+        self.create_family(fname="TEST FAMILY FOR SAMPLE")
+        self.create_sample()
+        retval = self.add_sample_to_family()
+
+        # test if the family is in the sample view
+        self.assertTrue(retval)
+        retval = self.app.get('/sample/1/')
+        self.assertIn('TEST FAMILY FOR SAMPLE', retval.data)
+
+        # test if the sample is linked in the family view
+        retval = self.app.get('/family/1/')
+        self.assertIn('0f6f0c6b818f072a7a6f02441d00ac69', retval.data)
+
+
+    def test_sample_multiple_family(self):
+        self.login("john", "password")
+        self.create_family(fname="TEST FAMILY FOR SAMPLE")
+        self.create_family(fname="SECOND FAMILY FOR SAMPLE")
+        self.create_sample()
+        retval = self.add_sample_to_family(1, 1)
+        self.assertTrue(retval)
+
+        retval = self.add_sample_to_family(1, 2)
+        self.assertTrue(retval)
+
+        # test if the family is in the sample view
+        retval = self.app.get('/sample/1/')
+        self.assertIn('TEST FAMILY FOR SAMPLE', retval.data)
+        self.assertIn('SECOND FAMILY FOR SAMPLE', retval.data)
+
+        # test if the sample is linked in the family view
+        retval = self.get_family(1)
+        self.assertIn('0f6f0c6b818f072a7a6f02441d00ac69', retval.data)
+
+        retval = self.get_family(2)
+        self.assertIn('0f6f0c6b818f072a7a6f02441d00ac69', retval.data)
+
 
     def test_sample_hashes(self):
         self.login("john", "password")
