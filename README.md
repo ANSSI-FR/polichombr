@@ -16,6 +16,24 @@ This platform is designed to help analysts to reverse malwares, as a team.
 We provide an engine to automate the analysis tasks,
 and identify hotpoints in the binary, and collaboratively reverse binaries.
 
+
+### Generic sample informations 
+![screenshot](docs/screenshots/screen_sample_view.png)
+
+### Family/Threat overview
+![screenshot](docs/screenshots/screen_family_view.png)
+
+
+### Online disassembly
+![screenshot](docs/screenshots/screen_disass.png)
+
+
+### Share IDA Pro informations from the WebUI / directly to other users
+![screenshot](docs/screenshots/screen_names.png)
+
+### Automated hotpoints detection 
+![screenshot](docs/screenshots/screen_analyzeit.png)
+
 ### Plugins / tasks
 Tasks are loaded from the app/controllers/tasks directory, and must inherit from the Task object.
 In particular, several tasks are already implemented:
