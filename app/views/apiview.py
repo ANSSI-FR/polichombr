@@ -44,8 +44,6 @@ def api_help():
         Get all the data for all the families
 
     /api/1.0/family/
-        [POST] : create a new family
-        [GET]  : nothing
     """
     return plain_text(text)
 
