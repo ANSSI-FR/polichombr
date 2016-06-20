@@ -5,8 +5,12 @@ To use polichombr as a docker container, we provide a *DockerFile*
 in the root directory.
 
 	docker build -t polichombr .
-	docker run -p 5001:5000 -v /home/user/poli_github/app.db:/opt/data/app.db polichombr
+	docker run -p 5001:5000 -it polichombr bash
 
-The docker container uses the local database (`app.db`) and will run automatically.
+Once in the docker shell:
+	./install.sh && ./run.py
 
-Please enjoy your new polichombr instance by accessing your host at port 5001 =)
+Please enjoy yout new polichombr by accessing your host at port 5001 =)
+
+Be aware, if you stop the container, you will lose the stored samples,
+as changes are not remanent with the current volume options.
