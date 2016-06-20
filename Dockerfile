@@ -20,10 +20,10 @@ MAINTAINER Tristan Pourcelot <tristan.pourcelot@ssi.gouv.fr>
 ENV DEBIAN_FRONTEND noninteractive
 
 RUN apt-get update
-RUN apt-get upgrade -y
-RUN apt-get dist-upgrade -y
+RUN apt-get upgrade -qq
+RUN apt-get dist-upgrade -qq
 
-RUN apt-get install -qy git virtualenv ruby libffi-dev python-dev graphviz gcc libssl-dev
+RUN apt-get install -qqy git virtualenv ruby libffi-dev python-dev graphviz gcc libssl-dev
 
 ADD https://github.com/anssi-fr/polichombr/tarball/master poli.tar.gz
 
@@ -33,11 +33,14 @@ RUN mv poli.tar.gz /opt/ && cd /opt/ && \
 	./install.sh 
 WORKDIR /opt/polichombr
 
+RUN sed -i '/SQLALCHEMY_DATABASE_URI/c\SQLALCHEMY_DATABASE_URI = "sqlite:///opt/data/app.db"' config.py
+
 ADD https://github.com/jjyg/metasm/tarball/master metasm.tar.gz
 RUN tar xzf metasm.tar.gz && mv jjyg-metasm-* metasm && rm metasm.tar.gz
 
-RUN mv utils/db_create.py db_create.py
-RUN flask/bin/python db_create.py
+VOLUME "/opt/data/"
+#RUN mv utils/db_create.py db_create.py
+#RUN flask/bin/python db_create.py
 
 EXPOSE 5000
 CMD flask/bin/python run.py
