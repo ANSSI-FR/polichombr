@@ -5,6 +5,7 @@ from flask_bootstrap import Bootstrap
 from flask_login import LoginManager
 from flask_marshmallow import Marshmallow
 from flask_misaka import Misaka
+
 app = Flask(__name__)
 
 app.config.from_object('config')
@@ -22,9 +23,11 @@ Misaka(app)
 login_manager = LoginManager()
 login_manager.init_app(app)
 
-from app.controllers.api import APIControl
+from poli.controllers.api import APIControl
 
 api = APIControl()
 
-from app.models import models
-from app.views import webui, apiview
+from poli.views import webui, apiview
+
+if __name__ == "__main__":
+    app.run(app.config['SERVER_ADDR'], port=app.config['SERVER_PORT'], debug=app.config['DEBUG'])

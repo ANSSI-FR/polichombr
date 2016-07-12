@@ -6,8 +6,8 @@ import json
 from time import sleep
 from StringIO import StringIO
 
-import app
-from app.controllers.api import APIControl
+import poli
+from poli.controllers.api import APIControl
 
 
 class MainTestCase(unittest.TestCase):
@@ -16,19 +16,19 @@ class MainTestCase(unittest.TestCase):
     """
     def setUp(self):
         self.db_fd, self.fname = tempfile.mkstemp()
-        app.app.config['SQLALCHEMY_DATABASE_URI'] = "sqlite:///"+self.fname
-        app.app.config['TESTING'] = True
-        app.app.config['WTF_CSRF_ENABLED'] = False
-        self.app = app.app.test_client()
-        app.db.create_all()
+        poli.app.config['SQLALCHEMY_DATABASE_URI'] = "sqlite:///"+self.fname
+        poli.app.config['TESTING'] = True
+        poli.app.config['WTF_CSRF_ENABLED'] = False
+        self.app = poli.app.test_client()
+        poli.db.create_all()
         api = APIControl()
         api.usercontrol.create("john", "password")
         self.create_sample()
-        app.db.session.commit()
+        poli.db.session.commit()
 
     def tearDown(self):
-        app.db.session.remove()
-        app.db.drop_all()
+        poli.db.session.remove()
+        poli.db.drop_all()
         os.close(self.db_fd)
         os.unlink(self.fname)
 

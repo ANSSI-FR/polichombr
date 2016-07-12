@@ -2,7 +2,7 @@
     User data model.
     See flask-login documentation for the login process
 """
-from app import db, ma
+from poli import db, ma
 from flask_login import UserMixin
 from werkzeug.security import generate_password_hash, check_password_hash
 

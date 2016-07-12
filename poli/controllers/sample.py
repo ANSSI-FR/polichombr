@@ -17,18 +17,18 @@ from collections import Counter
 from subprocess import Popen
 from graphviz import Source
 
-from app import app
-from app import db
-from app import login_manager
-from app.models.sample import SampleSchema, SampleMetadata, FunctionInfo
-from app.models.sample import SampleMetadataType, StringsItem, StringsType
-from app.models.sample import FileName, Sample, AnalysisStatus, CheckList
-from app.models.sample import SampleMatch
-from app.models.user import User
-from app.models.analysis import AnalysisResult
-from app.models.models import TLPLevel
-from app.models.yara_rule import YaraRule
-from app.models.idaactions import IDAAction
+from poli import app
+from poli import db
+from poli import login_manager
+from poli.models.sample import SampleSchema, SampleMetadata, FunctionInfo
+from poli.models.sample import SampleMetadataType, StringsItem, StringsType
+from poli.models.sample import FileName, Sample, AnalysisStatus, CheckList
+from poli.models.sample import SampleMatch
+from poli.models.user import User
+from poli.models.analysis import AnalysisResult
+from poli.models.models import TLPLevel
+from poli.models.yara_rule import YaraRule
+from poli.models.idaactions import IDAAction
 
 
 class SampleController(object):

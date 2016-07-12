@@ -6,9 +6,9 @@ import re
 import importlib
 import inspect
 
-from app import app, db
-from app.models.sample import Sample, AnalysisStatus
-from app.controllers.jobpool import JobPool
+from poli import app, db
+from poli.models.sample import Sample, AnalysisStatus
+from poli.controllers.jobpool import JobPool
 
 
 class AnalysisFactory(object):

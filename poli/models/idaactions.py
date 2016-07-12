@@ -1,6 +1,6 @@
 #!/usr/bin/env python
 
-from app import db, ma
+from poli import db, ma
 
 
 class IDAAction(db.Model):

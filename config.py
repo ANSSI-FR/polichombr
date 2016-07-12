@@ -25,6 +25,6 @@ BOOTSTRAP_SERVE_LOCAL = True
 
 # polichombr options
 USERS_CAN_REGISTER = True
-STORAGE_PATH = "app/storage"
-TASKS_PATH = "app/controllers/tasks"
+STORAGE_PATH = "poli/storage"
+TASKS_PATH = "poli/controllers/tasks"
 ANALYSIS_PROCESS_POOL_SIZE = 3

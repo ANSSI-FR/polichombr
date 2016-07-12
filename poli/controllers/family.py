@@ -17,12 +17,12 @@ from flask import abort
 from hashlib import md5, sha1, sha256
 from collections import Counter
 
-from app import app
-from app import db
-from app import login_manager
-from app.models.family import FamilySchema, FamilyStatus
-from app.models.family import Family, DetectionElement, FamilyDataFile, DetectionType
-from app.models.models import TLPLevel
+from poli import app
+from poli import db
+from poli import login_manager
+from poli.models.family import FamilySchema, FamilyStatus
+from poli.models.family import Family, DetectionElement, FamilyDataFile, DetectionType
+from poli.models.models import TLPLevel
 
 
 class FamilyController(object):

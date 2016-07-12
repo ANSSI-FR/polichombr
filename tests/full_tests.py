@@ -1,12 +1,12 @@
 #!/usr/bin/env python
 import os
-import app
+import poli
 import unittest
 import tempfile
 
 from StringIO import StringIO
 
-from app.controllers.api import APIControl
+from poli.controllers.api import APIControl
 
 from time import sleep
 
@@ -14,20 +14,20 @@ from time import sleep
 class MainTestCase(unittest.TestCase):
     def setUp(self):
         self.db_fd, self.fname = tempfile.mkstemp()
-        app.app.config['SQLALCHEMY_DATABASE_URI'] = "sqlite:///"+self.fname
-        app.app.config['TESTING'] = True
-        app.app.config['WTF_CSRF_ENABLED'] = False
+        poli.app.config['SQLALCHEMY_DATABASE_URI'] = "sqlite:///"+self.fname
+        poli.app.config['TESTING'] = True
+        poli.app.config['WTF_CSRF_ENABLED'] = False
 
-        self.app = app.app.test_client()
-        with app.app.app_context():
-            app.db.create_all()
+        self.app = poli.app.test_client()
+        with poli.app.app_context():
+            poli.db.create_all()
 
         api = APIControl()
         api.usercontrol.create("john", "password")
 
     def tearDown(self):
-        app.db.session.remove()
-        app.db.drop_all()
+        poli.db.session.remove()
+        poli.db.drop_all()
         os.close(self.db_fd)
         os.unlink(self.fname)
 

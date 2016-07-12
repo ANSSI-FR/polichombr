@@ -1,11 +1,11 @@
 #!/usr/bin/env python
 import time
 
-from app import app
-from app.models.yara_rule import YaraRule
-from app.controllers.task import Task
-from app.controllers.yara_rule import run_extended_yara, YaraController
-from app.controllers.sample import SampleController
+from poli import app
+from poli.models.yara_rule import YaraRule
+from poli.controllers.task import Task
+from poli.controllers.yara_rule import run_extended_yara, YaraController
+from poli.controllers.sample import SampleController
 
 
 class task_yara(Task):

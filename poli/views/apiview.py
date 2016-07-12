@@ -4,9 +4,9 @@
 
 import os
 
-from app import app, api
-from app.models.family import FamilySchema, TLPLevel
-from app.models.sample import Sample, SampleSchema
+from poli import app, api
+from poli.models.family import FamilySchema, TLPLevel
+from poli.models.sample import Sample, SampleSchema
 
 from flask import jsonify, g, request, redirect, send_file, abort, make_response
 from flask_login import login_required, current_user, login_user

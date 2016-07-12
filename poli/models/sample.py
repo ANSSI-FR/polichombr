@@ -6,10 +6,10 @@
 
 from marshmallow import fields
 
-from app import db, ma
+from poli import db, ma
 
-from app.models.models import TLPLevel
-from app.models.analysis import AnalysisResultSchema
+from poli.models.models import TLPLevel
+from poli.models.analysis import AnalysisResultSchema
 
 
 class SampleMetadata(db.Model):

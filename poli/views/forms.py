@@ -4,8 +4,8 @@ from wtforms import SubmitField, TextAreaField, BooleanField
 from wtforms import PasswordField, HiddenField
 from wtforms import IntegerField
 from wtforms.validators import DataRequired, Length, EqualTo, InputRequired
-from app.models.family import DetectionType
-from app.models.models import TLPLevel
+from poli.models.family import DetectionType
+from poli.models.models import TLPLevel
 
 """
 

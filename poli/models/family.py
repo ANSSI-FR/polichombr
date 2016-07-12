@@ -1,17 +1,12 @@
 '''
-
-    === Polichombr ===
-
-    Family model representation.
-    Updated: 2016-05-12
-
+    Polichomnr family model representation.
 '''
 
 from marshmallow import fields
 
-from app import db, ma
-from app.models.sample import SampleSchema
-from app.models.models import TLPLevel
+from poli import db, ma
+from poli.models.sample import SampleSchema
+from poli.models.models import TLPLevel
 
 
 '''

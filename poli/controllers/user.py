@@ -2,9 +2,9 @@ import random
 import time
 from hashlib import sha256
 
-from app import app, db
-from app import login_manager
-from app.models.user import User
+from poli import app, db
+from poli import login_manager
+from poli.models.user import User
 from werkzeug.security import generate_password_hash, check_password_hash
 
 

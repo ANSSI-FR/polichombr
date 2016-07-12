@@ -2,11 +2,11 @@ import os
 import re
 import time
 
-from app import app, db
-from app.models.sample import Sample
-from app.models.sample import FunctionInfo, StringsItem, StringsType
-from app.controllers.task import Task
-from app.controllers.sample import SampleController
+from poli import app, db
+from poli.models.sample import Sample
+from poli.models.sample import FunctionInfo, StringsItem, StringsType
+from poli.controllers.task import Task
+from poli.controllers.sample import SampleController
 
 
 class task_strings(Task):

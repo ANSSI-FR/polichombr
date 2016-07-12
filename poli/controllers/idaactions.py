@@ -3,10 +3,10 @@
 """
 import datetime
 
-from app import db
-from app.models.idaactions import IDANameAction, IDACommentAction
-from app.models.idaactions import IDAActionSchema
-from app.models.sample import Sample
+from poli import db
+from poli.models.idaactions import IDANameAction, IDACommentAction
+from poli.models.idaactions import IDAActionSchema
+from poli.models.sample import Sample
 
 
 class IDAActionsController(object):

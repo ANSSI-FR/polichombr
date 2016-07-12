@@ -4,10 +4,10 @@ import time
 
 from subprocess import Popen
 
-from app import app
-from app.controllers.task import Task
-from app.controllers.sample import SampleController
-from app.controllers.idaactions import IDAActionsController
+from poli import app
+from poli.controllers.task import Task
+from poli.controllers.sample import SampleController
+from poli.controllers.idaactions import IDAActionsController
 
 
 class task_analyzeitrb(Task):

@@ -3,11 +3,11 @@ import datetime
 import time
 import pefile
 
-from app import app, db
-from app.models.sample import Sample, SampleMetadata, SampleMetadataType
-from app.models.sample import SampleMatch
-from app.controllers.task import Task
-from app.controllers.sample import SampleController
+from poli import app, db
+from poli.models.sample import Sample, SampleMetadata, SampleMetadataType
+from poli.models.sample import SampleMatch
+from poli.controllers.task import Task
+from poli.controllers.sample import SampleController
 
 
 class task_peinfo(Task):

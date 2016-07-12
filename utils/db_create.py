@@ -1,5 +1,5 @@
 #!/usr/bin/env python
-from app import db
+from poli import db
 from config import SQLALCHEMY_DATABASE_URI
 from config import SQLALCHEMY_MIGRATE_REPO
 import os.path

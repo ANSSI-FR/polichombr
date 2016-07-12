@@ -6,14 +6,14 @@
 import re
 import yara
 
-from app import db
+from poli import db
 
-from app.models.yara_rule import YaraRule
-from app.models.sample import Sample
-from app.models.models import TLPLevel
+from poli.models.yara_rule import YaraRule
+from poli.models.sample import Sample
+from poli.models.models import TLPLevel
 
-from app.controllers.jobpool import YaraJobPool
-from app.controllers.family import FamilyController
+from poli.controllers.jobpool import YaraJobPool
+from poli.controllers.family import FamilyController
 
 
 def run_extended_yara(raw_rule, sample):

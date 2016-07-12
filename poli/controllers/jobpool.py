@@ -6,7 +6,7 @@
 import atexit
 from multiprocessing import Pool, Queue
 
-from app import app, db
+from poli import app, db
 
 
 def execute_task(mqueue):

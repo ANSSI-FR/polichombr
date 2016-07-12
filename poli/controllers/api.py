@@ -6,17 +6,17 @@
 import zipfile
 
 
-from app import app, db
+from poli import app, db
 
-from app.models.models import TLPLevel
-from app.models.sample import AnalysisStatus
-from app.controllers.analysis import AnalysisController
-from app.controllers.sample import SampleController
-from app.controllers.yara_rule import YaraController
-from app.controllers.family import FamilyController
-from app.controllers.user import UserController
-from app.controllers.idaactions import IDAActionsController
-from app.models.sample import FunctionInfo
+from poli.models.models import TLPLevel
+from poli.models.sample import AnalysisStatus
+from poli.controllers.analysis import AnalysisController
+from poli.controllers.sample import SampleController
+from poli.controllers.yara_rule import YaraController
+from poli.controllers.family import FamilyController
+from poli.controllers.user import UserController
+from poli.controllers.idaactions import IDAActionsController
+from poli.models.sample import FunctionInfo
 
 
 class APIControl(object):

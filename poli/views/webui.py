@@ -14,25 +14,25 @@ from werkzeug import secure_filename
 from graphviz import Source
 from zipfile import ZipFile
 
-from app import app, db, api
+from poli import app, db, api
 
-from app.models.user import User
-from app.models.family import Family
-from app.models.sample import Sample, SampleMetadataType
-from app.models.yara_rule import YaraRule
+from poli.models.user import User
+from poli.models.family import Family
+from poli.models.sample import Sample, SampleMetadataType
+from poli.models.yara_rule import YaraRule
 
-from app.views.forms import LoginForm, UserRegistrationForm, ChgNameForm, ChgThemeForm
-from app.views.forms import SampleAbstractForm, UploadSampleForm, ChgPassForm
-from app.views.forms import FamilyForm, AddSampleToFamilyForm, AddYaraToFamilyForm
-from app.views.forms import FamilyAbstractForm, AddSubFamilyForm, UploadFamilyFileForm
-from app.views.forms import ChangeTLPForm, ChangeStatusForm, ChgNickForm
-from app.views.forms import YaraForm, ExportMachexForm, CreateDetectionItemForm
-from app.views.forms import ExportFamilyForm, ImportForm, RenameForm, ChgPokeForm
-from app.views.forms import FullTextSearchForm, HashSearchForm
-from app.views.forms import CreateCheckListForm, MachocHashSearchForm
-from app.views.forms import CompareMachocForm
+from poli.views.forms import LoginForm, UserRegistrationForm, ChgNameForm, ChgThemeForm
+from poli.views.forms import SampleAbstractForm, UploadSampleForm, ChgPassForm
+from poli.views.forms import FamilyForm, AddSampleToFamilyForm, AddYaraToFamilyForm
+from poli.views.forms import FamilyAbstractForm, AddSubFamilyForm, UploadFamilyFileForm
+from poli.views.forms import ChangeTLPForm, ChangeStatusForm, ChgNickForm
+from poli.views.forms import YaraForm, ExportMachexForm, CreateDetectionItemForm
+from poli.views.forms import ExportFamilyForm, ImportForm, RenameForm, ChgPokeForm
+from poli.views.forms import FullTextSearchForm, HashSearchForm
+from poli.views.forms import CreateCheckListForm, MachocHashSearchForm
+from poli.views.forms import CompareMachocForm
 
-from app.controllers.sample import disassemble_sample, disassemble_sample_get_svg, disassemble_it, beautify_svg
+from poli.controllers.sample import disassemble_sample, disassemble_sample_get_svg, disassemble_it, beautify_svg
 
 """
 
