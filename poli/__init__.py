@@ -38,6 +38,3 @@ from poli.controllers.api import APIControl
 api = APIControl()
 
 from poli.views import webui, apiview
-
-if __name__ == "__main__":
-    app.run(app.config['SERVER_ADDR'], port=app.config['SERVER_PORT'], debug=app.config['DEBUG'])
