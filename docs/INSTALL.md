@@ -12,6 +12,15 @@ On a Ubuntu derivative:
 
 Access it at http://localhost:5000
 
+## With nginx and uwsgi
+Configure your nginx to use the uwsgi protocol, and modify the `poli.ini`
+file according to your needs.
+
+Then  launch the app:
+	uwsgi --ini poli.ini
+
+Now access it at the defined address for nginx
+
 ## virtualenv
 We use virtualenv, so don't forget to activate the environment
 

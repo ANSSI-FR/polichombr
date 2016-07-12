@@ -1,7 +1,7 @@
 #!/usr/bin/env python
-import sys
 from poli import app
 
-if len(sys.argv) > 1:
-    app.config["SERVER_ADDR"] = sys.argv[1]
-app.run(host=app.config["SERVER_ADDR"], port=app.config["SERVER_PORT"], debug=True)
+if __name__ == "__main__":
+    app.run(app.config['SERVER_ADDR'],
+            port=app.config['SERVER_PORT'],
+            debug=app.config['DEBUG'])
