@@ -1,22 +1,22 @@
-'''
+"""
+    This file is part of Polichombr.
 
-    === Polichombr ===
+    (c) 2016 ANSSI-FR
 
-    Yara rules model representation.
-    Updated: 2016-05-12
 
-'''
+    Description:
+        Yara rules model representation.
+"""
+
 from datetime import datetime
 
-from poli import db, ma
-from poli.models.models import TLPLevel
-from poli.models.analysis import AnalysisResultSchema
+from poli import db
 
 
 class YaraRule(db.Model):
-    '''
-    Yara rule model.
-    '''
+    """
+        Yara rule model.
+    """
     __tablename__ = 'yararule'
     id = db.Column(db.Integer, primary_key=True)
     # yara name (displayed)

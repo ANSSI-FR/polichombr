@@ -1,38 +1,44 @@
 """
+    This file is part of Polichombr.
 
-    === POLICHOMBR ===
+    (c) 2016 ANSSI-FR
 
+
+    Description:
+        Routes and forms parsing for the main web interface.
 """
+
 
 import json
 import os
 import io
 
-from flask import render_template, g, redirect, url_for, flash, abort, make_response, request
+from flask import render_template, g, redirect, url_for, flash
+from flask import abort, make_response, request
 from flask_login import login_user, logout_user, current_user, login_required
 from werkzeug import secure_filename
-from graphviz import Source
 from zipfile import ZipFile
 
-from poli import app, db, api
+from poli import app, api
 
-from poli.models.user import User
 from poli.models.family import Family
 from poli.models.sample import Sample, SampleMetadataType
 from poli.models.yara_rule import YaraRule
 
-from poli.views.forms import LoginForm, UserRegistrationForm, ChgNameForm, ChgThemeForm
+from poli.views.forms import LoginForm, UserRegistrationForm
+from poli.views.forms import ChgNameForm, ChgThemeForm
 from poli.views.forms import SampleAbstractForm, UploadSampleForm, ChgPassForm
-from poli.views.forms import FamilyForm, AddSampleToFamilyForm, AddYaraToFamilyForm
-from poli.views.forms import FamilyAbstractForm, AddSubFamilyForm, UploadFamilyFileForm
+from poli.views.forms import FamilyForm, AddSampleToFamilyForm
+from poli.views.forms import FamilyAbstractForm, AddYaraToFamilyForm
+from poli.views.forms import AddSubFamilyForm, UploadFamilyFileForm
 from poli.views.forms import ChangeTLPForm, ChangeStatusForm, ChgNickForm
-from poli.views.forms import YaraForm, ExportMachexForm, CreateDetectionItemForm
-from poli.views.forms import ExportFamilyForm, ImportForm, RenameForm, ChgPokeForm
+from poli.views.forms import YaraForm, ExportMachexForm
+from poli.views.forms import ExportFamilyForm, ImportForm, RenameForm
 from poli.views.forms import FullTextSearchForm, HashSearchForm
 from poli.views.forms import CreateCheckListForm, MachocHashSearchForm
-from poli.views.forms import CompareMachocForm
+from poli.views.forms import CompareMachocForm, CreateDetectionItemForm
 
-from poli.controllers.sample import disassemble_sample, disassemble_sample_get_svg, disassemble_it, beautify_svg
+from poli.controllers.sample import disassemble_sample_get_svg
 
 """
 
@@ -79,21 +85,22 @@ def index():
     families_choices = [(0, "None")]
     families_choices += [(f.id, f.name) for f in Family.query.order_by('name')]
     upload_sample_form.family.choices = families_choices
-    uncategorized_samples = []
+    uncategorized = []
     if g.user.is_authenticated:
         uncategorized = api.samplecontrol.get_user_uncategorized_samples(
             g.user)
     return render_template('index.html',
                            families=api.familycontrol.get_all(),
                            impform=machex_import_form,
-                           uncategorized=uncategorized_samples,
+                           uncategorized=uncategorized,
                            form=upload_sample_form)
 
 
 @app.route('/login/', methods=['GET', 'POST'])
 def login():
     """
-    Flask-Login. The APIKEY authentication is actually performed in the api view file.
+    Flask-Login.
+    The APIKEY authentication is actually performed in the api view file.
     We should migrate it here.
     """
     if g.user.is_authenticated:
@@ -151,7 +158,6 @@ def logout():
 @login_required
 def dl_skelenox():
     ipaddr, port = request.host.split(":")
-    skelenox_data = open("skelenox.py", "rb").read()
     zipout = io.BytesIO()
     with ZipFile(zipout, "w") as myzip:
         myzip.write("skelenox.py")
@@ -220,7 +226,6 @@ def view_user(user_id):
     if myuser is None:
         abort(404)
 
-    chpkform = ChgPokeForm()
     chnickform = ChgNickForm()
     chthemeform = ChgThemeForm()
     chnameform = ChgNameForm()
@@ -236,14 +241,11 @@ def view_user(user_id):
             if api.usercontrol.check_user_pass(
                     myuser, chpassform.oldpass.data):
                 api.usercontrol.set_pass(myuser, chpassform.password.data)
-        if chpkform.validate_on_submit():
-            api.usercontrol.set_poke(myuser, chpkform.newpoke.data)
     return render_template('user.html',
                            chnickform=chnickform,
                            chthemeform=chthemeform,
                            chpassform=chpassform,
                            chnameform=chnameform,
-                           chpkform=chpkform,
                            user=myuser)
 
 
@@ -301,6 +303,9 @@ def view_family(family_id):
         newname = add_subfamily_form.familyname.data
         newname = family.name + "." + newname
         fid = api.familycontrol.create(name=newname, parentfamily=family)
+        if not fid:
+            abort(500)
+
     if export_form.validate_on_submit():
         exptype = export_form.datatype.data
         lvl = export_form.level.data

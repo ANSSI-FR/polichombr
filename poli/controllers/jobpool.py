@@ -1,6 +1,11 @@
-#!/usr/bin/env python
 """
-    === POLICHOMBR ===
+    This file is part of Polichombr.
+
+    (c) 2016 ANSSI-FR
+
+
+    Description:
+        Implement analysis job pools.
 """
 
 import atexit
@@ -40,8 +45,8 @@ def execute_task(mqueue):
 def execute_yara_task(mqueue):
     """
     Special dedicated YARA worker. Dispatches newly created yara rules on the
-    samples pool. There is no analysis in this case, nor priority considerations,
-    that's why it has been separated.
+    samples pool. There is no analysis in this case,
+    nor priority considerations, that's why it has been separated.
     """
     while True:
         yara_task = mqueue.get(True)
@@ -55,7 +60,7 @@ def execute_yara_task(mqueue):
                 app.logger.error("Error executing yara task %s" % (yara_task))
         except Exception as e:
             db.session.rollback()
-            app.logger.error("Exception exceuting yara task: %s" % (e))
+            app.logger.error("Exception executing yara task: %s" % (e))
             app.logger.exception(e)
             continue
     return True

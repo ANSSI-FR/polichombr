@@ -1,12 +1,18 @@
-#!/usr/bin/env python
 """
-    Managers for editing and running yara rules
+    This file is part of Polichombr.
+
+    (c) 2016 ANSSI-FR
+
+
+    Description:
+        Managers for editing and running yara rules
 """
+
 
 import re
 import yara
 
-from poli import db
+from poli import app, db
 
 from poli.models.yara_rule import YaraRule
 from poli.models.sample import Sample
@@ -50,7 +56,7 @@ def run_extended_yara(raw_rule, sample):
         yara_obj = yara.compile(source=raw_rule)
         matches = yara_obj.match(data=open(sample_filepath, "rb").read())
     except Exception as e:
-        app.logger.error("YARA RULE FAILED: %s" % (e))
+        app.logger.exception("YARA RULE FAILED: %s" % (e))
         pass
     if len(matches) != 0:
         return True
@@ -129,7 +135,8 @@ class YaraController(object):
 
     def create(self, name, raw_data, tlp_level):
         """
-        Creates a new rule. Checks the rule before insertion, and executes it on
+        Creates a new rule.
+        Checks the rule before insertion, and executes it on
         any database sample.
         """
         if TLPLevel.tostring(tlp_level) is None:

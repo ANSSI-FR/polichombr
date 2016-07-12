@@ -1,6 +1,13 @@
 """
-    Managers for all the actions associated with IDAPro models
+    This file is part of Polichombr.
+
+    (c) 2016 ANSSI-FR
+
+
+    Description:
+        Managers for all the actions associated with IDAPro models
 """
+
 import datetime
 
 from poli import db

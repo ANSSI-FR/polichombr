@@ -1,8 +1,18 @@
+"""
+    This file is part of Polichombr.
+
+    (c) 2016 ANSSI-FR
+
+
+    Description:
+        User management.
+"""
+
 import random
 import time
 from hashlib import sha256
 
-from poli import app, db
+from poli import db
 from poli import login_manager
 from poli.models.user import User
 from werkzeug.security import generate_password_hash, check_password_hash

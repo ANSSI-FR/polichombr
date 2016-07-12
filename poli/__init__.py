@@ -1,4 +1,14 @@
-from flask import Flask, render_template
+"""
+    This file is part of Polichombr.
+
+    (c) 2016 ANSSI-FR
+
+
+    Description:
+        Init flask app and the modules.
+"""
+
+from flask import Flask
 
 from flask_sqlalchemy import SQLAlchemy
 from flask_bootstrap import Bootstrap

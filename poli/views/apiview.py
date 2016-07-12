@@ -1,15 +1,21 @@
 """
-    Web API definition
+    This file is part of Polichombr.
+
+    (c) 2016 ANSSI-FR
+
+
+    Description:
+        Routes for REST API
 """
 
 import os
 
 from poli import app, api
-from poli.models.family import FamilySchema, TLPLevel
+from poli.models.family import FamilySchema
 from poli.models.sample import Sample, SampleSchema
 
 from flask import jsonify, g, request, redirect, send_file, abort, make_response
-from flask_login import login_required, current_user, login_user
+from flask_login import login_user
 
 
 @app.before_request

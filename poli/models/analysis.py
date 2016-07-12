@@ -1,6 +1,13 @@
 """
-    Definition for each analysis result
+    This file is part of Polichombr.
+
+    (c) 2016 ANSSI-FR
+
+
+    Description:
+        Definition for each analysis result
 """
+
 from poli import db, ma
 
 

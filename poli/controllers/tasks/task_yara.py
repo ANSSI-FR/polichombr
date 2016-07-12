@@ -1,4 +1,13 @@
-#!/usr/bin/env python
+"""
+    This file is part of Polichombr.
+
+    (c) 2016 ANSSI-FR
+
+
+    Description:
+        Task for running yara on the sample.
+"""
+
 import time
 
 from poli import app
@@ -47,10 +56,10 @@ class task_yara(Task):
         s_controller = SampleController()
         sample = s_controller.get_by_id(self.sid)
         app.logger.debug(self.tmessage + "APPLY_RESULT")
-        for y in self.yaramatched:
+        for match in self.yaramatched:
             # use the static YaraController => the () will create a JobPool,
             # causing exceptions (daemon => child).
-            YaraController.add_to_sample(sample, y)
+            YaraController.add_to_sample(sample, match)
         app.logger.debug(self.tmessage + "END - TIME %i" %
                          (int(time.time()) - self.tstart))
         return True

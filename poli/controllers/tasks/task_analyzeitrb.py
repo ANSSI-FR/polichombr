@@ -1,3 +1,13 @@
+"""
+    This file is part of Polichombr.
+
+    (c) 2016 ANSSI-FR
+
+
+    Description:
+        AnalyzeIt task implementation.
+"""
+
 import os
 import re
 import time
@@ -92,7 +102,7 @@ class task_analyzeitrb(Task):
                             addr = addr[2:]
                         try:
                             addr = int(addr, 16)
-                        except Exception as e:
+                        except Exception:
                             continue
                         act = idac.add_comment(addr, value)
                         SampleController.add_idaaction(sample.id, act)

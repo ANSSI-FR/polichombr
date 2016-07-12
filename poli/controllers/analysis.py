@@ -1,6 +1,13 @@
 """
-    Analysis
+    This file is part of Polichombr.
+
+    (c) 2016 ANSSI-FR
+
+
+    Description:
+        Analysis management
 """
+
 import os
 import re
 import importlib
@@ -185,13 +192,15 @@ class Analysis(object):
         list is provided along with its execution level, in order to be
         priorized when the jobpool will execute them.
         """
-        try:
+
+        if hasattr(task, 'execution_level'):
             execution_level = task.execution_level
-        except Exception as e:
+        else:
             app.logger.warning(
                 "Could not read execution_level for task %s, default to 0" %
                 (tname))
             execution_level = 0
+
         if execution_level < 0:
             execution_level = 0
         if execution_level > 32:

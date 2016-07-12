@@ -1,11 +1,19 @@
-import os
+"""
+    This file is part of Polichombr.
+
+    (c) 2016 ANSSI-FR
+
+
+    Description:
+        peinfo task implementation
+"""
+
 import datetime
 import time
 import pefile
 
-from poli import app, db
-from poli.models.sample import Sample, SampleMetadata, SampleMetadataType
-from poli.models.sample import SampleMatch
+from poli import app
+from poli.models.sample import SampleMetadataType
 from poli.controllers.task import Task
 from poli.controllers.sample import SampleController
 
@@ -14,7 +22,7 @@ class task_peinfo(Task):
     """
     Extract basic metadata from pefile.
 
-    TODO: also extract (and store, which is the current challenge) Exports, Imports and Sections.
+    TODO: also extract Exports, Imports and Sections.
     """
 
     def __init__(self, sample):
@@ -25,6 +33,10 @@ class task_peinfo(Task):
         self.matches = []
         self.metadata_extracted = []
         self.fpath = sample.storage_file
+
+        self.tstart = None
+        self.tmessage = "PEINFO TASK %d :: " % (sample.id)
+
         # ignore non-PE files
         if "application/x-dosexec" not in sample.mime_type:
             self.is_interrested = False
@@ -32,7 +44,6 @@ class task_peinfo(Task):
 
     def execute(self):
         self.tstart = int(time.time())
-        self.tmessage = "PEINFO TASK %d :: " % (self.sid)
         app.logger.debug(self.tmessage + "EXECUTE")
         pe = pefile.PE(self.fpath)
         self.compile_timestamp = datetime.date.fromtimestamp(

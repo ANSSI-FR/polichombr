@@ -1,3 +1,13 @@
+"""
+    This file is part of Polichombr.
+
+    (c) 2016 ANSSI-FR
+
+
+    Description:
+        Forms used in the web interface.
+"""
+
 from flask_wtf import Form
 from wtforms import StringField, FileField, SelectField
 from wtforms import SubmitField, TextAreaField, BooleanField
@@ -8,9 +18,7 @@ from poli.models.family import DetectionType
 from poli.models.models import TLPLevel
 
 """
-
     USER forms.
-
 """
 
 

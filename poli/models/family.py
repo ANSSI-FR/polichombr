@@ -1,20 +1,18 @@
-'''
-    Polichomnr family model representation.
-'''
+"""
+    This file is part of Polichombr.
+
+    (c) 2016 ANSSI-FR
+
+
+    Description:
+        Models representing malware families.
+"""
 
 from marshmallow import fields
 
 from poli import db, ma
 from poli.models.sample import SampleSchema
 from poli.models.models import TLPLevel
-
-
-'''
-
-    Detection element, provided by users. It can be multiple things,
-    such as OpenIOC data, Snort rules, etc.
-
-'''
 
 
 class DetectionElement(db.Model):
@@ -150,7 +148,7 @@ class Family(db.Model):
 
 class FamilySchema(ma.ModelSchema):
     """
-    Schema.
+    Schema for exporting by marshalling in JSON.
     """
     samples = fields.Nested(SampleSchema, many=True, only=['id'])
     subfamilies = fields.Nested('FamilySchema', many=True, only=['id',

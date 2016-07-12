@@ -1,10 +1,19 @@
+"""
+    This file is part of Polichombr.
+
+    (c) 2016 ANSSI-FR
+
+
+    Description:
+        Strings task implementation.
+"""
+
 import os
 import re
 import time
 
-from poli import app, db
-from poli.models.sample import Sample
-from poli.models.sample import FunctionInfo, StringsItem, StringsType
+from poli import app
+from poli.models.sample import StringsType
 from poli.controllers.task import Task
 from poli.controllers.sample import SampleController
 

@@ -1,4 +1,12 @@
-#!/usr/bin/env python
+"""
+    This file is part of Polichombr.
+
+    (c) 2016 ANSSI-FR
+
+
+    Description:
+        Models to implement IDA Pro objects server side.
+"""
 
 from poli import db, ma
 
@@ -32,6 +40,9 @@ class IDAAction(db.Model):
 
 
 class IDACommentAction(IDAAction):
+    """
+        Implement comments
+    """
     __tablename__ = 'idacomments'
     id = db.Column(db.Integer(),
                    db.ForeignKey('idaactions.id'),

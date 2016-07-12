@@ -1,7 +1,12 @@
-#!/usr/bin/env python
 """
-    Contains all the model for the samples,
-    including the corresponding relations
+    This file is part of Polichombr.
+
+    (c) 2016 ANSSI-FR
+
+
+    Description:
+        Contains all the model for the samples,
+        including the corresponding relations
 """
 
 from marshmallow import fields

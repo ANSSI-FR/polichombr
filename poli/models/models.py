@@ -1,11 +1,12 @@
-'''
+"""
+    This file is part of Polichombr.
 
-    === Polichombr ===
+    (c) 2016 ANSSI-FR
 
-    Generic information (enum, etc.).
-    Updated: 2016-05-12
 
-'''
+    Description:
+        Generic models.
+"""
 
 
 class TLPLevel:

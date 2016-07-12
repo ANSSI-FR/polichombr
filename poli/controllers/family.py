@@ -1,27 +1,25 @@
 """
+    This file is part of Polichombr.
 
-    === POLICHOMBR ===
+    (c) 2016 ANSSI-FR
 
+
+    Description:
+        Implement the controller managing families.
 """
 
+
 import os
-import random
-import re
-import datetime
-import yara
-import magic
 import time
 import tarfile
 
-from flask import abort
-from hashlib import md5, sha1, sha256
-from collections import Counter
+from hashlib import md5, sha256
 
 from poli import app
 from poli import db
-from poli import login_manager
 from poli.models.family import FamilySchema, FamilyStatus
-from poli.models.family import Family, DetectionElement, FamilyDataFile, DetectionType
+from poli.models.family import Family, DetectionElement, FamilyDataFile
+from poli.models.family import DetectionType
 from poli.models.models import TLPLevel
 
 

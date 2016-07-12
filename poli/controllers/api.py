@@ -1,7 +1,14 @@
 """
-    Main API controls for model management
-    and data production.
+    This file is part of Polichombr.
+
+    (c) 2016 ANSSI-FR
+
+
+    Description:
+        Main API controls for model management
+        and data production.
 """
+
 
 import zipfile
 

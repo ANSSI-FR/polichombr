@@ -1,17 +1,20 @@
 """
-    Sample managements and disassembly (SVG) management.
+    This file is part of Polichombr.
+
+    (c) 2016 ANSSI-FR
+
+
+    Description:
+        Sample managements and disassembly (SVG) management.
 """
 
 import os
-import random
 import re
 import datetime
-import yara
 import magic
 import time
 import json
 
-from flask import abort
 from hashlib import md5, sha1, sha256
 from collections import Counter
 from subprocess import Popen
@@ -19,15 +22,12 @@ from graphviz import Source
 
 from poli import app
 from poli import db
-from poli import login_manager
 from poli.models.sample import SampleSchema, SampleMetadata, FunctionInfo
-from poli.models.sample import SampleMetadataType, StringsItem, StringsType
+from poli.models.sample import SampleMetadataType, StringsItem
 from poli.models.sample import FileName, Sample, AnalysisStatus, CheckList
 from poli.models.sample import SampleMatch
-from poli.models.user import User
 from poli.models.analysis import AnalysisResult
 from poli.models.models import TLPLevel
-from poli.models.yara_rule import YaraRule
 from poli.models.idaactions import IDAAction
 
 
@@ -50,8 +50,8 @@ class SampleController(object):
             return None
         sha_256 = sha256(file_data).hexdigest()
         sample = None
-        # check if we already had the file or not. If not, we will just update some
-        # information
+        # check if we already had the file or not
+        # If not, we will just update some information
         if Sample.query.filter_by(sha256=sha_256).count() != 0:
             sample = Sample.query.filter_by(sha256=sha_256).first()
             if sample.storage_file is not None and sample.storage_file != "" and os.path.exists(
@@ -277,7 +277,8 @@ class SampleController(object):
     @staticmethod
     def create_analysis(sample, data, title, overwrite=True):
         """
-            Create an analysis result. Analyses results are unique (by their titles)
+            Create an analysis result.
+            Analyses results are unique (by their titles)
             if overwrite is set to False, the existing one will be overwitten.
             Otherwise, not.
         """
@@ -368,8 +369,7 @@ class SampleController(object):
         for analysis in AnalysisResult.query.filter(
                 AnalysisResult.data.like(needle)).all():
             if analysis.sample not in results:
-                results.append(s.sample)
-
+                results.append(analysis.sample)
         return results
 
     def search_machoc_full_hash(self, machoc_hash, limit=0.8):
@@ -491,9 +491,7 @@ class SampleController(object):
     def machoc_diff_samples(cls, sample1, sample2):
         """
             Diff two samples using machoc.
-            XXX : le memory leak arrive entre deux appels de cette methode
         """
-        app.logger.error("Mem: %i" % (cls.memory_usage_resource()))
         if sample1 == sample2:
             return 0
         sample1_hashes = []
@@ -504,15 +502,7 @@ class SampleController(object):
         for f in sample2.functions:
             if f.machoc_hash is not None and f.machoc_hash != -1:
                 sample2_hashes.append(f.machoc_hash)
-        app.logger.error("Mem: %i" % (cls.memory_usage_resource()))
         return cls.machoc_diff_hashes(sample1_hashes, sample2_hashes)
-
-    @staticmethod
-    def memory_usage_resource():
-        import resource
-        rusage_denom = 1024.
-        mem = resource.getrusage(resource.RUSAGE_SELF).ru_maxrss / rusage_denom
-        return mem
 
     @staticmethod
     def machoc_diff_hashes(sample1_hashes, sample2_hashes):
@@ -528,15 +518,16 @@ class SampleController(object):
 
     def machoc_get_similar_functions(self, sample_dst, sample_src):
         """
-            Diff two sample in order to identify similar functions. This is performed by:
-            - getting unique machoc hashes;
-            - getting unique 5-grams machoc hashes.
+            Diff two sample in order to identify similar functions.
+            This is performed by:
+                - getting unique machoc hashes;
+                - getting unique 5-grams machoc hashes.
 
             We actually build the 5-grams, compare the hashes and then compare the
-            5-grams. The code is provided as-is and MUST BE IMPROVED. We also have to add
-            other functionalities:
-            - 3-grams comparison between single & 5-grams comparisons;
-            - 7-grams comparison with non-standard middle function.
+            5-grams. The code is provided as-is and MUST BE IMPROVED.
+            We also have to add other functionalities:
+                - 3-grams comparison between single & 5-grams comparisons;
+                - 7-grams comparison with non-standard middle function.
         """
         src_addresses_identified = []
         dst_addresses_identified = []

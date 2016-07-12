@@ -1,5 +1,11 @@
 """
-    Simple task skeleton
+    This file is part of Polichombr.
+
+    (c) 2016 ANSSI-FR
+
+
+    Description:
+        Simple task skeleton
 """
 
 
@@ -44,7 +50,7 @@ class Task(object):
         """
             This method is called before the execute() method. Actually
             the method will just return the is_interrested value, but you
-            can superseede it if you want.
+            can supersed it if you want.
         """
         return self.is_interrested
 

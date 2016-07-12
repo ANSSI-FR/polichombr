@@ -1,15 +1,19 @@
 """
-    User data model.
-    See flask-login documentation for the login process
+    This file is part of Polichombr.
+
+    (c) 2016 ANSSI-FR
+
+
+    Description:
+        User data model.
+        Dependant on Flask-Login for authentication
 """
+
 from poli import db, ma
 from flask_login import UserMixin
 from werkzeug.security import generate_password_hash, check_password_hash
 
 
-'''
-    N-N relationships tables.
-'''
 usersample = db.Table('usersample',
                       db.Column('user_id', db.Integer,
                                 db.ForeignKey('user.id')),
