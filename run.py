@@ -1,6 +1,6 @@
 #!/usr/bin/env python
 import sys
-from app import app
+from poli import app
 
 if len(sys.argv) > 1:
     app.config["SERVER_ADDR"] = sys.argv[1]

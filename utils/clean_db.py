@@ -1,9 +1,9 @@
 #!/usr/bin/env python
-from app import app
-from app import db
-from app.models.models import User
-from app.models.family import Family
-from app.models.sample import Sample
+from poli import app
+from poli import db
+from poli.models.models import User
+from poli.models.family import Family
+from poli.models.sample import Sample
 
 Sample.query.delete()
 Family.query.delete()

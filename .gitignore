@@ -4,6 +4,6 @@ flask
 *.pyc
 *.db
 *.db-journal
-app/storage/*
+poli/storage/*
 db_repository
 skelsettings.json
