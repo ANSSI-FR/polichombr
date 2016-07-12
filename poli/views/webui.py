@@ -19,7 +19,7 @@ from flask_login import login_user, logout_user, current_user, login_required
 from werkzeug import secure_filename
 from zipfile import ZipFile
 
-from poli import app, api
+from poli import app, api, login_manager
 
 from poli.models.family import Family
 from poli.models.sample import Sample, SampleMetadataType
@@ -118,6 +118,7 @@ def login():
             return redirect(url_for("index"))
     return render_template('login.html', title='Sign In', form=login_form)
 
+login_manager.login_view = "login"
 
 @app.route('/register/', methods=['GET', 'POST'])
 def register_user():
@@ -312,37 +313,37 @@ def view_family(family_id):
         if exptype == 1:
             return redirect(
                 url_for(
-                    "api_family_export_detection_yara",
+                    "apiview.api_family_export_detection_yara",
                     family_id=family.id,
                     tlp_level=lvl))
         elif exptype == 2:
             return redirect(
                 url_for(
-                    "api_family_export_samplesioc",
+                    "apiview.api_family_export_samplesioc",
                     family_id=family.id,
                     tlp_level=lvl))
         elif exptype == 3:
             return redirect(
                 url_for(
-                    "api_family_export_detection_openioc",
+                    "apiview.api_family_export_detection_openioc",
                     family_id=family.id,
                     tlp_level=lvl))
         elif exptype == 4:
             return redirect(
                 url_for(
-                    "api_family_export_detection_snort",
+                    "apiview.api_family_export_detection_snort",
                     family_id=family.id,
                     tlp_level=lvl))
         elif exptype == 5:
             return redirect(
                 url_for(
-                    "api_family_export_detection_custom_elements",
+                    "apiview.api_family_export_detection_custom_elements",
                     family_id=family.id,
                     tlp_level=lvl))
         elif exptype == 6:
             return redirect(
                 url_for(
-                    "api_family_export_sampleszip",
+                    "apiview.api_family_export_sampleszip",
                     family_id=family.id,
                     tlp_level=lvl))
     if add_yara_form.validate_on_submit():
@@ -776,7 +777,7 @@ def download_sample(sample_id):
     """
         Download a sample's file.
     """
-    return redirect(url_for('api_get_sample_file', sid=sample_id))
+    return redirect(url_for('apiview.api_get_sample_file', sid=sample_id))
 
 
 """

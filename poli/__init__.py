@@ -9,12 +9,14 @@
 """
 
 from flask import Flask
+from flask import Blueprint
 
 from flask_sqlalchemy import SQLAlchemy
 from flask_bootstrap import Bootstrap
 from flask_login import LoginManager
 from flask_marshmallow import Marshmallow
 from flask_misaka import Misaka
+
 
 app = Flask(__name__)
 
@@ -37,4 +39,10 @@ from poli.controllers.api import APIControl
 
 api = APIControl()
 
-from poli.views import webui, apiview
+
+apiview = Blueprint('apiview', __name__, url_prefix='/api/1.0')
+
+from poli.views import webui
+from poli.views import apiview as view
+
+app.register_blueprint(apiview)
