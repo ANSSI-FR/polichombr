@@ -180,9 +180,9 @@ def api_post_family(fam_name):
 def api_get_sample_id_from_hash(shash):
     if len(shash) == 32:
         s = Sample.query.filter_by(md5=shash).first()
-    elif len(hash) == 40:
+    elif len(shash) == 40:
         s = Sample.query.filter_by(sha1=shash).first()
-    elif len(hash) == 64:
+    elif len(shash) == 64:
         s = Sample.query.filter_by(sha256=shash).first()
     if s is not None:
         return jsonify({'sample_id': s.id})
