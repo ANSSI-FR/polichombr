@@ -23,13 +23,26 @@ def plain_text(data):
     return response
 
 
+@apiview.route("/<path:invalid_path>")
+def handle_unmatchable(*args, **kwargs):
+    abort(404)
+
+
 @apiview.errorhandler(404)
-def api_404_handler():
-    return jsonify({'error': 404})
+def api_404_handler(error):
+    return jsonify({'error': 404}), 404
+
 
 @apiview.errorhandler(500)
-def api_404_handler():
-    return jsonify({'error': 500})
+def api_500_handler(error):
+    return jsonify({'error': 500}), 500
+
+
+@apiview.errorhandler(400)
+def api_400_handler(error):
+    return jsonify({'error': 400,
+                    'error_description': error.description,
+                    'error_message': error.message}), 400
 
 
 @apiview.route('/api/')
@@ -176,7 +189,6 @@ def api_post_family(fam_name):
 
 
 @apiview.route('/samples/<shash>/')
-# TODO : API!!!
 def api_get_sample_id_from_hash(shash):
     if len(shash) == 32:
         s = Sample.query.filter_by(md5=shash).first()
@@ -184,6 +196,8 @@ def api_get_sample_id_from_hash(shash):
         s = Sample.query.filter_by(sha1=shash).first()
     elif len(shash) == 64:
         s = Sample.query.filter_by(sha256=shash).first()
+    else:
+        abort(400)
     if s is not None:
         return jsonify({'sample_id': s.id})
     return jsonify({'sample_id': None})
