@@ -9,6 +9,7 @@
 """
 
 from flask_wtf import Form
+from flask_security import RegisterForm
 from wtforms import StringField, FileField, SelectField
 from wtforms import SubmitField, TextAreaField, BooleanField
 from wtforms import PasswordField, HiddenField
@@ -20,15 +21,6 @@ from poli.models.models import TLPLevel
 """
     USER forms.
 """
-
-
-class ChgPokeForm(Form):
-    """
-    Change user's pokemon.
-    """
-    newpoke = IntegerField("New id", validators=[DataRequired()])
-    changepoke = SubmitField(u'Submit')
-
 
 class ChgThemeForm(Form):
     """
@@ -63,7 +55,7 @@ class ChgPassForm(Form):
     """
     Change user's password.
     """
-    oldpass = StringField("Old password", validators=[DataRequired()])
+    oldpass = PasswordField("Old password", validators=[DataRequired()])
     password = PasswordField(
         'New password', validators=[
             Length(min=6),
@@ -96,7 +88,6 @@ class UserRegistrationForm(Form):
             EqualTo('rpt_pass',
                     message='Confirmation must match')])
     rpt_pass = PasswordField('Confirm password')
-    poke_id = IntegerField("Pokemon Id")
     userregister = SubmitField(u'Submit')
 
 

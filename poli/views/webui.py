@@ -15,7 +15,8 @@ import io
 
 from flask import render_template, g, redirect, url_for, flash
 from flask import abort, make_response, request
-from flask_login import login_user, logout_user, current_user, login_required
+from flask_security import login_user, logout_user, current_user
+from flask_security import login_required, roles_required
 from werkzeug import secure_filename
 from zipfile import ZipFile
 
@@ -97,11 +98,10 @@ def index():
 
 
 @app.route('/login/', methods=['GET', 'POST'])
+#@app.route('/login', methods=['GET', 'POST'])
 def login():
     """
     Flask-Login.
-    The APIKEY authentication is actually performed in the api view file.
-    We should migrate it here.
     """
     if g.user.is_authenticated:
         return redirect(url_for('index'))
@@ -116,6 +116,8 @@ def login():
             login_user(user, remember=True)
             flash("Logged in!", "success")
             return redirect(url_for("index"))
+        else:
+            flash("Cannot login...", "error")
     return render_template('login.html', title='Sign In', form=login_form)
 
 
@@ -130,8 +132,7 @@ def register_user():
     if registration_form.validate_on_submit():
         api.usercontrol.create(registration_form.username.data,
                                registration_form.password.data,
-                               registration_form.completename.data,
-                               registration_form.poke_id.data)
+                               registration_form.completename.data)
         return redirect(url_for('login'))
     return render_template('register.html',
                            form=registration_form)
@@ -188,6 +189,13 @@ def dl_skelenox():
         "Content-Disposition"] = "attachment; filename=skelenox.zip"
     return response
 
+
+@app.route('/admin/', methods=['GET', 'POST'])
+@login_required
+@roles_required('admin')
+def admin_page():
+    flash("Not implemented for the moment", "error")
+    return redirect(url_for('ui_settings'))
 
 @app.route('/settings/', methods=['GET', 'POST'])
 @login_required

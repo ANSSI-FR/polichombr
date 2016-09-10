@@ -15,18 +15,6 @@ from poli.models.family import FamilySchema
 from poli.models.sample import Sample, SampleSchema
 
 from flask import jsonify, g, request, redirect, send_file, abort, make_response
-from flask_login import login_user
-
-
-@app.before_request
-def before_request():
-    if not g.user.is_authenticated:
-        apikey = request.args.get('apikey')
-        if apikey:
-            myuser = api.usercontrol.get_by_key(apikey)
-            if myuser:
-                g.user = myuser
-                login_user(myuser)
 
 
 def plain_text(data):
