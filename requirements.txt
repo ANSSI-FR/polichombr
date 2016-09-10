@@ -1,6 +1,6 @@
 flask
 flask-bootstrap
-flask-login
+flask-security
 flask-marshmallow
 Flask-Misaka
 flask-sqlalchemy
