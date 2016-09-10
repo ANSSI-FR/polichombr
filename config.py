@@ -7,7 +7,7 @@ DEBUG = True
 BASE_DIR = os.path.abspath(os.path.dirname(__file__))
 
 # used for server creation and skelenox script generation
-SERVER_ADDR = "0.0.0.0" 
+SERVER_ADDR = "0.0.0.0"
 SERVER_PORT = 5000
 
 # database settings
@@ -18,13 +18,19 @@ DATABASE_CONNECT_OPTIONS = {}
 
 # web server options
 THREADS_PER_PAGE = 2
+BOOTSTRAP_SERVE_LOCAL = True
+
+# security options
 CSRF_ENABLED     = True
 CSRF_SESSION_KEY = "secret"
 SECRET_KEY = "secret"
-BOOTSTRAP_SERVE_LOCAL = True
+USERS_CAN_REGISTER = True
+SECURITY_PASSWORD_HASH = 'pbkdf2_sha512'
+SECURITY_PASSWORD_SALT = 'secret'
+SECURITY_TRACKABLE = True
+
 
 # polichombr options
-USERS_CAN_REGISTER = True
 STORAGE_PATH = "poli/storage"
 TASKS_PATH = "poli/controllers/tasks"
 ANALYSIS_PROCESS_POOL_SIZE = 3
