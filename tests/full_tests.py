@@ -21,9 +21,9 @@ class MainTestCase(unittest.TestCase):
         self.app = poli.app.test_client()
         with poli.app.app_context():
             poli.db.create_all()
+            api = APIControl()
+            api.usercontrol.create("john", "password")
 
-        api = APIControl()
-        api.usercontrol.create("john", "password")
 
     def tearDown(self):
         poli.db.session.remove()
@@ -91,7 +91,7 @@ class MainTestCase(unittest.TestCase):
         self.assertTrue(retval)
 
     def logout(self):
-        return self.app.get("/logout",
+        return self.app.get("/logout/",
                             follow_redirects=True)
 
     def test_login_func(self):
@@ -105,15 +105,15 @@ class MainTestCase(unittest.TestCase):
         retval = self.login("john", "password")
         retval = self.logout()
         self.assertNotIn("error", retval.data)
-        self.assertIn("href=\"/login\"", retval.data)
+        self.assertIn("href=\"/login/\"", retval.data)
 
     def test_wrong_login(self):
         # test wrong login
         retval = self.login("IncorrectUser", "password1")
-        self.assertIn("href=\"/login\"", retval.data)
+        self.assertIn("href=\"/login/\"", retval.data)
 
         retval = self.login("john", "password1")
-        self.assertIn("href=\"/login\"", retval.data)
+        self.assertIn("href=\"/login/\"", retval.data)
 
     def test_running(self):
         retval = self.app.get('/')
