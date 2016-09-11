@@ -144,7 +144,7 @@ class UserController(object):
     def deactivate(user_id):
         u = user_datastore.get_user(int(user_id))
         if u is not None:
-            app.logger.debug("Deactivating user ", user_id)
+            app.logger.debug("Deactivating user %s", u.nickname)
             user_datastore.deactivate_user(u)
             db.session.commit()
             return True
