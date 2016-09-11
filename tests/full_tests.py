@@ -75,13 +75,23 @@ class MainTestCase(unittest.TestCase):
                            follow_redirects=True)
 
         # XXX : put a callback here to be notified when the analysis is ended
-        sleep(4)
+        sleep(3)
         return retval
 
     def add_sample_to_family(self, sid=1, fid=1):
         self.login("john", "password")
         retval = self.app.post("/sample/"+str(sid)+ "/",
                 data = dict(parentfamily=fid),
+                follow_redirects=True)
+        return retval
+
+    def register_user(self, name, password):
+        retval = self.app.post("/register/",
+                data = dict(username=name,
+                    password=password,
+                    completename=name,
+                    rpt_pass=password,
+                    userregister="Submit"),
                 follow_redirects=True)
         return retval
 
@@ -114,6 +124,46 @@ class MainTestCase(unittest.TestCase):
 
         retval = self.login("john", "password1")
         self.assertIn("href=\"/login/\"", retval.data)
+
+    def test_register(self):
+        retval = self.register_user("SomeUserName", "password2")
+        self.assertEqual(retval.status_code, 200)
+
+        # the new user is not activated, so it cannot login
+        retval = self.login("john", "password")
+        retval = self.app.post("/user/2/activate", follow_redirects=True)
+        self.assertEqual(retval.status_code, 200)
+        self.logout()
+        retval = self.login("SomeUserName", "password2")
+        self.assertIn("logout", retval.data)
+
+
+
+    def test_admin(self):
+        # test normal user registration
+        retval = self.register_user("notadmin", "password")
+        self.assertEqual(retval.status_code, 200)
+
+
+        # test admin panel access
+        retval = self.login("john", "password")
+        self.assertIn("href=\"/admin\"", retval.data)
+
+        # test the availability of user management
+        retval = self.app.get("/admin/", follow_redirects=True)
+        self.assertEqual(retval.status_code, 200)
+        self.assertIn("notadmin", retval.data)
+        # don't forget to activate user 2
+        retval = self.app.post("/user/2/activate", follow_redirects=True)
+
+        self.logout()
+
+        # test that normal user cannot access admin
+        retval = self.login("notadmin", "password")
+        self.assertNotIn("href=\"/admin\"", retval.data)
+
+        retval = self.app.get("/admin/", follow_redirects=True)
+        self.assertNotIn("Admin", retval.data)
 
     def test_running(self):
         retval = self.app.get('/')
