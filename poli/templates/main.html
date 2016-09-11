@@ -40,6 +40,9 @@
 	      <li><a href="/skelenox">Skelenox</a> </li>
 	      <li><a href="/settings">Settings</a> </li>
 	{% endif %}
+	{% if "admin" in g.user.roles %}
+	      <li><a href="/admin">Admin</a> </li>
+	{% endif %}
 	    </ul>
 
 		<ul class="nav navbar-nav navbar-right">

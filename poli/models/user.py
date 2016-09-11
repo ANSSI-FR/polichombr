@@ -89,7 +89,7 @@ class User(db.Model, UserMixin):
     last_login_ip = db.Column(db.String(45))
     current_login_ip = db.Column(db.String(45))
     login_count = db.Column(db.Integer)
-    active = db.Column(db.Boolean())
+    active = db.Column(db.Boolean(), default=False)
 
     def get_id(self):
         return self.id

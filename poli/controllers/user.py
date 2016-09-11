@@ -14,7 +14,6 @@ from hashlib import sha256
 
 from poli import app, db
 from poli.models.user import User
-#from werkzeug.security import check_password_hash
 from flask_security.utils import encrypt_password, verify_and_update_password
 from poli import user_datastore
 
@@ -29,11 +28,12 @@ class UserController(object):
             Init the user model, and save it in DB
         """
         if User.query.filter_by(nickname=username).count() != 0:
-            return None
+            return False
         password = encrypt_password(password)
         user_datastore.create_user(nickname=username,
                                    password=password,
-                                   completename=completename)
+                                   completename=completename,
+                                   active=False)
 
         myuser = User.query.filter_by(nickname=username).first()
         # TODO : manage API key with flask-login
@@ -46,7 +46,7 @@ class UserController(object):
 
         myuser.theme = "default"
 
-        # the first user is an admin
+        # the first user is active and admin
         if User.query.count() == 1:
             role = user_datastore.find_or_create_role("admin",
                                                       description="Administrator")
@@ -54,13 +54,14 @@ class UserController(object):
                 user_datastore.add_role_to_user(myuser, role)
             else:
                 app.logger.error("Cannot find and affect admin role to user")
+            user_datastore.activate_user(myuser)
 
         db.session.commit()
-        return
+        return True
 
-    @staticmethod
     def add_role_to_user(uid, role):
-        pass
+        user = user_datastore.get_user(int(uid))
+        user_datastore.add_role_to_user(user, role)
 
     @staticmethod
     def get_by_name(name):
@@ -137,3 +138,23 @@ class UserController(object):
             gets an user by its id. Used by the flask login manager.
         """
         return User.query.get(int(user_id))
+
+
+    @staticmethod
+    def deactivate(user_id):
+        u = user_datastore.get_user(int(user_id))
+        if u is not None:
+            app.logger.debug("Deactivating user ", user_id)
+            user_datastore.deactivate_user(u)
+            db.session.commit()
+            return True
+        return False
+
+    @staticmethod
+    def activate(user_id):
+        u = User.query.get(int(user_id))
+        if u is not None:
+            user_datastore.activate_user(u)
+            db.session.commit()
+            return True
+        return False
