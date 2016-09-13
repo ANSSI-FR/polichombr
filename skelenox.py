@@ -20,6 +20,9 @@ import threading
 import logging
 
 g_logger = logging.getLogger()
+for h in g_logger.handlers:
+    g_logger.removeHandler(h)
+
 g_logger.setLevel(logging.DEBUG)
 handler = logging.StreamHandler()
 formatter = logging.Formatter('[%(asctime)s] [%(levelname)s] [%(threadName)s]: %(message)s',
@@ -35,10 +38,7 @@ skel_db = None
 skel_conn = None
 
 last_timestamp = 0
-skelhook = None
-skelhook_set = None
 uihook = None
-polihook = None
 poli_id = 0
 sample_id = 0
 crit_backup_file = None
@@ -351,7 +351,7 @@ def execute_comment(comment):
 
 def execute_rename(name):
         if "sub_" in idc.GetTrueName(name["address"]):
-            g_logger.debug("[x] renaming %s @0x%x as %s" % (idc.GetTrueName(name["address"]), name["address"], name["data"]))
+            g_logger.debug("[x] renaming %s @ 0x%x as %s" % (idc.GetTrueName(name["address"]), name["address"], name["data"]))
             idc.MakeName(
                 name["address"],
                 name["data"].encode(
@@ -401,18 +401,9 @@ def get_online(*args):
             g_logger.error("Cannot find remote sample")
             # XXX upload sample!
             skel_conn.get_offline()
-            return 0
-
-    # remove les liens vu qu'on en a plus besoin
-    if "m7" in globals() and m7 is not None:
-        idaapi.del_menu_item(m7)
-        m7 = None
-    # if "m8" in globals() and m8 != None:
-        # idaapi.del_menu_item(m8)
-        #m8 = None
-
+            return True
     g_logger.info("[+] First synchronization finished")
-    return 0
+    return True
 
 
 def end_skelenox():
@@ -420,29 +411,31 @@ def end_skelenox():
         cleanup
     """
     global sample_id, skel_conn
-    # cut connection
     skel_conn.close_connection()
-    # on enleve les hooks
     cleanup_hooks()
-    g_logger.info("[!] Skelenox terminated")
-    # et on reset les globales importantes
+    g_logger.info("Skelenox terminated")
     sample_id = 0
     return
+
+def end_notify_callback(nw_arg):
+    g_logger.debug("Being notified of exiting DB")
+    end_skelenox()
+
+idaapi.notify_when(idaapi.NW_CLOSEIDB|idaapi.NW_TERMIDA,
+                   end_notify_callback)
 
 
 def init_skelenox():
     global crit_backup_file, backup_file, last_saved
     global last_timestamp
     global sample_id
-    global m7, polihook, skellhook, skelhook_set
-    global skelV
+    global uihook
     global is_updating
     global skel_conn
     global skel_settings, settings_filename
 
     is_updating = 0
 
-    skelhook_set = False
     last_timestamp = -1
     sample_id = 0
     last_saved = 0
@@ -460,7 +453,7 @@ def init_skelenox():
 
     cleanup_hooks()
 
-    # GetIdbPath() c'est un peu violent comme filename, changer si besoin
+    # If having 3 idbs in your current path bother you, change this
     crit_backup_file = GetIdbPath()[:-4] + "_backup_preskel_.idb"
     backup_file = GetIdbPath()[:-4] + "_backup_.idb"
 
@@ -483,8 +476,8 @@ def init_skelenox():
 
     # setup hooks
 
-    polihook = MyUiHook()
-    polihook.hook()
+    uihook = MyUiHook()
+    uihook.hook()
 
     g_logger.info("Skelenox init finished")
     _help()
@@ -694,15 +687,10 @@ def prepare_parse_type(typestr, ea):
     return mtype
 
 
-class hookEr(idaapi.IDP_Hooks):
+class SkelIDPHooks(idaapi.IDP_Hooks):
     """
-        # hook IDP
-        #   analyse de fonction des changement du ptr
-        #   save l'IDB / update la poliDB toutes les 10 minutes
+        Hook IDP that saves the database regularly
     """
-    curfuncstart = 0
-    curfuncend = 0
-
     def __init__(self):
         idaapi.IDP_Hooks.__init__(self)
 
@@ -712,18 +700,6 @@ class hookEr(idaapi.IDP_Hooks):
             print "[+] Saving IDB"
             SaveBase(backup_file, idaapi.DBFL_TEMP)
             last_saved = time.time()
-        addr = idc.here()
-        if addr < self.curfuncstart or addr > self.curfuncend:
-            ea = ScreenEA()
-            if idaapi.get_func(ea) is not None:
-                cfs = idaapi.get_func(ea).startEA
-                cfe = idaapi.get_func(ea).endEA
-                if cfe == BADADDR:
-                    cfe = idaapi.get_func(self.curfuncS).endEA
-                if cfe != BADADDR and cfs != BADADDR:
-                    self.curfuncstart = cfs
-                    self.curfuncend = cfe
-                    print analyzeFunction(addr)[0]
         return idaapi.IDP_Hooks.custom_out(self)
 
     def rename(self, *args):
@@ -732,10 +708,7 @@ class hookEr(idaapi.IDP_Hooks):
 
 def cleanup_hooks():
     """Clean IDA hooks on exit"""
-    global uihook, polihook
-    if "polihook" in globals() and polihook is not None:
-        polihook.unhook()
-        polihook = None
+    global uihook
     if "uihook" in globals() and uihook is not None:
         uihook.unhook()
         uihook = None
@@ -754,25 +727,6 @@ def _help():
     print "-------------------------------------------------------------------"
     print "\tfile %IDB%_backup_preskel_ contains pre-critical ops IDB backup"
     print "\tfile %IDB%_backup_ contains periodic IDB backups"
-    return
-
-
-def tracker(*args):
-    """
-        Init le tracker
-    """
-    global skelhook, skelhook_set
-    if skelhook_set:
-        g_logger.info("UI hook uninstall")
-        skelhook.unhook()
-        del skelhook
-        skelhook = None
-        skelhook_set = False
-    else:
-        g_logger.info("UI hook install")
-        skelhook = hookEr()
-        skelhook.hook()
-        skelhook_set = True
     return
 
 if __name__ == '__main__':
