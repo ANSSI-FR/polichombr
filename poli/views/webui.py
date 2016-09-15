@@ -15,13 +15,15 @@ import io
 
 from flask import render_template, g, redirect, url_for, flash
 from flask import abort, make_response, request
-from flask_login import login_user, logout_user, current_user, login_required
+from flask_security import login_user, logout_user, current_user
+from flask_security import login_required, roles_required
 from werkzeug import secure_filename
 from zipfile import ZipFile
 
 from poli import app, api
 
 from poli.models.family import Family
+from poli.models.user   import User
 from poli.models.sample import Sample, SampleMetadataType
 from poli.models.yara_rule import YaraRule
 
@@ -97,11 +99,10 @@ def index():
 
 
 @app.route('/login/', methods=['GET', 'POST'])
+#@app.route('/login', methods=['GET', 'POST'])
 def login():
     """
     Flask-Login.
-    The APIKEY authentication is actually performed in the api view file.
-    We should migrate it here.
     """
     if g.user.is_authenticated:
         return redirect(url_for('index'))
@@ -116,6 +117,8 @@ def login():
             login_user(user, remember=True)
             flash("Logged in!", "success")
             return redirect(url_for("index"))
+        else:
+            flash("Cannot login...", "error")
     return render_template('login.html', title='Sign In', form=login_form)
 
 
@@ -128,11 +131,15 @@ def register_user():
         return redirect(url_for('index'))
     registration_form = UserRegistrationForm()
     if registration_form.validate_on_submit():
-        api.usercontrol.create(registration_form.username.data,
+        ret = api.usercontrol.create(registration_form.username.data,
                                registration_form.password.data,
                                registration_form.completename.data,
-                               registration_form.poke_id.data)
-        return redirect(url_for('login'))
+                               )
+        if ret:
+            return redirect(url_for('login'))
+        else:
+            app.logger.error("Error during user registration")
+            flash("Error registering user")
     return render_template('register.html',
                            form=registration_form)
 
@@ -189,6 +196,13 @@ def dl_skelenox():
     return response
 
 
+@app.route('/admin/', methods=['GET', 'POST'])
+@login_required
+@roles_required('admin')
+def admin_page():
+    users = User.query.all()
+    return render_template("admin.html", users=users)
+
 @app.route('/settings/', methods=['GET', 'POST'])
 @login_required
 def ui_settings():
@@ -224,7 +238,8 @@ def view_user(user_id):
     """
     myuser = api.usercontrol.get_by_id(user_id)
     if myuser is None:
-        abort(404)
+        flash("User not found...", "error")
+        return redirect(url_for("index"))
 
     chnickform = ChgNickForm()
     chthemeform = ChgThemeForm()
@@ -248,6 +263,25 @@ def view_user(user_id):
                            chnameform=chnameform,
                            user=myuser)
 
+@app.route('/user/<int:user_id>/activate', methods=['GET', 'POST'])
+@login_required
+@roles_required("admin")
+def activate_user(user_id):
+    ret = api.usercontrol.activate(user_id)
+    if not ret:
+        flash("Cannot activate user", "error")
+    else:
+        flash("activated user", "success")
+    return redirect(url_for("admin_page"))
+
+@app.route('/user/<int:user_id>/deactivate', methods=['GET', 'POST'])
+@login_required
+@roles_required("admin")
+def deactivate_user(user_id):
+    ret = api.usercontrol.deactivate(user_id)
+    if not ret:
+        flash("Cannot deactivate user", "error")
+    return redirect(url_for("admin_page"))
 
 """
 

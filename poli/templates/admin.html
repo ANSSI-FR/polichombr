@@ -1,0 +1,31 @@
+{% extends "main.html" %}
+
+{% block content %}
+    {{super()}}
+	<div class="panel panel-primary">
+		<div class="panel-heading">
+			<h3 class="panel-title">Users</h2>
+		</div>
+		<div class="panel-body">
+			<table class="table">
+				{% for u in users %}
+					<tr>
+						<td>{{u.nickname}} </td>
+						<td>
+							{% if u.is_active %}
+								<a href="/user/{{u.id}}/deactivate" class="btn btn-danger">
+									Deactivate
+								</a>
+							{% else %}
+								<a href="/user/{{u.id}}/activate" class="btn btn-success">
+									Activate
+								</a>
+							{% endif %}
+						</td>
+					</tr>
+				{% endfor %}
+			</table>
+		</div>
+	</div>
+
+{% endblock%}
