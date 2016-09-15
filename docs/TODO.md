@@ -5,7 +5,7 @@ with some current bugs too
 ## Core
 	[ ] Add a link relationship between dropper/dropped samples
 	[ ] x86/x64 emulation
-	
+
 ## Analysis tasks
 	[ ] Resources / overlay extraction
 	[ ] Section hashing/matching
@@ -31,6 +31,13 @@ with some current bugs too
 	[ ] Manage timestamp
 	[ ] Function identification by machoc hash
 	[ ] Highlight cryptoblocks
+	[ ] Fix upload of sample if it is new
+	[ ] Fix note pad destruction when calling exit_skelenox
+	[x] Proper logging
+	[ ] Local names (prefix) are not pushed.
+	[ ] Make difference for comments
+	[ ] Hook for segments / structs / enums etc
+	[ ] Integrates with HexRays decompiler
 
 ## Tests
 	The tests are far from complete, so more tests are needed
@@ -39,10 +46,11 @@ with some current bugs too
 	[ ] Machine learning tools that use the metadata presented via the API
 	[ ] autodeployment tools
 	[ ] Make an export module that can speak to other tools (eg MISP, Viper, ...)
- 
+
 # Known bugs
 	[ ] If we kill an analysis (when restarting service for example), we cannot reschedule it
 	[ ] The disassembly view does not check if the disassembly svg is empty
 	[ ] Date file is buggy (not displaying the hour?)
 	[ ] Even when the user have uncategorized sample, the view doesn't hilight it
 	[ ] IDA Actions are not attributed to a user
+	[ ] When reopening a sample in IDA, skelenox does not take that in account
