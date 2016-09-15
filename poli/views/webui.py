@@ -20,7 +20,7 @@ from flask_security import login_required, roles_required
 from werkzeug import secure_filename
 from zipfile import ZipFile
 
-from poli import app, api, login_manager
+from poli import app, api
 
 from poli.models.family import Family
 from poli.models.user   import User
@@ -121,7 +121,6 @@ def login():
             flash("Cannot login...", "error")
     return render_template('login.html', title='Sign In', form=login_form)
 
-login_manager.login_view = "login"
 
 @app.route('/register/', methods=['GET', 'POST'])
 def register_user():
