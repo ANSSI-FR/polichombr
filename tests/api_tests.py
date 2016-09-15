@@ -10,7 +10,7 @@ import poli
 from poli.controllers.api import APIControl
 
 
-class MainTestCase(unittest.TestCase):
+class ApiTestCase(unittest.TestCase):
     """
         Tests cases for the API endpoints
     """
@@ -84,15 +84,38 @@ class MainTestCase(unittest.TestCase):
         data = json.loads(retval.data)
         self.assertEqual(data['id'], 1)
 
+    def test_get_sample_id(self):
+        # test getting ID by MD5
+        retval = self.app.get('/api/1.0/samples/0f6f0c6b818f072a7a6f02441d00ac69/')
+        self.assertEqual(retval.status_code, 200)
+        data = json.loads(retval.data)
+        self.assertEqual(data['sample_id'], 1)
+
+        # get ID by SHA1
+        retval = self.app.get('/api/1.0/samples/39b8a7a0a99f6e2220cf60fd860923f9df3e8d01/')
+        self.assertEqual(retval.status_code, 200)
+        data = json.loads(retval.data)
+        self.assertEqual(data['sample_id'], 1)
+
+        # get ID by SHA256
+        retval = self.app.get('/api/1.0/samples/e5b830bf3d82aba009244bff86d33b10a48b03f48ca52cd1d835f033e2b445e6/')
+        self.assertEqual(retval.status_code, 200)
+        data = json.loads(retval.data)
+        self.assertEqual(data['sample_id'], 1)
+
+        # Bug when using incorrect value for hash
+        url = "api/1.0/samples/abcdef/"
+        retval = self.app.get(url)
+        self.assertEqual(retval.status_code, 400)
+        data = json.loads(retval.data)
+        self.assertEqual(data['error'], 400)
+
     def test_get_multiples_sample_info(self):
         retval = self.app.get('/api/1.0/samples/')
         self.assertEqual(retval.status_code, 200)
 
         data = json.loads(retval.data)
         self.assertEqual(len(data['samples']), 1)
-
-        self.assertEqual(data['samples'][0]['md5'],
-                         '0f6f0c6b818f072a7a6f02441d00ac69')
 
         self.assertEqual(data['samples'][0]['md5'],
                          '0f6f0c6b818f072a7a6f02441d00ac69')
@@ -172,7 +195,6 @@ class MainTestCase(unittest.TestCase):
     def test_multiple_comments_same_address(self):
         self.assertTrue(False)
 
-
     def test_push_name(self):
         retval = self.push_name(address=0xDEADBEEF, name="TESTNAME1")
         self.assertEqual(retval.status_code, 200)
@@ -193,6 +215,7 @@ class MainTestCase(unittest.TestCase):
         data = json.loads(retval.data)
         self.assertIn(data['names'][0]["data"], "TESTNAME1")
         self.assertEqual(data['names'][0]["address"], 0xDEADBEEF)
+
 
 if __name__ == '__main__':
     unittest.main()

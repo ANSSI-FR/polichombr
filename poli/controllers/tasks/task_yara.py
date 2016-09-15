@@ -34,6 +34,8 @@ class task_yara(Task):
         """
         self.execution_level = 1
         self.yaramatched = []
+        self.tstart = None
+        self.tmessage = "YARA TASK %d :: " % (sample.id)
 
     def execute(self):
         """
@@ -42,7 +44,6 @@ class task_yara(Task):
         s_controller = SampleController()
         sample = s_controller.get_by_id(self.sid)
         self.tstart = int(time.time())
-        self.tmessage = "YARA TASK %d :: " % (sample.id)
         app.logger.debug(self.tmessage + "EXECUTE")
         for yar in YaraRule.query.all():
             if run_extended_yara(yar.raw_rule, sample) is True:

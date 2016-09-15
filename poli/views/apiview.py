@@ -10,11 +10,11 @@
 
 import os
 
-from poli import app, api
+from poli import api, apiview
 from poli.models.family import FamilySchema
 from poli.models.sample import Sample, SampleSchema
 
-from flask import jsonify, g, request, redirect, send_file, abort, make_response
+from flask import jsonify, request, redirect, send_file, abort, make_response
 
 
 def plain_text(data):
@@ -23,21 +23,43 @@ def plain_text(data):
     return response
 
 
-@app.route('/api/')
-@app.route('/api/1.0/')
+@apiview.route("/<path:invalid_path>")
+def handle_unmatchable(*args, **kwargs):
+    abort(404)
+
+
+@apiview.errorhandler(404)
+def api_404_handler(error):
+    return jsonify({'error': 404}), 404
+
+
+@apiview.errorhandler(500)
+def api_500_handler(error):
+    return jsonify({'error': 500}), 500
+
+
+@apiview.errorhandler(400)
+def api_400_handler(error):
+    return jsonify({'error': 400,
+                    'error_description': error.description,
+                    'error_message': error.message}), 400
+
+
+@apiview.route('/api/')
+@apiview.route('/')
 def api_help():
     text = """
-    /api/1.0/
-    /api/1.0/samples/
-    /api/1.0/samples/
-    /api/1.0/samples/<int:sid>/download
-    /api/1.0/samples/<int:sid>
-    /api/1.0/samples/<shash>/
+    /
+    /samples/
+    /samples/
+    /samples/<int:sid>/download
+    /samples/<int:sid>
+    /samples/<shash>/
 
-    /api/1.0/families/
+    /families/
         Get all the data for all the families
 
-    /api/1.0/family/
+    /family/
         [POST] : create a new family
         [GET]  : nothing
     """
@@ -49,8 +71,8 @@ def api_help():
 """
 
 
-@app.route(
-    '/api/1.0/family/<family_id>/export/<tlp_level>/detection/yara',
+@apiview.route(
+    '/family/<family_id>/export/<tlp_level>/detection/yara',
     methods=['GET'])
 def api_family_export_detection_yara(family_id, tlp_level):
     my_family = api.familycontrol.get_by_id(family_id)
@@ -60,8 +82,8 @@ def api_family_export_detection_yara(family_id, tlp_level):
         api.familycontrol.export_yara_ruleset(my_family, tlp_level))
 
 
-@app.route(
-    '/api/1.0/family/<family_id>/export/<tlp_level>/detection/snort',
+@apiview.route(
+    '/family/<family_id>/export/<tlp_level>/detection/snort',
     methods=['GET'])
 def api_family_export_detection_snort(family_id, tlp_level):
     my_family = api.familycontrol.get_by_id(family_id)
@@ -71,8 +93,8 @@ def api_family_export_detection_snort(family_id, tlp_level):
         api.familycontrol.export_detection_snort(my_family, tlp_level))
 
 
-@app.route(
-    '/api/1.0/family/<family_id>/export/<tlp_level>/detection/openioc',
+@apiview.route(
+    '/family/<family_id>/export/<tlp_level>/detection/openioc',
     methods=['GET'])
 def api_family_export_detection_openioc(family_id, tlp_level):
     my_family = api.familycontrol.get_by_id(family_id)
@@ -82,8 +104,8 @@ def api_family_export_detection_openioc(family_id, tlp_level):
         api.familycontrol.export_detection_openioc(my_family, tlp_level))
 
 
-@app.route(
-    '/api/1.0/family/<family_id>/export/<tlp_level>/detection/custom_elements',
+@apiview.route(
+    '/family/<family_id>/export/<tlp_level>/detection/custom_elements',
     methods=['GET'])
 def api_family_export_detection_custom_elements(family_id, tlp_level):
     my_family = api.familycontrol.get_by_id(family_id)
@@ -93,8 +115,8 @@ def api_family_export_detection_custom_elements(family_id, tlp_level):
         api.familycontrol.export_detection_custom(my_family, tlp_level))
 
 
-@app.route(
-    '/api/1.0/family/<family_id>/export/<tlp_level>/samplesarchive',
+@apiview.route(
+    '/family/<family_id>/export/<tlp_level>/samplesarchive',
     methods=['GET'])
 def api_family_export_sampleszip(family_id, tlp_level):
     my_family = api.familycontrol.get_by_id(family_id)
@@ -107,8 +129,8 @@ def api_family_export_sampleszip(family_id, tlp_level):
                      attachment_filename="export.tar.gz")
 
 
-@app.route(
-    '/api/1.0/family/<family_id>/export/<tlp_level>/samplesioc',
+@apiview.route(
+    '/family/<family_id>/export/<tlp_level>/samplesioc',
     methods=['GET'])
 def api_family_export_samplesioc(family_id, tlp_level):
     my_family = api.familycontrol.get_by_id(family_id)
@@ -118,13 +140,13 @@ def api_family_export_samplesioc(family_id, tlp_level):
         api.familycontrol.export_samplesioc(my_family, tlp_level))
 
 
-@app.route('/api/1.0/families/', methods=['GET'])
+@apiview.route('/families/', methods=['GET'])
 def api_get_families():
     result = api.familycontrol.get_all_schema()
     return jsonify(result)
 
 
-@app.route('/api/1.0/family/', methods=['POST'])
+@apiview.route('/family/', methods=['POST'])
 def api_post_families():
     """
         Insert a new family
@@ -144,7 +166,7 @@ def api_post_families():
     return jsonify({'family': fid})
 
 
-@app.route('/api/1.0/family/<fname>', methods=['GET'])
+@apiview.route('/family/<fname>', methods=['GET'])
 def api_get_family(fname):
     fam = api.familycontrol.get_by_name(fname)
     if fam is None:
@@ -154,7 +176,7 @@ def api_get_family(fname):
     return jsonify({"family": data})
 
 
-@app.route('/api/1.0/family/<fam_name>', methods=['POST'])
+@apiview.route('/family/<fam_name>', methods=['POST'])
 def api_post_family(fam_name):
     """
         TODO
@@ -166,22 +188,22 @@ def api_post_family(fam_name):
 """
 
 
-@app.route('/api/1.0/samples/<shash>/')
-# TODO : API!!!
+@apiview.route('/samples/<shash>/')
 def api_get_sample_id_from_hash(shash):
     if len(shash) == 32:
         s = Sample.query.filter_by(md5=shash).first()
-    elif len(hash) == 40:
+    elif len(shash) == 40:
         s = Sample.query.filter_by(sha1=shash).first()
-    elif len(hash) == 64:
+    elif len(shash) == 64:
         s = Sample.query.filter_by(sha256=shash).first()
+    else:
+        abort(400)
     if s is not None:
         return jsonify({'sample_id': s.id})
     return jsonify({'sample_id': None})
 
 
-@app.route('/api/1.0/samples/<int:sid>/download/')
-# TODO : API
+@apiview.route('/samples/<int:sid>/download/')
 def api_get_sample_file(sid):
     s = api.samplecontrol.get_by_id(sid)
     if s is None:
@@ -192,14 +214,14 @@ def api_get_sample_file(sid):
                      attachment_filename=os.path.basename(fp))
 
 
-@app.route('/api/1.0/samples/', methods=['GET'])
+@apiview.route('/samples/', methods=['GET'])
 def api_get_samples():
     result = api.samplecontrol.schema_export_all()
     data = jsonify({'samples': result})
     return data
 
 
-@app.route('/api/1.0/samples/', methods=['POST'])
+@apiview.route('/samples/', methods=['POST'])
 def api_post_samples():
     """
     @description : Insert a new sample in database, launch analysis
@@ -219,7 +241,7 @@ def api_post_samples():
     return jsonify({'sample': result})
 
 
-@app.route('/api/1.0/samples/<int:sid>/', methods=['GET'])
+@apiview.route('/samples/<int:sid>/', methods=['GET'])
 def api_get_unique_sample(sid):
     sample_schema = SampleSchema()
     data = Sample.query.get(sid)
@@ -230,12 +252,12 @@ def api_get_unique_sample(sid):
     return data
 
 
-@app.route('/api/1.0/samples/<int:sid>/', methods=['POST'])
+@apiview.route('/samples/<int:sid>/', methods=['POST'])
 def api_post_unique_sample(sid):
     pass
 
 
-@app.route('/api/1.0/samples/<int:sid>/families/', methods=['POST'])
+@apiview.route('/samples/<int:sid>/families/', methods=['POST'])
 def api_post_sample_family(sid):
     samp = api.samplecontrol.get_by_id(sid)
     if samp is None:
@@ -254,7 +276,7 @@ def api_post_sample_family(sid):
     return jsonify({'result': result})
 
 
-@app.route('/api/1.0/samples/<int:sid>/abstract/', methods=['POST'])
+@apiview.route('/samples/<int:sid>/abstract/', methods=['POST'])
 def api_set_sample_abstract(sid):
     """
         @arg: abstract Markdown for the abstract
@@ -266,7 +288,7 @@ def api_set_sample_abstract(sid):
     return jsonify({'result': result})
 
 
-@app.route('/api/1.0/samples/<int:sid>/comments/', methods=['GET'])
+@apiview.route('/samples/<int:sid>/comments/', methods=['GET'])
 def api_get_sample_comments(sid):
     """
         Get all the comments for a given sample
@@ -281,7 +303,7 @@ def api_get_sample_comments(sid):
     return jsonify({'comments': data})
 
 
-@app.route('/api/1.0/samples/<int:sid>/comments/', methods=['POST'])
+@apiview.route('/samples/<int:sid>/comments/', methods=['POST'])
 def api_post_sample_comments(sid):
     """
         Upload a new comment for a sample
@@ -298,7 +320,7 @@ def api_post_sample_comments(sid):
     return jsonify({'result': result})
 
 
-@app.route('/api/1.0/samples/<int:sid>/names/', methods=['GET'])
+@apiview.route('/samples/<int:sid>/names/', methods=['GET'])
 def api_get_sample_names(sid):
     """
         Get names for a given sample
@@ -318,7 +340,7 @@ def api_get_sample_names(sid):
     return jsonify({'names': data})
 
 
-@app.route('/api/1.0/samples/<int:sid>/names/', methods=['POST'])
+@apiview.route('/samples/<int:sid>/names/', methods=['POST'])
 def api_post_sample_names(sid):
     """
         Upload a new names for a sample
@@ -335,7 +357,7 @@ def api_post_sample_names(sid):
     return jsonify({'result': result})
 
 
-@app.route('/api/1.0/samples/<int:sid>/matches/', methods=['GET'])
+@apiview.route('/samples/<int:sid>/matches/', methods=['GET'])
 def api_get_matches(sid):
     """
     TODO
@@ -348,7 +370,7 @@ def api_get_matches(sid):
     return jsonify({'result': result})
 
 
-@app.route('/api/1.0/samples/<int:sid>/matches/machoc', methods=['GET'])
+@apiview.route('/samples/<int:sid>/matches/machoc', methods=['GET'])
 def api_get_machoc_matches(sid):
     """
         TODO : Get machoc hashes
@@ -358,7 +380,7 @@ def api_get_machoc_matches(sid):
     return jsonify({'result': result})
 
 
-@app.route('/api/1.0/samples/<int:sid>/matches/iat_hash', methods=['GET'])
+@apiview.route('/samples/<int:sid>/matches/iat_hash', methods=['GET'])
 def api_get_iat_matches(sid):
     """
         TODO : Get IAT hashes
@@ -368,7 +390,7 @@ def api_get_iat_matches(sid):
     return jsonify({'result': result})
 
 
-@app.route('/api/1.0/samples/<int:sid>/matches/yara', methods=['GET'])
+@apiview.route('/samples/<int:sid>/matches/yara', methods=['GET'])
 def api_get_yara_matches(sid):
     """
         TODO : Get yara hashes
