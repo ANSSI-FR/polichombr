@@ -51,7 +51,7 @@ class AnalysisFactory(object):
                                 task_class):
                             self.tasks_classes_container.append(
                                 (task_class, task_filename))
-                            app.logger.info("Loaded task %s" % (task_filename))
+                            app.logger.info("Imported task %s" % (task_filename))
                 except Exception as e:
                     app.logger.error(
                         "Could not load %s : %s" %
@@ -206,5 +206,5 @@ class Analysis(object):
         if execution_level > 32:
             execution_level = 32
         self.tasks.append((execution_level, task))
-        app.logger.info("Task loaded: %s" % (tname))
+        app.logger.info("Task added: %s" % (tname))
         return True
