@@ -40,6 +40,9 @@
 	      <li><a href="/skelenox">Skelenox</a> </li>
 	      <li><a href="/settings">Settings</a> </li>
 	{% endif %}
+	{% if "admin" in g.user.roles %}
+	      <li><a href="/admin">Admin</a> </li>
+	{% endif %}
 	    </ul>
 
 		<ul class="nav navbar-nav navbar-right">
@@ -61,8 +64,8 @@
 				{% endif %}
                 #}
 			{% else %}
-				<li><a href="/register"><span class="glyphicon glyphicon-record"></span> &nbsp Register</a></li>
-				<li><a href="/login"><span class="glyphicon glyphicon-log-in"></span> &nbsp Login</a></li>
+				<li><a href="/register/"><span class="glyphicon glyphicon-record"></span> &nbsp Register</a></li>
+				<li><a href="/login/"><span class="glyphicon glyphicon-log-in"></span> &nbsp Login</a></li>
 			{% endif %}
 		</ul>
 	</div>

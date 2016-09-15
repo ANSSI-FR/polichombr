@@ -12,10 +12,10 @@ import random
 import time
 from hashlib import sha256
 
-from poli import db
-from poli import login_manager
+from poli import app, db
 from poli.models.user import User
-from werkzeug.security import generate_password_hash, check_password_hash
+from flask_security.utils import encrypt_password, verify_and_update_password
+from poli import user_datastore
 
 
 class UserController(object):
@@ -23,14 +23,19 @@ class UserController(object):
         Operates on the User model
     """
 
-    def create(self, username, password, completename=None, poke_id=None):
+    def create(self, username, password, completename=None):
         """
             Init the user model, and save it in DB
         """
         if User.query.filter_by(nickname=username).count() != 0:
-            return None
-        myuser = User()
+            return False
+        password = encrypt_password(password)
+        user_datastore.create_user(nickname=username,
+                                   password=password,
+                                   completename=completename,
+                                   active=False)
 
+        myuser = User.query.filter_by(nickname=username).first()
         # TODO : manage API key with flask-login
         apikey_seed = str(random.randint(0, 0xFFFFFFFFFFFFFFFF))
         apikey_seed = apikey_seed + str(int(time.time()))
@@ -39,31 +44,24 @@ class UserController(object):
         apikey_seed = ''.join(random.sample(apikey_seed, len(apikey_seed)))
         myuser.api_key = sha256(apikey_seed).hexdigest()
 
-        myuser.nickname = username
-        myuser.completename = completename
         myuser.theme = "default"
-        myuser.password = generate_password_hash(password)
-        db.session.add(myuser)
-        db.session.commit()
-        if poke_id is None:
-            # So you did not choose your favorite pokemon? So you're not a true
-            # pokemon trainer, you will never have a REAL pokemon (0-151),
-            # muahahahahaha!
-            self.set_poke(myuser, random.randint(152, 721))
-        else:
-            self.set_poke(myuser, poke_id)
-        return myuser
 
-    @staticmethod
-    def get_by_key(key):
-        """
-            Gets the user by its api key.
-            TODO: replace by @login_manager.request_loader.
-        """
-        user = User.query.filter_by(api_key=key)
-        if user is None:
-            return None
-        return user.first()
+        # the first user is active and admin
+        if User.query.count() == 1:
+            role = user_datastore.find_or_create_role("admin",
+                                                      description="Administrator")
+            if role != None:
+                user_datastore.add_role_to_user(myuser, role)
+            else:
+                app.logger.error("Cannot find and affect admin role to user")
+            user_datastore.activate_user(myuser)
+
+        db.session.commit()
+        return True
+
+    def add_role_to_user(uid, role):
+        user = user_datastore.get_user(int(uid))
+        user_datastore.add_role_to_user(user, role)
 
     @staticmethod
     def get_by_name(name):
@@ -74,18 +72,6 @@ class UserController(object):
         if user is None:
             return None
         return user.first()
-
-    @staticmethod
-    def set_poke(user, poke_id):
-        """
-            Set's the user pokemon ID.
-        """
-        if poke_id > 721 or poke_id < 0:
-            poke_id = random.randint(152, 721)
-        user.poke_id = poke_id
-        db.session.add(user)
-        db.session.commit()
-        return True
 
     @staticmethod
     def set_theme(user, theme):
@@ -121,15 +107,13 @@ class UserController(object):
         """
             Checks an user's password.
         """
-        return check_password_hash(user.password, passw)
+        return verify_and_update_password(passw, user)
 
-    @staticmethod
-    def set_pass(user, passw):
+    def set_pass(self, user, passw):
         """
             Regenerate an user's password hash.
         """
-        user.password = generate_password_hash(passw)
-        db.session.commit()
+        verify_and_update_password(passw, user)
         return True
 
     @staticmethod
@@ -149,9 +133,28 @@ class UserController(object):
         return User.query.all()
 
     @staticmethod
-    @login_manager.user_loader
     def get_by_id(user_id):
         """
             gets an user by its id. Used by the flask login manager.
         """
         return User.query.get(int(user_id))
+
+
+    @staticmethod
+    def deactivate(user_id):
+        u = user_datastore.get_user(int(user_id))
+        if u is not None:
+            app.logger.debug("Deactivating user %s", u.nickname)
+            user_datastore.deactivate_user(u)
+            db.session.commit()
+            return True
+        return False
+
+    @staticmethod
+    def activate(user_id):
+        u = User.query.get(int(user_id))
+        if u is not None:
+            user_datastore.activate_user(u)
+            db.session.commit()
+            return True
+        return False

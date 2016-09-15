@@ -12,9 +12,9 @@ from flask import Flask
 
 from flask_sqlalchemy import SQLAlchemy
 from flask_bootstrap import Bootstrap
-from flask_login import LoginManager
 from flask_marshmallow import Marshmallow
 from flask_misaka import Misaka
+from flask_security import Security, SQLAlchemyUserDatastore
 
 app = Flask(__name__)
 
@@ -29,9 +29,11 @@ Bootstrap(app)
 db = SQLAlchemy(app)
 ma = Marshmallow(app)
 Misaka(app)
-# Init login manager extension
-login_manager = LoginManager()
-login_manager.init_app(app)
+
+# Init user management
+from poli.models.user import User, Role
+user_datastore = SQLAlchemyUserDatastore(db, User, Role)
+security = Security(app, user_datastore)
 
 from poli.controllers.api import APIControl
 
