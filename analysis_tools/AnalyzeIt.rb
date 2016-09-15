@@ -32,7 +32,6 @@ ori_renamed_functions = {}
 ori_comments = {}
 knownCfg = {}
 
-checkedFunc = ["CreateProcessW", "CreateProcessA", "MoveFileW", "MoveFileA", "CopyFileW", "CopyFileA", "CopyFile", "DeleteFileA", "DeleteFileW", "RegCreateKeyA", "RegCreateKeyW", "RegSetValueA", "RegSetValueExA", "RegSetValueExW", "CreateDirectoryA", 'CreateDirectoryExA', 'CreateDirectoryExW', 'CreateDirectoryW','CreateServiceA' ,'CreateServiceW','RegOpenKeyA' ,'RegOpenKeyExA' ,'RegOpenKeyExW' ,'RegOpenKeyW', 'InternetCheckConnectionA', 'InternetCheckConnectionW','InternetOpenA', 'InternetOpenUrlA', 'InternetOpenUrlW', 'InternetOpenW', 'InternetConnectA', 'InternetConnectW', 'HttpAddRequestHeadersA', 'HttpAddRequestHeadersW','WSAAddressToStringA', 'WSAAddressToStringW', 'WSAAsyncGetHostByAddr', 'WSAAsyncGetHostByName','CheckRemoteDebuggerPresent','DbgBreakPoint','SHRegSetUSValueA','SHRegSetUSValueW','VirtualProtect','VirtualProtectEx','URLDownloadToFile','WinExec','send','connect','system','OpenServiceA','OpenServiceW','OpenSCManagerA','OpenSCManagerW','CoCreateInstance','gethostbyname','SHGetValueA','SHGetValueW','inet_addr','IoCreateSymbolicLink','IoCreateDevice','RtlAppendUnicodeToString','ZwCreateFile','ZwQueryInformationFile','ZwQuerySystemInformation','ZwOpenKey','ZwEnumerateKey','RtlWriteRegistryValue','RtlInitUnicodeString','OpenProcess', 'CreateRemoteThread', 'WriteProcessMemory','OpenEventA','OpenEventW','CreateEventA','CreateEventW','CreateFileA','CreateFileW','WriteFile']
 @tbFuncName = {}
 @tbComments = {}
 
@@ -304,6 +303,73 @@ def getArg(addrori,arg)
     end
 end
 
+@functionsDecoders = {
+    "IsDebuggerPresent"=>{'args'=>[],'tags'=>[]},
+    "OpenSCManagerW"=>{'args'=>['PWSTR','PWSTR'],'tags'=>[]},
+    "OpenSCManagerA"=>{'args'=>['PSTR','PSTR'],'tags'=>[]},
+    "CreateProcessW"=>{'args'=>['PWSTR','PWSTR'],'tags'=>['Proc_']},
+    "CreateServiceA"=>{'args'=>[nil,'PSTR','PSTR'],'tags'=>['Serv_']},
+    "WinExec"=>{'args'=>['PSTR'],'tags'=>['Proc_']},
+    "CreateProcessA"=>{'args'=>['PSTR','PSTR'],'tags'=>['Proc_']},
+    "VirtualProtect"=>{'args'=>['UINT','UINT','PROTECT'],'tags'=>[]},
+    "MoveFileA"=>{'args'=>['PSTR','PSTR'],'tags'=>['File_']},
+    "MoveFileW"=>{'args'=>['PWSTR','PWSTR'],'tags'=>['File_']},
+    "CopyFileA"=>{'args'=>['PSTR','PSTR'],'tags'=>['File_']},
+    "CopyFileW"=>{'args'=>['PWSTR','PWSTR'],'tags'=>['File_']},
+    "DeleteFileA"=>{'args'=>['PSTR','PSTR'],'tags'=>['File_']},
+    "DeleteFileW"=>{'args'=>['PWSTR','PWSTR'],'tags'=>['File_']},
+    "RegSetValueExA"=>{'args'=>[nil,'PSTR'],'tags'=>['Reg_']},
+    "RegSetValueExW"=>{'args'=>[nil,'PWSTR'],'tags'=>['Reg_']},
+    "RegSetValueA"=>{'args'=>[nil,'PWSTR'],'tags'=>['Reg_']},
+    "CreateDirectoryW"=>{'args'=>['PWSTR'],'tags'=>['File_']},
+    "RegOpenKeyA"=>{'args'=>[nil,'PSTR'],'tags'=>['Reg_']},
+    "RegOpenKeyW"=>{'args'=>[nil,'PWSTR'],'tags'=>['Reg_']},
+    "RegOpenKeyExA"=>{'args'=>[nil,'PSTR'],'tags'=>['Reg_']},
+    "RegOpenKeyExW"=>{'args'=>[nil,'PWSTR'],'tags'=>['Reg_']},
+    "RegCreateKeyA"=>{'args'=>[nil,'PSTR'],'tags'=>['Reg_']},
+    "RegCreateKeyW"=>{'args'=>[nil,'PWSTR'],'tags'=>['Reg_']},
+    "CreateDirectoryA"=>{'args'=>['PSTR'],'tags'=>['File_']},
+    "InternetCheckConnectionA"=>{'args'=>['PSTR'],'tags'=>['Net_']},
+    "InternetCheckConnectionW"=>{'args'=>['PWSTR'],'tags'=>['Net_']},
+    "InternetOpenA"=>{'args'=>['PSTR'],'tags'=>['Net_']},
+    "InternetOpenW"=>{'args'=>['PWSTR'],'tags'=>['Net_']},
+    "OpenServiceA"=>{'args'=>[nil,'PSTR'],'tags'=>['Serv_']},
+    "OpenServiceW"=>{'args'=>[nil,'PWSTR'],'tags'=>['Serv_']},
+    "InternetOpenUrlW"=>{'args'=>[nil,'PWSTR','PWSTR'],'tags'=>['Net_']},
+    "InternetConnectW"=>{'args'=>[nil,'PWSTR'],'tags'=>['Net_']},
+    "HttpAddRequestHeadersW"=>{'args'=>[nil,'PWSTR'],'tags'=>['Net_']},
+    "CoCreateInstance"=>{'args'=>['REFCLSID'],'tags'=>['Net_']},
+    "send"=>{'args'=>[nil,'PSTR','UINT'],'tags'=>['Net_']},
+    "gethostbyname"=>{'args'=>['PSTR'],'tags'=>['Net_']},
+    "inet_addr"=>{'args'=>['PSTR'],'tags'=>['Net_']},
+    "system"=>{'args'=>['PSTR'],'tags'=>['Proc_']},
+    "SHGetValueA"=>{'args'=>[nil,'PSTR','PSTR'],'tags'=>['Reg_']},
+    "SHGetValueW"=>{'args'=>[nil,'PWSTR','PWSTR'],'tags'=>['Reg_']},
+    "IoCreateDevice"=>{'args'=>[nil,nil,'PWSTR'],'tags'=>[]},
+    "RtlInitUnicodeString"=>{'args'=>['PWSTR','PWSTR'],'tags'=>[]},
+    "RtlAppendUnicodeToString"=>{'args'=>['PWSTR','PWSTR'],'tags'=>[]},
+    "RtlWriteRegistryValue"=>{'args'=>[nil,'PWSTR','PWSTR'],'tags'=>['Reg_']},
+    "IoCreateSymbolicLink"=>{'args'=>['PWSTR','PWSTR'],'tags'=>[]},
+    "connect"=>{'args'=>['UINT'],'tags'=>['Net_']},
+    "CreateFileA"=>{'args'=>['PSTR'],'tags'=>['File_']},
+    "CreateFileW"=>{'args'=>['PWSTR'],'tags'=>['File_']},
+    "WriteFile"=>{'args'=>[nil,'PVOID','UINT'],'tags'=>['File_']},
+    "RegDeleteKeyA"=>{'args'=>['HKEY','PSTR'],'tags'=>['Reg_']},
+    "RegDeleteKeyExA"=>{'args'=>['HKEY','PSTR'],'tags'=>['Reg_']},
+    "RegDeleteKeyW"=>{'args'=>['HKEY','PWSTR'],'tags'=>['Reg_']},
+    "RegDeleteKeyExW"=>{'args'=>['HKEY','PWSTR'],'tags'=>['Reg_']},
+    "RegDeleteKeyValueA"=>{'args'=>['HKEY','PSTR','PSTR'],'tags'=>['Reg_']},
+    "RegDeleteKeyValueW"=>{'args'=>['HKEY','PWSTR','PWSTR'],'tags'=>['Reg_']},
+    "CloseServiceHandle"=>{'args'=>['UINT'],'tags'=>['Serv_']},
+    "OpenSCManagerA"=>{'args'=>['PSTR','PSTR'],'tags'=>['Serv_']},
+    "OpenSCManagerW"=>{'args'=>['PWSTR','PWSTR'],'tags'=>['Serv_']},
+    "ConvertSidToStringSid"=>{'args'=>['PVOID'],'tags'=>['Token_']},
+    "OpenProcessToken"=>{'args'=>[],'tags'=>['Token_']},
+    "GetTokenInformation"=>{'args'=>[nil,'TIC'],'tags'=>['Token_']},
+    "AdjustTokenPrivileges"=>{'args'=>[],'tags'=>['Token_']},
+    "LookupPrivilegeValueW"=>{'args'=>['PWSTR','PWSTR'],'tags'=>['Priv_']},
+}
+
 def checkCall(strFunc, xrefCall)
     basefunc = find_start_of_function(xrefCall)
     if basefunc != nil
@@ -311,779 +377,112 @@ def checkCall(strFunc, xrefCall)
         log("Top of function : #{poliLinkAddr(basefunc)} ; Top of block : #{poliLinkAddr($gdasm.di_at(xrefCall).block.list[0].address)}")
         log("")
     end
-        if strFunc == "IsDebuggerPresent"
-        log("  *   #{poliLinkAddr(xrefCall)} -> IsDebuggerPresent()")
-        return
+    
+    cfunctionDecoder = @functionsDecoders[strFunc]
+    return if cfunctionDecoder == nil
+    
+    printString = "  *   #{poliLinkAddr(xrefCall)} -> #{strFunc}("
+    decoded_arg = false
+    decoded_arg = true if cfunctionDecoder['args'].length == 0
+    for i in 0...cfunctionDecoder['args'].length
+        decodeType = cfunctionDecoder['args'][i]
+        next if decodeType == nil
+        strArg = nil
+        carg = getArg(xrefCall,i)
+        case decodeType
+            when 'PSTR'
+                if $gdasm.decode_strz(carg)
+                    strArg = "'#{$gdasm.decode_strz(carg)}'"
+                else
+                    strArg = ''
+                end
+            when 'PWSTR'
+                if $gdasm.decode_wstrz(carg)
+                    strArg = "'#{$gdasm.decode_wstrz(carg).gsub(/[\x00]/n, '')}'"
+                else
+                    strArg = ''
+                end
+            when 'UINT'
+                if $gdasm.decode_dword(carg)
+                    strArg = "0x#{$gdasm.decode_dword(carg).to_s(16)}"
+                else
+                    strArg = ''
+                end
+            when 'PROTECT'
+                case carg
+                when 0x10
+                    strArg = 'PAGE_EXECUTE'
+                when 0x20
+                    strArg = 'PAGE_EXECUTE_READ'
+                when 0x40
+                    strArg = 'PAGE_EXECUTE_READWRITE'
+                when 0x80
+                    strArg = 'PAGE_EXECUTE_WRITECOPY'
+                when 0x01
+                    strArg = 'PAGE_NOACCESS'
+                when 0x02
+                    strArg = 'PAGE_READONLY'
+                when 0x04
+                    strArg = 'PAGE_READWRITE'
+                when 0x08
+                    strArg = 'PAGE_WRITECOPY'
+                else
+                    strArg = ''
+                end
+            when 'REFCLSID'
+                if $gdasm.decode_dword(carg)
+                    strArg = "{%08X-%04X-%04X-%02X%02X-%02X%02X%02X%02X%02X%02X}" % [$gdasm.decode_dword(carg), ($gdasm.decode_dword(carg+4) & 0xffff), ($gdasm.decode_dword(carg+6) & 0xffff), $gdasm.decode_byte(carg+8), $gdasm.decode_byte(carg+9), $gdasm.decode_byte(carg+10), $gdasm.decode_byte(carg+11), $gdasm.decode_byte(carg+12), $gdasm.decode_byte(carg+13), $gdasm.decode_byte(carg+14), $gdasm.decode_byte(carg+15), $gdasm.decode_byte(carg+16)]
+                    @tbComments[xrefCall] = "Instance : #{strArg}" if strArg.to_s != ''
+                    if strArg.casecmp("{0002df01-0000-0000-c000-000000000046}") == 0
+                        strArg += " (CLSID_InternetExplorer)"
+                        @tbComments[xrefCall] += " (CLSID_InternetExplorer)"
+                        AddTagFunction(basefunc, "Net_") if basefunc != nil
+                    end 
+                    if strArg.casecmp("{0002DF05-0000-0000-C000-000000000046}") == 0
+                        strArg += " (IID_IWebBrowserApp)"
+                        @tbComments[xrefCall] += " (IID_IWebBrowserApp)"
+                        AddTagFunction(basefunc, "Net_") if basefunc != nil
+                    end
+                    if strArg.casecmp("{00021401-0000-0000-C000-000000000046}") == 0
+                        strArg += " (CLSID_LNK)"
+                        @tbComments[xrefCall] += " (CLSID_LNK)"
+                    end
+                end
+                strArg = '' if strArg == nil
+            when 'PVOID'
+                if $gdasm.read_raw_data(carg,0x10)
+                    strArg = $gdasm.read_raw_data(carg,0x10).unpack("C*").map{|a| "\\x"+a.to_s(16)}.join()
+                else
+                    strArg = ''
+                end
+            when 'HKEY'
+                strArg = {0x80000000=>"HKEY_CLASSES_ROOT ",0x80000001=>"HKEY_CURRENT_USER",0x80000002=>"HKEY_LOCAL_MACHINE",0x80000003=>"HKEY_USERS",0x80000004=>"HKEY_PERFORMANCE_DATA",0x80000005=>"HKEY_CURRENT_CONFIG",0x80000006=>"HKEY_DYN_DATA"}[carg]
+                strArg = '' if strArg == nil
+            when 'TIC'
+                if carg != nil
+                    strArg = [nil,"TokenUser","TokenGroups","TokenPrivileges","TokenOwner","TokenPrimaryGroup","TokenDefaultDacl","TokenSource","TokenType","TokenImpersonationLevel","TokenStatistics","TokenRestrictedSids","TokenSessionId","TokenGroupsAndPrivileges","TokenSessionReference","TokenSandBoxInert","TokenAuditPolicy","TokenOrigin","TokenElevationType","TokenLinkedToken","TokenElevation","TokenHasRestrictions","TokenAccessInformation","TokenVirtualizationAllowed","TokenVirtualizationEnabled","TokenIntegrityLevel","TokenUIAccess","TokenMandatoryPolicy","TokenLogonSid","TokenIsAppContainer","TokenCapabilities","TokenAppContainerSid","TokenAppContainerNumber","TokenUserClaimAttributes","TokenDeviceClaimAttributes","TokenRestrictedUserClaimAttributes","TokenRestrictedDeviceClaimAttributes","TokenDeviceGroups","TokenRestrictedDeviceGroups","TokenSecurityAttributes","TokenIsRestricted","MaxTokenInfoClass"][carg]
+                end
+                strArg = '' if strArg == nil
+        end
+        decoded_arg = true if strArg != nil and strArg != ''
+        
+        printString += ',' if printString[-1] != '('
+        
+        if strArg != nil
+            printString += strArg
+        end
     end
-    if strFunc == "OpenSCManagerW"
-        arg1 = getArg(xrefCall,0)
-        if $gdasm.decode_wstrz(arg1)
-            arg1 = $gdasm.decode_wstrz(arg1).gsub(/[\x00]/n, '')
-        else
-            arg1 = ''
-        end
-        arg2 = getArg(xrefCall,1)
-        if $gdasm.decode_wstrz(arg2)
-            arg2 = $gdasm.decode_wstrz(arg2).gsub(/[\x00]/n, '')
-        else
-            arg2 = ''
-        end
-        if arg1 != '' or arg2 != ''
-            log("  *   #{poliLinkAddr(xrefCall)} -> OpenSCManagerW('#{arg1}','#{arg2}')")
-        end
-        return
+    printString += ')'
+    
+    cfunctionDecoder['tags'].each{|ctag|
+        AddTagFunction(basefunc, ctag) if basefunc != nil
+    }
+    
+    
+    if decoded_arg == true
+        log(printString)
     end
-    if strFunc == "OpenSCManagerA"
-        arg1 = getArg(xrefCall,0)
-        if $gdasm.decode_wstrz(arg1)
-            arg1 = $gdasm.decode_strz(arg1)
-        else
-            arg1 = ''
-        end
-        arg2 = getArg(xrefCall,1)
-        if $gdasm.decode_wstrz(arg2)
-            arg2 = $gdasm.decode_strz(arg2)
-        else
-            arg2 = ''
-        end
-        if arg1 != '' or arg2 != ''
-            log("  *   #{poliLinkAddr(xrefCall)} -> OpenSCManagerA('#{arg1}','#{arg2}')")
-        end
-        return
-    end
-    if strFunc == "CreateProcessW"
-        arg1 = getArg(xrefCall,0)
-        if $gdasm.decode_wstrz(arg1)
-            arg1 = $gdasm.decode_wstrz(arg1).gsub(/[\x00]/n, '')
-        else
-            arg1 = ''
-        end
-        arg2 = getArg(xrefCall,1)
-        if $gdasm.decode_wstrz(arg2)
-            arg2 = $gdasm.decode_wstrz(arg2).gsub(/[\x00]/n, '')
-        else
-            arg2 = ''
-        end
-        AddTagFunction(basefunc, "Proc_") if basefunc != nil
-        if arg1 != '' or arg2 != ''
-            log("  *   #{poliLinkAddr(xrefCall)} -> CreateProcessW('#{arg1}','#{arg2}')")
-        end
-        return
-    end
-    if strFunc == "CreateServiceA"
-        arg2 = getArg(xrefCall,1)
-        if $gdasm.decode_strz(arg2)
-            arg2 = $gdasm.decode_strz(arg2)
-        else
-            arg2 = ''
-        end
-        arg3 = getArg(xrefCall,2)
-        if $gdasm.decode_strz(arg3)
-            arg3 = $gdasm.decode_strz(arg3)
-        else
-            arg3 = ''
-        end
-        AddTagFunction(basefunc, "Serv_") if basefunc != nil
-        if arg2 != '' or arg3 != ''
-            log("  *   #{poliLinkAddr(xrefCall)} -> CreateServiceA('#{arg2}','#{arg3}')")
-        end
-        return
-    end
-    if strFunc == "WinExec"
-        arg1 = getArg(xrefCall,0)
-        if $gdasm.decode_strz(arg1)
-            arg1 = $gdasm.decode_strz(arg1)
-        else
-            arg1 = ''
-        end
-        AddTagFunction(basefunc, "Proc_") if basefunc != nil
-        if arg1 != ''
-            log("  *   #{poliLinkAddr(xrefCall)} -> WinExec('#{arg1}')")
-        end
-        return
-    end
-    if strFunc == "CreateProcessA"
-        arg1 = getArg(xrefCall,0)
-        if $gdasm.decode_strz(arg1)
-            arg1 = $gdasm.decode_strz(arg1)
-        else
-            arg1 = ''
-        end
-        arg2 = getArg(xrefCall,1)
-        if $gdasm.decode_strz(arg2)
-            arg2 = $gdasm.decode_strz(arg2)
-        else
-            arg2 = ''
-        end
-        AddTagFunction(basefunc, "Proc_") if basefunc != nil
-        if arg1 != '' or arg2 != ''
-            log("  *   #{poliLinkAddr(xrefCall)} -> CreateProcessA('#{arg1}','#{arg2}')")
-        end
-        return
-    end
-    if strFunc == "VirtualProtect"
-        arg1 = getArg(xrefCall,0)
-        arg2 = getArg(xrefCall,1)
-        arg3 = getArg(xrefCall,2)
-        if $gdasm.decode_dword(arg1)
-            arg1 = "0x#{$gdasm.decode_dword(arg1).to_s(16)}"
-        else
-            arg1 = ''
-        end
-        if $gdasm.decode_dword(arg2)
-            arg2 = "0x#{$gdasm.decode_dword(arg2).to_s(16)}"
-        else
-            arg2 = ''
-        end
-        if arg3
-            case arg3
-            when 0x10
-                arg3 = 'PAGE_EXECUTE'
-            when 0x20
-                arg3 = 'PAGE_EXECUTE_READ'
-            when 0x40
-                arg3 = 'PAGE_EXECUTE_READWRITE'
-            when 0x80
-                arg3 = 'PAGE_EXECUTE_WRITECOPY'
-            when 0x01
-                arg3 = 'PAGE_NOACCESS'
-            when 0x02
-                arg3 = 'PAGE_READONLY'
-            when 0x04
-                arg3 = 'PAGE_READWRITE'
-            when 0x08
-                arg3 = 'PAGE_WRITECOPY'
-            else
-                arg3 = ''
-            end
-        else
-            arg3 = ''
-        end
-        if arg3 != ''
-            @tbComments[xrefCall] = "VirtualProtect(#{arg1},#{arg2},#{arg3})" if arg1.to_s != '' or arg2.to_s != '' or arg3.to_s != ''
-        end
-        if arg1 != '' or arg2 != '' or  arg3 != ''
-            log("  *   #{poliLinkAddr(xrefCall)} -> VirtualProtect(#{arg1},#{arg2},#{arg3})")
-        end
-        return
-    end
-    if strFunc == "MoveFileA"
-        arg1 = getArg(xrefCall,0)
-        arg2 = getArg(xrefCall,1)
-        if $gdasm.decode_strz(arg1)
-            arg1 = $gdasm.decode_strz(arg1)
-        else
-            arg1 = ''
-        end
-        if $gdasm.decode_strz(arg2)
-            arg2 = $gdasm.decode_strz(arg2)
-        else
-            arg2 = ''
-        end
-        AddTagFunction(basefunc, "File_") if basefunc != nil
-        if arg1 != '' or arg2 != ''
-            log("  *   #{poliLinkAddr(xrefCall)} -> MoveFileA('#{arg1}','#{arg2}')")
-        end
-        return
-    end
-    if strFunc == "MoveFileW"
-        arg1 = getArg(xrefCall,0)
-        if $gdasm.decode_wstrz(arg1)
-            arg1 = $gdasm.decode_wstrz(arg1).gsub(/[\x00]/n, '')
-        else
-            arg1 = ''
-        end
-        arg2 = getArg(xrefCall,1)
-        if $gdasm.decode_wstrz(arg2)
-            arg2 = $gdasm.decode_wstrz(arg2).gsub(/[\x00]/n, '')
-        else
-            arg2 = ''
-        end
-        AddTagFunction(basefunc, "File_") if basefunc != nil
-        if arg1 != '' or arg2 != ''
-            log("  *   #{poliLinkAddr(xrefCall)} -> MoveFileW('#{arg1}','#{arg2}')")
-        end
-        return
-    end
-    if strFunc == "CopyFileA"
-        arg1 = getArg(xrefCall,0)
-        arg2 = getArg(xrefCall,1)
-        if $gdasm.decode_strz(arg1)
-            arg1 = $gdasm.decode_strz(arg1)
-        else
-            arg1 = ''
-        end
-        if $gdasm.decode_strz(arg2)
-            arg2 = $gdasm.decode_strz(arg2)
-        else
-            arg2 = ''
-        end
-        AddTagFunction(basefunc, "File_") if basefunc != nil
-        if arg1 != '' or arg2 != ''
-            log("  *   #{poliLinkAddr(xrefCall)} -> CopyFileA('#{arg1}','#{arg2}')")
-        end
-        return
-    end
-    if strFunc == "CopyFileW"
-        arg1 = getArg(xrefCall,0)
-        if $gdasm.decode_wstrz(arg1)
-            arg1 = $gdasm.decode_wstrz(arg1).gsub(/[\x00]/n, '')
-        else
-            arg1 = ''
-        end
-        arg2 = getArg(xrefCall,1)
-        if $gdasm.decode_wstrz(arg2)
-            arg2 = $gdasm.decode_wstrz(arg2).gsub(/[\x00]/n, '')
-        else
-            arg2 = ''
-        end
-        AddTagFunction(basefunc, "File_") if basefunc != nil
-        if arg1 != '' or arg2 != ''
-            log("  *   #{poliLinkAddr(xrefCall)} -> CopyFileW('#{arg1}','#{arg2}')")
-        end
-        return
-    end
-    if strFunc == "DeleteFileA"
-        arg1 = getArg(xrefCall,0)
-        if $gdasm.decode_strz(arg1)
-            arg1 = $gdasm.decode_strz(arg1)
-        else
-            arg1 = ''
-        end
-        AddTagFunction(basefunc, "File_") if basefunc != nil
-        if arg1 != ''
-            log("  *   #{poliLinkAddr(xrefCall)} -> DeleteFileA('#{arg1}')")
-        end
-        return
-    end
-    if strFunc == "DeleteFileW"
-        # pp addr.to_s(16)
-        arg1 = getArg(xrefCall,0)
-        if $gdasm.decode_wstrz(arg1)
-            arg1 = $gdasm.decode_wstrz(arg1).gsub(/[\x00]/n, '')
-        else
-            arg1 = ''
-        end
-        AddTagFunction(basefunc, "File_") if basefunc != nil
-        if arg1 != ''
-            log("  *   #{poliLinkAddr(xrefCall)} -> DeleteFileW('#{arg1}')")
-        end
-        return
-    end
-    if strFunc == "RegSetValueExW"
-        arg2 = getArg(xrefCall,1)
-        if $gdasm.decode_wstrz(arg2)
-            arg2 = $gdasm.decode_wstrz(arg2).gsub(/[\x00]/n, '')
-        else
-            arg2 = ''
-        end
-        AddTagFunction(basefunc, "Reg_") if basefunc != nil
-        if arg2 != ''
-            log("  *   #{poliLinkAddr(xrefCall)} -> RegSetValueExW('#{arg2}')")
-        end
-        return
-    end
-    if strFunc == "RegSetValueExA"
-        arg2 = getArg(xrefCall,1)
-        if $gdasm.decode_strz(arg2)
-            arg2 = $gdasm.decode_strz(arg2)
-        else
-            arg2 = ''
-        end
-        AddTagFunction(basefunc, "Reg_") if basefunc != nil
-        if arg2 != ''
-            log("  *   #{poliLinkAddr(xrefCall)} -> RegSetValueExA('#{arg2}')")
-        end
-        return
-    end
-    if strFunc == "RegSetValueA"
-        arg2 = getArg(xrefCall,1)
-        if $gdasm.decode_strz(arg2)
-            arg2 = $gdasm.decode_strz(arg2)
-        else
-            arg2 = ''
-        end
-        AddTagFunction(basefunc, "Reg_") if basefunc != nil
-        if arg2 != ''
-            log("  *   #{poliLinkAddr(xrefCall)} -> RegSetValueA('#{arg2}')")
-        end
-        return
-    end
-    if strFunc == "CreateDirectoryW"
-        arg1 = getArg(xrefCall,0)
-        if $gdasm.decode_wstrz(arg1)
-            arg1 = $gdasm.decode_wstrz(arg1).gsub(/[\x00]/n, '')
-        else
-            arg1 = ''
-        end
-        AddTagFunction(basefunc, "File_") if basefunc != nil
-        if arg1 != ''
-            log("  *   #{poliLinkAddr(xrefCall)} -> CreateDirectoryW('#{arg1}')")
-        end
-        return
-    end
-    if strFunc == "RegOpenKeyW"
-        arg2 = getArg(xrefCall,1)
-        if $gdasm.decode_wstrz(arg2)
-            arg2 = $gdasm.decode_wstrz(arg2).gsub(/[\x00]/n, '')
-        else
-            arg2 = ''
-        end
-        AddTagFunction(basefunc, "Reg_") if basefunc != nil
-        if arg2 != ''
-            log("  *   #{poliLinkAddr(xrefCall)} -> RegOpenKeyW('#{arg2}')")
-        end
-        return
-    end
-    if strFunc == "RegOpenKeyA"
-        arg2 = getArg(xrefCall,1)
-        if $gdasm.decode_strz(arg2)
-            arg2 = $gdasm.decode_strz(arg2)
-        else
-            arg2 = ''
-        end
-        AddTagFunction(basefunc, "Reg_") if basefunc != nil
-        if arg2 != ''
-            log("  *   #{poliLinkAddr(xrefCall)} -> RegOpenKeyA('#{arg2}')")
-        end
-        return
-    end
-    if strFunc == "RegOpenKeyExA"
-        arg2 = getArg(xrefCall,1)
-        AddTagFunction(basefunc, "Reg_") if basefunc != nil
-        if arg2 != ''
-            log("  *   #{poliLinkAddr(xrefCall)} -> RegOpenKeyExA('#{$gdasm.decode_strz(arg2)}')")
-        end
-        return
-    end
-    if strFunc == "RegCreateKeyW"
-        arg2 = getArg(xrefCall,1)
-        if $gdasm.decode_wstrz(arg2)
-            arg2 = $gdasm.decode_wstrz(arg2).gsub(/[\x00]/n, '')
-        else
-            arg2 = ''
-        end
-        AddTagFunction(basefunc, "Reg_") if basefunc != nil
-        if arg2 != ''
-            log("  *   #{poliLinkAddr(xrefCall)} -> RegCreateKeyW('#{$gdasm.decode_strz(arg2)}')")
-        end
-        return
-    end
-    if strFunc == "RegCreateKeyA"
-        arg2 = getArg(xrefCall,1)
-        if $gdasm.decode_strz(arg2)
-            arg2 = $gdasm.decode_strz(arg2)
-        else
-            arg2 = ''
-        end
-        AddTagFunction(basefunc, "Reg_") if basefunc != nil
-        if arg2 != ''
-            log("  *   #{poliLinkAddr(xrefCall)} -> RegCreateKeyA('#{$gdasm.decode_strz(arg2)}')")
-        end
-        return
-    end
-    if strFunc == "RegOpenKeyExW"
-        arg2 = getArg(xrefCall,1)
-        if $gdasm.decode_wstrz(arg2)
-            arg2 = $gdasm.decode_wstrz(arg2).gsub(/[\x00]/n, '')
-        else
-            arg2 = ''
-        end
-        AddTagFunction(basefunc, "Reg_") if basefunc != nil
-        if arg2 != ''
-            log("  *   #{poliLinkAddr(xrefCall)} -> RegOpenKeyExW('#{arg2}')")
-        end
-        return
-    end
-    if strFunc == "CreateDirectoryA"
-        arg1 = getArg(xrefCall,0)
-        AddTagFunction(basefunc, "File_") if basefunc != nil
-        if arg1 != ''
-            log("  *   #{poliLinkAddr(xrefCall)} -> CreateDirectoryA('#{$gdasm.decode_strz(arg1)}')")
-        end
-        return
-    end
-    if strFunc == "InternetCheckConnectionA"
-        arg1 = getArg(xrefCall,0)
-        AddTagFunction(basefunc, "Net_") if basefunc != nil
-        if arg1 != ''
-            log("  *   #{poliLinkAddr(xrefCall)} -> InternetCheckConnectionA('#{$gdasm.decode_strz(arg1)}')")
-        end
-        return
-    end
-    if strFunc == "InternetCheckConnectionW"
-        arg1 = getArg(xrefCall,0)
-        if $gdasm.decode_wstrz(arg1)
-            arg1 = $gdasm.decode_wstrz(arg1).gsub(/[\x00]/n, '')
-        else
-            arg1 = ''
-        end
-        AddTagFunction(basefunc, "Net_") if basefunc != nil
-        if arg1 != ''
-            log("  *   #{poliLinkAddr(xrefCall)} -> InternetCheckConnectionW('#{arg1}')")
-        end
-        return
-    end
-    if strFunc == "InternetOpenA"
-        arg1 = getArg(xrefCall,0)
-        if $gdasm.decode_strz(arg1)
-            arg1 = $gdasm.decode_strz(arg1)
-        else
-            arg1 = ''
-        end
-        AddTagFunction(basefunc, "Net_") if basefunc != nil
-        if arg1 != ''
-            log("  *   #{poliLinkAddr(xrefCall)} -> InternetOpenA('#{arg1}')")
-        end
-        return
-    end
-    if strFunc == "OpenServiceA"
-        arg1 = getArg(xrefCall,1)
-        if $gdasm.decode_strz(arg1)
-            arg1 = $gdasm.decode_strz(arg1)
-        else
-            arg1 = ''
-        end
-        AddTagFunction(basefunc, "Serv_") if basefunc != nil
-        if arg1 != ''
-            log("  *   #{poliLinkAddr(xrefCall)} -> OpenServiceA('#{arg1}')")
-        end
-        return
-    end
-    if strFunc == "OpenServiceW"
-        arg1 = getArg(xrefCall,1)
-        if $gdasm.decode_wstrz(arg1)
-            arg1 = $gdasm.decode_wstrz(arg1).gsub(/[\x00]/n, '')
-        else
-            arg1 = ''
-        end
-        AddTagFunction(basefunc, "Serv_") if basefunc != nil
-        if arg1 != ''
-            log("  *   #{poliLinkAddr(xrefCall)} -> OpenServiceW('#{arg1}')")
-        end
-        return
-    end
-    if strFunc == "InternetOpenW"
-        arg1 = getArg(xrefCall,0)
-        if $gdasm.decode_wstrz(arg1)
-            arg1 = $gdasm.decode_wstrz(arg1).gsub(/[\x00]/n, '')
-        else
-            arg1 = ''
-        end
-        AddTagFunction(basefunc, "Net_") if basefunc != nil
-        if arg1 != ''
-            log("  *   #{poliLinkAddr(xrefCall)} -> InternetOpenW('#{arg1}')")
-        end
-        return
-    end
-    if strFunc == "InternetOpenUrlW"
-        arg1 = getArg(xrefCall,1)
-        arg2 = getArg(xrefCall,2)
-        if $gdasm.decode_wstrz(arg1)
-            arg1 = $gdasm.decode_wstrz(arg1).gsub(/[\x00]/n, '')
-        else
-            arg1 = ''
-        end
-        if $gdasm.decode_wstrz(arg2)
-            arg2 = $gdasm.decode_wstrz(arg2).gsub(/[\x00]/n, '')
-        else
-            arg2 = ''
-        end
-        AddTagFunction(basefunc, "Net_") if basefunc != nil
-        if arg1 != '' or arg2 != ''
-            log("  *   #{poliLinkAddr(xrefCall)} -> InternetOpenUrlW('#{arg1}','#{arg2}')")
-        end
-        return
-    end
-    if strFunc == "InternetConnectW"
-        arg1 = getArg(xrefCall,1)
-        if $gdasm.decode_wstrz(arg1)
-            arg1 = $gdasm.decode_wstrz(arg1).gsub(/[\x00]/n, '')
-        else
-            arg1 = ''
-        end
-        AddTagFunction(basefunc, "Net_") if basefunc != nil
-        if arg1 != ''
-            log("  *   #{poliLinkAddr(xrefCall)} -> InternetOpenW('#{arg1}')")
-        end
-        return
-    end
-    if strFunc == "HttpAddRequestHeadersW"
-        arg1 = getArg(xrefCall,1)
-        if $gdasm.decode_wstrz(arg1)
-            arg1 = $gdasm.decode_wstrz(arg1).gsub(/[\x00]/n, '')
-        else
-            arg1 = ''
-        end
-        AddTagFunction(basefunc, "Net_") if basefunc != nil
-        if arg1 != ''
-            log("  *   #{poliLinkAddr(xrefCall)} -> HttpAddRequestHeadersW('#{arg1}')")
-        end
-        return
-    end
-    if strFunc == "CoCreateInstance"
-        arg1 = getArg(xrefCall,0)
-        if $gdasm.decode_dword(arg1)
-            arg1 = "{%08X-%04X-%04X-%02X%02X-%02X%02X%02X%02X%02X%02X}" % [$gdasm.decode_dword(arg1), ($gdasm.decode_dword(arg1+4) & 0xffff), ($gdasm.decode_dword(arg1+6) & 0xffff), $gdasm.decode_byte(arg1+8), $gdasm.decode_byte(arg1+9), $gdasm.decode_byte(arg1+10), $gdasm.decode_byte(arg1+11), $gdasm.decode_byte(arg1+12), $gdasm.decode_byte(arg1+13), $gdasm.decode_byte(arg1+14), $gdasm.decode_byte(arg1+15), $gdasm.decode_byte(arg1+16)]
-            @tbComments[xrefCall] = "Instance : #{arg1}" if arg1.to_s != ''
-            if arg1.casecmp("{0002df01-0000-0000-c000-000000000046}") == 0
-                arg1 += " (CLSID_InternetExplorer)"
-                @tbComments[xrefCall] += " (CLSID_InternetExplorer)"
-                AddTagFunction(basefunc, "Net_") if basefunc != nil
-            end 
-            if arg1.casecmp("{0002DF05-0000-0000-C000-000000000046}") == 0
-                arg1 += " (IID_IWebBrowserApp)"
-                @tbComments[xrefCall] += " (IID_IWebBrowserApp)"
-                AddTagFunction(basefunc, "Net_") if basefunc != nil
-            end
-            if arg1.casecmp("{00021401-0000-0000-C000-000000000046}") == 0
-                arg1 += " (CLSID_LNK)"
-                @tbComments[xrefCall] += " (CLSID_LNK)"
-            end
-        else
-            arg1 = ''
-        end
-        if arg1 != ''
-            log("  *   #{poliLinkAddr(xrefCall)} -> CoCreateInstance('#{arg1}')")
-        end
-        return
-    end
-    if strFunc == "send"
-        arg1 = getArg(xrefCall,1)
-        arg2 = getArg(xrefCall,2)
-        if $gdasm.decode_strz(arg1)
-            arg1 = $gdasm.decode_strz(arg1)
-        elsif $gdasm.decode_wstrz(arg1)
-            arg1 = $gdasm.decode_wstrz(arg1).gsub(/[\x00]/n, '')
-        else
-            arg1 = ''
-        end
-        if $gdasm.decode_dword(arg2)
-            arg2 = $gdasm.decode_dword(arg2)
-        else
-            arg2 = ''
-        end
-        AddTagFunction(basefunc, "Net_") if basefunc != nil
-        if arg1 != '' or arg2 != ''
-            log("  *   #{poliLinkAddr(xrefCall)} -> send('#{arg1}',#{arg2})")
-        end
-        return
-    end
-    if strFunc == "gethostbyname"
-        arg1 = getArg(xrefCall,0)
-        if $gdasm.decode_strz(arg1)
-            arg1 = $gdasm.decode_strz(arg1)
-        else
-            arg1 = ''
-        end
-        AddTagFunction(basefunc, "Net_") if basefunc != nil
-        if arg1 != ''
-            log("  *   #{poliLinkAddr(xrefCall)} -> gethostbyname('#{arg1}')")
-        end
-        return
-    end
-    if strFunc == "inet_addr"
-        arg1 = getArg(xrefCall,0)
-        if $gdasm.decode_strz(arg1)
-            arg1 = $gdasm.decode_strz(arg1)
-        else
-            arg1 = ''
-        end
-        AddTagFunction(basefunc, "Net_") if basefunc != nil
-        if arg1 != ''
-            log("  *   #{poliLinkAddr(xrefCall)} -> inet_addr('#{arg1}')")
-        end
-        return
-    end
-    if strFunc == "system"
-        arg1 = getArg(xrefCall,0)
-        if $gdasm.decode_strz(arg1)
-            arg1 = $gdasm.decode_strz(arg1)
-        else
-            arg1 = ''
-        end
-        AddTagFunction(basefunc, "Proc_") if basefunc != nil
-        if arg1 != ''
-            log("  *   #{poliLinkAddr(xrefCall)} -> system('#{arg1}')")
-        end
-        return
-    end
-    if strFunc == "SHGetValueA"
-        arg1 = getArg(xrefCall,1)
-        arg2 = getArg(xrefCall,2)
-        if $gdasm.decode_strz(arg1)
-            arg1 = $gdasm.decode_strz(arg1)
-        else
-            arg1 = ''
-        end
-        if $gdasm.decode_strz(arg2)
-            arg2 = $gdasm.decode_strz(arg2)
-        else
-            arg2 = ''
-        end
-        AddTagFunction(basefunc, "Reg_") if basefunc != nil
-        if arg1 != '' or arg2 != ''
-            log("  *   #{poliLinkAddr(xrefCall)} -> SHGetValueA('#{arg1}','#{arg2}')")
-        end
-        return
-    end
-    if strFunc == "SHGetValueW"
-        arg1 = getArg(xrefCall,1)
-        arg2 = getArg(xrefCall,2)
-        if $gdasm.decode_wstrz(arg1)
-            arg1 = $gdasm.decode_wstrz(arg1).gsub(/[\x00]/n, '')
-        else
-            arg1 = ''
-        end
-        if $gdasm.decode_wstrz(arg2)
-            arg2 = $gdasm.decode_wstrz(arg2).gsub(/[\x00]/n, '')
-        else
-            arg2 = ''
-        end
-        AddTagFunction(basefunc, "Reg_") if basefunc != nil
-        if arg1 != '' or arg2 != ''
-            log("  *   #{poliLinkAddr(xrefCall)} -> SHGetValueW('#{arg1}','#{arg2}')")
-        end
-        return
-    end
-    if strFunc == "IoCreateDevice"
-        arg1 = getArg(xrefCall,2)
-        if $gdasm.decode_wstrz(arg1)
-            arg1 = $gdasm.decode_wstrz(arg1).gsub(/[\x00]/n, '')
-        else
-            arg1 = ''
-        end
-        if arg1 != ''
-            log("  *   #{poliLinkAddr(xrefCall)} -> IoCreateDevice('#{arg1}')")
-        end
-        return
-    end
-    if strFunc == "RtlInitUnicodeString"
-        arg1 = getArg(xrefCall,0)
-        arg2 = getArg(xrefCall,1)
-        if $gdasm.decode_wstrz(arg1)
-            arg1 = $gdasm.decode_wstrz(arg1).gsub(/[\x00]/n, '')
-        else
-            arg1 = ''
-        end
-        if $gdasm.decode_wstrz(arg2)
-            arg2 = $gdasm.decode_wstrz(arg2).gsub(/[\x00]/n, '')
-        else
-            arg2 = ''
-        end
-        if arg1 != '' or arg2 != ''
-            log("  *   #{poliLinkAddr(xrefCall)} -> RtlInitUnicodeString('#{arg1}','#{arg2}')")
-        end
-        return
-    end
-    if strFunc == "RtlAppendUnicodeToString"
-        arg1 = getArg(xrefCall,0)
-        arg2 = getArg(xrefCall,1)
-        if $gdasm.decode_wstrz(arg1)
-            arg1 = $gdasm.decode_wstrz(arg1).gsub(/[\x00]/n, '')
-        else
-            arg1 = ''
-        end
-        if $gdasm.decode_wstrz(arg2)
-            arg2 = $gdasm.decode_wstrz(arg2).gsub(/[\x00]/n, '')
-        else
-            arg2 = ''
-        end
-        if arg1 != '' or arg2 != ''
-            log("  *   #{poliLinkAddr(xrefCall)} -> RtlAppendUnicodeToString('#{arg1}','#{arg2}')")
-        end
-        return
-    end
-    if strFunc == "RtlWriteRegistryValue"
-        arg1 = getArg(xrefCall,1)
-        arg2 = getArg(xrefCall,2)
-        if $gdasm.decode_wstrz(arg1)
-            arg1 = $gdasm.decode_wstrz(arg1).gsub(/[\x00]/n, '')
-        else
-            arg1 = ''
-        end
-        if $gdasm.decode_wstrz(arg2)
-            arg2 = $gdasm.decode_wstrz(arg2).gsub(/[\x00]/n, '')
-        else
-            arg2 = ''
-        end
-        AddTagFunction(basefunc, "Reg_") if basefunc != nil
-        if arg1 != '' or arg2 != ''
-            log("  *   #{poliLinkAddr(xrefCall)} -> RtlWriteRegistryValue('#{arg1}','#{arg2}')")
-        end
-        return
-    end
-    if strFunc == "IoCreateSymbolicLink"
-        arg1 = getArg(xrefCall,0)
-        arg2 = getArg(xrefCall,1)
-        if $gdasm.decode_wstrz(arg1)
-            arg1 = $gdasm.decode_wstrz(arg1).gsub(/[\x00]/n, '')
-        else
-            arg1 = ''
-        end
-        if $gdasm.decode_wstrz(arg2)
-            arg2 = $gdasm.decode_wstrz(arg2).gsub(/[\x00]/n, '')
-        else
-            arg2 = ''
-        end
-        if arg1 != '' or arg2 != ''
-            log("  *   #{poliLinkAddr(xrefCall)} -> IoCreateSymbolicLink('#{arg1}','#{arg2}')")
-        end
-        return
-    end
-    if strFunc == "connect"
-        arg1 = getArg(xrefCall,1)
-        if $gdasm.decode_dword(arg1)
-            arg1 = ":%d" % ( ($gdasm.decode_dword(arg1) & 0xffff) )
-        else
-            arg1 = ''
-        end
-        AddTagFunction(basefunc, "Net_") if basefunc != nil
-        if arg1 != ''
-            log("  *   #{poliLinkAddr(xrefCall)} -> connect(#{arg1})")
-        end
-        return
-    end
-    if strFunc == "CreateFileA"
-        arg1 = getArg(xrefCall,1)
-        if $gdasm.decode_strz(arg1)
-            arg1 = $gdasm.decode_strz(arg1)
-        else
-            arg1 = ''
-        end
-        AddTagFunction(basefunc, "File_") if basefunc != nil
-        if arg1 != ''
-            log("  *   #{poliLinkAddr(xrefCall)} -> CreateFileA('#{arg1}')")
-        end
-        return
-    end
-    if strFunc == "CreateFileW"
-        arg1 = getArg(xrefCall,1)
-        if $gdasm.decode_wstrz(arg1)
-            arg1 = $gdasm.decode_wstrz(arg1)
-        else
-            arg1 = ''
-        end
-        AddTagFunction(basefunc, "File_") if basefunc != nil
-        if arg1 != ''
-            log("  *   #{poliLinkAddr(xrefCall)} -> CreateFileW('#{arg1}')")
-        end
-        return
-    end
-    if strFunc == "WriteFile"
-        arg2 = getArg(xrefCall,2)
-        arg3 = getArg(xrefCall,3)
-        if $gdasm.read_raw_data(arg2,0x10)
-            arg2 = $gdasm.read_raw_data(arg2,0x10).unpack("C*").map{|a| "\\x"+a.to_s(16)}.join()
-        else
-            arg2 = ''
-        end
-        AddTagFunction(basefunc, "File_") if basefunc != nil
-        if arg2 != '' or (arg3 != nil and arg3.to_s =~ /^[0-9a-f]+$/)
-            log("  *   #{poliLinkAddr(xrefCall)} -> WriteFile('#{arg2}',#{arg3})")
-        end
-        return
-    end
+    
 end
 
 # is_modrm : ensure that arg is a modrm : [esp+4], etc.
@@ -1407,18 +806,20 @@ entrypoints.each{|ep|
     if $gdasm.function[dasm.normalize(ep)] == nil
         toaddr = []
         fromaddr = []
-        xreftree = dasm.get_xrefs_x(dasm.di_at(dasm.normalize(ep)))
-        xreftree.each{|xref_addr|
-                fromaddr << xref_addr if xref_addr.to_s =~ /^[0-9]+$/
-        }
-        dasm.each_function_block(dasm.normalize(ep)).each{|bloc|
-            dasm.di_at(bloc[0]).block.list.each{|di|
-                toaddr << dasm.normalize(di.instruction.args.first) if di.opcode.name == 'call' and dasm.normalize(di.instruction.args.first).to_s =~ /^[0-9]+$/
+        if dasm.di_at(dasm.normalize(ep)) != nil and dasm.di_at(dasm.normalize(ep)).instruction != nil
+            xreftree = dasm.get_xrefs_x(dasm.di_at(dasm.normalize(ep)))
+            xreftree.each{|xref_addr|
+                    fromaddr << xref_addr if xref_addr.to_s =~ /^[0-9]+$/
             }
-        }
-        toaddr = toaddr.sort.uniq
-        fromaddr = fromaddr.sort.uniq
-        @treefuncs << [dasm.normalize(ep), toaddr, fromaddr]
+            dasm.each_function_block(dasm.normalize(ep)).each{|bloc|
+                dasm.di_at(bloc[0]).block.list.each{|di|
+                    toaddr << dasm.normalize(di.instruction.args.first) if di.opcode.name == 'call' and dasm.normalize(di.instruction.args.first).to_s =~ /^[0-9]+$/
+                }
+            }
+            toaddr = toaddr.sort.uniq
+            fromaddr = fromaddr.sort.uniq
+            @treefuncs << [dasm.normalize(ep), toaddr, fromaddr]
+        end
     end
 }
 
@@ -1462,7 +863,7 @@ dasm.xrefs.each{|addr, info|
             next
         }
     else
-        if checkedFunc.include? funcname
+        if @functionsDecoders.keys().include? funcname
             log("### API &lt;&lt; #{funcname} &gt;&gt; :")
             dasm.each_xref(addr){|a|
                 xaddr = a

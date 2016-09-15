@@ -8,19 +8,6 @@
     <div class="row">
         <div class="panel panel-primary">
             <div class="panel-heading">
-                <h3 class="panel-title">Users list</h3>
-            </div>
-            <div class="panel-body">
-                {% for u in users %}
-                    <a href="/user/{{u.id}}/" class="btn btn-info">{{u.nickname}}</a>
-                {% endfor %}
-                <a class="btn btn-default">Create new</a>
-            </div>
-        </div>
-    </div>
-    <div class="row">
-        <div class="panel panel-primary">
-            <div class="panel-heading">
                 <h3 class="panel-title">CheckLists</h3>
             </div>
         <div class="panel-body">
@@ -41,4 +28,4 @@
             {% endfor %}
         </div>
     </div>
-{% endblock%} 
+{% endblock%}
