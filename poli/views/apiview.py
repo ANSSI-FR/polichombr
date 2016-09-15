@@ -10,7 +10,7 @@
 
 import os
 
-from poli import api, apiview
+from poli import api, apiview, app
 from poli.models.family import FamilySchema
 from poli.models.sample import Sample, SampleSchema
 
@@ -356,6 +356,24 @@ def api_post_sample_names(sid):
         result = api.samplecontrol.rename_func_from_action(sid, addr, name)
     return jsonify({'result': result})
 
+@apiview.route('/samples/<int:sid>/structs/', methods=['POST'])
+def api_create_struct(sid):
+    data = request.json
+    if data is None:
+        abort(500)
+    result = False
+    name = data['name']
+    app.logger.debug("Creating structure %s" % name)
+    mstruct = api.idacontrol.create_struct(name=name)
+    if mstruct:
+        result = api.samplecontrol.add_idaaction(sid, mstruct)
+    return jsonify({'result': result, 'structid': mstruct})
+
+
+@apiview.route('/samples/<int:sid>/structs/', methods=['GET'])
+def api_get_struct(sid):
+    result = False
+    return jsonify({'result': result})
 
 @apiview.route('/samples/<int:sid>/matches/', methods=['GET'])
 def api_get_matches(sid):

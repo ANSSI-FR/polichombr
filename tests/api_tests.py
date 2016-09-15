@@ -21,8 +21,9 @@ class ApiTestCase(unittest.TestCase):
         poli.app.config['WTF_CSRF_ENABLED'] = False
         self.app = poli.app.test_client()
         poli.db.create_all()
-        api = APIControl()
-        api.usercontrol.create("john", "password")
+        with poli.app.app_context():
+            api = APIControl()
+            api.usercontrol.create("john", "password")
         self.create_sample()
         poli.db.session.commit()
 
@@ -55,6 +56,29 @@ class ApiTestCase(unittest.TestCase):
         retval = self.app.post('/api/1.0/samples/'+str(sid)+'/comments/',
                                data=json.dumps(dict(address=address, comment=comment)),
                                content_type="application/json")
+        return retval
+
+
+    def create_struct(self, sid=1, name=None):
+        retval = self.app.post('/api/1.0/samples/'+str(sid)+'/structs/',
+                            data=json.dumps(dict(name=name)),
+                            content_type="application/json")
+        return retval
+
+    def create_struct_member(self, sid=1, sname=None, mname=None, size=0, offset=0):
+        retval = self.app.post('/api/1.0/samples/'+str(sid)+'/structmember/',
+                            data=json.dumps(dict(sname=sname,
+                                                mname=mname,
+                                                size=size,
+                                                offset=offset)),
+                            content_type="application/json")
+        return retval
+
+    def get_struct(self, sid=1, name=None):
+        retval = self.app.get('/api/1.0/samples/' + str(sid) +
+                              '/structs/',
+                              data=json.dumps({'name':name}),
+                              content_type="application/json")
         return retval
 
 
@@ -216,6 +240,21 @@ class ApiTestCase(unittest.TestCase):
         self.assertIn(data['names'][0]["data"], "TESTNAME1")
         self.assertEqual(data['names'][0]["address"], 0xDEADBEEF)
 
+    def test_create_struct(self):
+        retval = self.create_struct(sid=1, name="StructName1")
+        self.assertEqual(retval.status_code, 200)
+        data = json.loads(retval.data)
+        self.assertTrue(data["result"])
+
+        retval = self.get_struct()
+        self.assertEqual(retval.status_code, 200)
+        data = json.loads(retval.data)
+        self.assertIn("StructName1", data[structs][0][name])
+        self.assertEqual(0, data[structs][0][size])
+
+    def test_create_struct_member(self):
+        retval = self.create_struct_member(name="MemberName1", size=4, offset=0)
+        self.assertEqual(retval.status_code, 200)
 
 if __name__ == '__main__':
     unittest.main()

@@ -13,6 +13,7 @@ import datetime
 from poli import db
 from poli.models.idaactions import IDANameAction, IDACommentAction
 from poli.models.idaactions import IDAActionSchema
+from poli.models.idaactions import IDAStruct
 from poli.models.sample import Sample
 
 
@@ -87,3 +88,26 @@ class IDAActionsController(object):
         data = query.all()
         schema = IDAActionSchema(many=True)
         return schema.dump(data).data
+
+    @staticmethod
+    def create_struct(name=None):
+        if name is None:
+            return False
+        mstruct = IDAStruct()
+        mstruct.name = name
+        mstruct.timestamp = datetime.datetime.now()
+        db.session.add(mstruct)
+        db.session.commit()
+        return mstruct.id
+
+    @staticmethod
+    def get_structure(sid, name, timestamp):
+        return False
+
+    @staticmethod
+    def add_struct_member(struct_id, name, size, offset):
+        return False
+
+    @staticmethod
+    def change_struct_member_name(struct_id, orig_name, new_name):
+        return False

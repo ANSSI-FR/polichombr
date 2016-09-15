@@ -34,7 +34,7 @@ class IDAAction(db.Model):
     # The action type
     type = db.Column(db.String())
     __mapper_args__ = {
-        'polymorphic_identity': 'analysisresult',
+        'polymorphic_identity': 'idaactions',
         'polymorphic_on': type
     }
 
@@ -61,8 +61,45 @@ class IDANameAction(IDAAction):
         'polymorphic_identity': 'idanames'}
 
 
-class IDAStructs():
-    pass
+class IDAApplyStructs(IDAAction):
+    __tablename__ = 'idaapplystructs'
+    id = db.Column(db.Integer(),
+                   db.ForeignKey('idaactions.id'),
+                   primary_key=True)
+    __mapper_args__ = {
+        'polymorphic_identity': 'idaapplystructs'}
+
+
+
+
+class IDAStruct(IDAAction):
+    """
+        Structures are a particular type of
+        actions, as the address and will always be null,
+        and they store a relationship with their members
+    """
+    __tablename__ = "idastructs"
+    id = db.Column(db.Integer(),
+                   db.ForeignKey('idaactions.id'),
+                   primary_key=True)
+    name = db.Column(db.String())
+    size = db.Column(db.Integer())
+    members = db.relationship("IDAStructMember",
+            backref=db.backref("struct"),
+            remote_side=[id])
+
+    __mapper_args__ = {
+        "polymorphic_identity": "idastructs"}
+
+
+class IDAStructMember(db.Model):
+    __tablename__ = "idastructmember"
+    id = db.Column(db.Integer(), primary_key=True)
+    struct_id = db.Column(db.Integer(), db.ForeignKey("idastructs.id"))
+    name = db.Column(db.String())
+    size = db.Column(db.Integer())
+    mtype = db.Column(db.String())
+    offset = db.Column(db.Integer())
 
 
 class IDAActionSchema(ma.ModelSchema):
