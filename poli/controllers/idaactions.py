@@ -14,6 +14,7 @@ from poli import db
 from poli.models.idaactions import IDANameAction, IDACommentAction
 from poli.models.idaactions import IDAActionSchema
 from poli.models.idaactions import IDAStruct, IDAStructSchema
+from poli.models.idaactions import IDAStructMember, IDAStructSchema
 from poli.models.sample import Sample
 
 
@@ -114,10 +115,47 @@ class IDAActionsController(object):
         schema = IDAStructSchema(many=True)
         return schema.dump(data).data
 
+    @staticmethod
+    def get_one_struct(sid, struct_id):
+        """
+            Get only one structure
+        """
+        query = IDAStruct.query
+        data = query.get(struct_id)
+
+        schema = IDAStructSchema()
+        return schema.dump(data).data
+
 
     @staticmethod
-    def add_struct_member(struct_id, name, size, offset):
-        return False
+    def create_struct_member(name=None, size=None, offset=None):
+        member = IDAStructMember()
+        if member is None:
+            return False
+        member.name = name
+        member.size = size
+        member.offset = offset
+        db.session.add(member)
+        db.session.commit()
+        return member.id
+
+    @staticmethod
+    def add_member_to_struct(struct_id=None, mid=None, offset=None):
+        """
+
+        """
+        struct = IDAStruct.query.get(struct_id)
+        member = IDAStructMember.query.get(mid)
+        if struct is None or member is None:
+            result = False
+        else:
+            struct.members.append(member)
+            # struct is updated, so we must update the timestamp
+            struct.timestamp = datetime.datetime.now()
+            struct.size += member.size
+            db.session.commit()
+            result = True
+        return result
 
     @staticmethod
     def change_struct_member_name(struct_id, orig_name, new_name):

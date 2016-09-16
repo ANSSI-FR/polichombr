@@ -8,6 +8,8 @@
         Models to implement IDA Pro objects server side.
 """
 
+from marshmallow import fields
+
 from poli import db, ma
 
 
@@ -70,13 +72,13 @@ class IDAApplyStructs(IDAAction):
         'polymorphic_identity': 'idaapplystructs'}
 
 
-
-
 class IDAStruct(IDAAction):
     """
         Structures are a particular type of
         actions, as the address and will always be null,
         and they store a relationship with their members
+        The management of the members is done by the controller,
+        and at each update the structure's timestamp is updated
     """
     __tablename__ = "idastructs"
     id = db.Column(db.Integer(),
@@ -110,15 +112,28 @@ class IDAActionSchema(ma.ModelSchema):
             "timestamp",
             "address",
             "data",
-            "type"
+            "type",
+        )
+
+class IDAStructMemberSchema(ma.ModelSchema):
+    class Meta:
+        fields=(
+            "id",
+            "name",
+            "offset",
+            "size",
+            "mtype"
         )
 
 class IDAStructSchema(ma.ModelSchema):
+    members = fields.Nested('IDAStructMemberSchema',
+                            only=['id', 'name', 'offset', 'size', 'mtype'],
+                            many=True)
     class Meta:
         fields = (
                 "id",
                 "timestamp",
                 "name",
                 "size",
+                "members"
         )
-
