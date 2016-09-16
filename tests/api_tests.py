@@ -249,8 +249,8 @@ class ApiTestCase(unittest.TestCase):
         retval = self.get_struct()
         self.assertEqual(retval.status_code, 200)
         data = json.loads(retval.data)
-        self.assertIn("StructName1", data[structs][0][name])
-        self.assertEqual(0, data[structs][0][size])
+        self.assertIn("StructName1", data["structs"][0]["name"])
+        self.assertEqual(0, data["structs"][0]["size"])
 
     def test_create_struct_member(self):
         retval = self.create_struct_member(name="MemberName1", size=4, offset=0)

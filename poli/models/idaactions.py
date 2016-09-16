@@ -88,6 +88,7 @@ class IDAStruct(IDAAction):
             backref=db.backref("struct"),
             remote_side=[id])
 
+
     __mapper_args__ = {
         "polymorphic_identity": "idastructs"}
 
@@ -111,3 +112,13 @@ class IDAActionSchema(ma.ModelSchema):
             "data",
             "type"
         )
+
+class IDAStructSchema(ma.ModelSchema):
+    class Meta:
+        fields = (
+                "id",
+                "timestamp",
+                "name",
+                "size",
+        )
+

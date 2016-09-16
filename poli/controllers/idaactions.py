@@ -13,7 +13,7 @@ import datetime
 from poli import db
 from poli.models.idaactions import IDANameAction, IDACommentAction
 from poli.models.idaactions import IDAActionSchema
-from poli.models.idaactions import IDAStruct
+from poli.models.idaactions import IDAStruct, IDAStructSchema
 from poli.models.sample import Sample
 
 
@@ -92,17 +92,28 @@ class IDAActionsController(object):
     @staticmethod
     def create_struct(name=None):
         if name is None:
+            app.logger.error("Cannot create anonymous struct")
             return False
         mstruct = IDAStruct()
         mstruct.name = name
         mstruct.timestamp = datetime.datetime.now()
+        mstruct.size = 0
         db.session.add(mstruct)
         db.session.commit()
         return mstruct.id
 
     @staticmethod
-    def get_structure(sid, name, timestamp):
-        return False
+    def get_structs(sid, timestamp=None):
+        query = IDAStruct.query
+        query = query.filter(IDAStruct.samples.any(Sample.id == sid))
+
+        if timestamp is not None:
+            query = query.filter_by(timestamp >= timestamp)
+
+        data = query.all()
+        schema = IDAStructSchema(many=True)
+        return schema.dump(data).data
+
 
     @staticmethod
     def add_struct_member(struct_id, name, size, offset):

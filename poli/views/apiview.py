@@ -365,15 +365,15 @@ def api_create_struct(sid):
     name = data['name']
     app.logger.debug("Creating structure %s" % name)
     mstruct = api.idacontrol.create_struct(name=name)
-    if mstruct:
+    if mstruct is not False:
         result = api.samplecontrol.add_idaaction(sid, mstruct)
-    return jsonify({'result': result, 'structid': mstruct})
+    return jsonify({'result': result, 'structs':[{'id':mstruct}] })
 
 
 @apiview.route('/samples/<int:sid>/structs/', methods=['GET'])
 def api_get_struct(sid):
-    result = False
-    return jsonify({'result': result})
+    structs = api.idacontrol.get_structs(sid)
+    return jsonify({'structs': structs})
 
 @apiview.route('/samples/<int:sid>/matches/', methods=['GET'])
 def api_get_matches(sid):
