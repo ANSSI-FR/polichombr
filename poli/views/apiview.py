@@ -256,6 +256,23 @@ def api_get_unique_sample(sid):
 def api_post_unique_sample(sid):
     abort(404)
 
+@apiview.route('/samples/<int:sid>/analysis/', methods=['GET'])
+def api_get_sample_full_analysis(sid):
+    return jsonify({'analysis': 'Not implemented'})
+
+@apiview.route('/samples/<int:sid>/analysis/analyzeit/', methods=['GET'])
+def api_get_sample_analyzeit(sid):
+    return jsonify({'analyzeit': 'Not implemented'})
+
+@apiview.route('/samples/<int:sid>/analysis/strings/', methods=['GET'])
+def api_get_sample_strings(sid):
+    return jsonify({'strings': 'Not implemented'})
+
+
+@apiview.route('/samples/<int:sid>/analysis/peinfo/', methods=['GET'])
+def api_get_sample_peinfo(sid):
+    return jsonify({'peinfo': 'not implemented'})
+
 
 @apiview.route('/samples/<int:sid>/families/', methods=['POST'])
 def api_post_sample_family(sid):

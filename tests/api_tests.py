@@ -180,18 +180,22 @@ class ApiTestCase(unittest.TestCase):
 
         data = json.loads(retval.data)
 
-        self.assertIn('analyzeit', data.keys)
-        self.assertIn('peinfo', data.keys)
-        self.assertIn('strings', data.keys)
+        self.assertIn('analysis', data.keys())
 
     def test_get_analyzeit_data(self):
-        retval = self.app.get('/api/1.0/samples/1/analyzeit/')
+        retval = self.app.get('/api/1.0/samples/1/analysis/analyzeit/')
+        self.assertEqual(retval.status_code, 200)
+        data = json.loads(retval.data)
+        self.assertEqual(len(data), 1)
+
+    def test_get_peinfo_data(self):
+        retval = self.app.get('/api/1.0/samples/1/analysis/peinfo/')
         self.assertEqual(retval.status_code, 200)
         data = json.loads(retval.data)
         self.assertEqual(len(data), 1)
 
     def test_get_strings_data(self):
-        retval = self.app.get('/api/1.0/samples/1/analysis/strings')
+        retval = self.app.get('/api/1.0/samples/1/analysis/strings/')
         self.assertEqual(retval.status_code, 200)
         data = json.loads(retval.data)
         self.assertEqual(len(data), 1)
@@ -236,10 +240,6 @@ class ApiTestCase(unittest.TestCase):
         self.assertEqual(data['comments'][0]["address"], 0xDEADBEEF)
         self.assertIn(data['comments'][1]["data"], "TESTCOMMENT2")
         self.assertEqual(data['comments'][1]["address"], 0xBADF00D)
-
-
-    def test_multiple_comments_same_address(self):
-        self.assertTrue(False)
 
     def test_push_name(self):
         """
