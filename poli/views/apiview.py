@@ -422,9 +422,16 @@ def api_create_struct_member(sid, struct_id):
 @apiview.route('/samples/<int:sid>/structs/<int:struct_id>/members/',
                 methods=['PATCH'])
 def api_update_struct_member(sid, struct_id):
+    data = request.json
+    if data is None:
+        abort(500)
+    mid = data["mid"]
     result = False
-    structs = None
-    return jsonify({'result': result, 'structs': structs})
+    if 'newname' in data.keys():
+        result = api.idacontrol.change_struct_member_name(sid, mid, data["newname"])
+    if 'newsize' in data.keys():
+        result = api.idacontrol.change_struct_member_size(sid, mid, data["newsize"])
+    return jsonify({'result': result})
 
 @apiview.route('/samples/<int:sid>/structs/<int:struct_id>/members/',
                 methods=['GET'])

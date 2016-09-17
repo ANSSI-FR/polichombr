@@ -152,11 +152,48 @@ class IDAActionsController(object):
             struct.members.append(member)
             # struct is updated, so we must update the timestamp
             struct.timestamp = datetime.datetime.now()
+            if member.offset >= struct.size:
+                struct.size += (member.offset - struct.size)
             struct.size += member.size
             db.session.commit()
             result = True
         return result
 
     @staticmethod
-    def change_struct_member_name(struct_id, orig_name, new_name):
-        return False
+    def change_struct_member_name(struct_id, mid, new_name):
+        struct = IDAStruct.query.get(struct_id)
+        member = None
+        if struct is None:
+            return False
+        for m in struct.members:
+            if m.id == mid:
+                member = m
+                break
+        if member is None:
+            return False
+        member.name = new_name
+        struct.timestamp = datetime.datetime.now()
+        db.session.commit()
+        return True
+
+    @staticmethod
+    def change_struct_member_size(struct_id, mid, new_size):
+        struct = IDAStruct.query.get(struct_id)
+        member = None
+        if struct is None:
+            return False
+        for m in struct.members:
+            if m.id == mid:
+                member = m
+                break
+        if member is None:
+            return False
+
+        if member.offset + member.size == struct.size:
+            struct.size = struct.size - (member.size - new_size)
+        member.size = new_size
+
+        struct.timestamp = datetime.datetime.now()
+        db.session.commit()
+
+        return True

@@ -76,16 +76,24 @@ class ApiTestCase(unittest.TestCase):
                             content_type="application/json")
         return retval
 
-    def update_struct_member(self, sid=1, struct_id=None, mname=None, size=0, offset=0):
+    def update_struct_member_name(self, sid=1, struct_id=None, mid=None, newname=""):
         url = '/api/1.0/samples/' + str(sid)
         url += '/structs/' + str(struct_id)
-        url += '/members/' + str(mid) + '/'
+        url += '/members/'
         retval = self.app.patch(url,
-                            data=json.dumps(dict(mname=mname,
-                                                size=size,
-                                                offset=offset)),
+                            data=json.dumps(dict(mid=mid, newname=newname)),
                             content_type="application/json")
         return retval
+
+    def update_struct_member_size(self, sid=1, struct_id=None, mid=None, newsize=0):
+        url = '/api/1.0/samples/' + str(sid)
+        url += '/structs/' + str(struct_id)
+        url += '/members/'
+        retval = self.app.patch(url,
+                            data=json.dumps(dict(mid=mid, newsize=newsize)),
+                            content_type="application/json")
+        return retval
+
 
 
     def get_all_structs(self, sid=1, name=None):
@@ -314,7 +322,6 @@ class ApiTestCase(unittest.TestCase):
         self.assertEqual(0, struct2["size"])
 
 
-
     def test_create_struct_member(self):
         """
             Member creation
@@ -342,6 +349,139 @@ class ApiTestCase(unittest.TestCase):
         self.assertIn("MemberName1", member["name"])
         self.assertEqual(4, member["size"])
         self.assertEqual(0, member["offset"])
+
+    def test_create_multiple_struct_members(self):
+        """
+            Test for multiples members
+        """
+        self.create_struct(sid=1, name="StructName1")
+        self.create_struct_member(struct_id=1,
+                mname="MemberName1",
+                size=4,
+                offset=0)
+
+        self.create_struct_member(struct_id=1,
+                mname="MemberName2",
+                size=2,
+                offset=4)
+
+        self.create_struct_member(struct_id=1,
+                mname="MemberName3",
+                size=2,
+                offset=6)
+
+        self.create_struct_member(struct_id=1,
+                mname="MemberName4",
+                size=4,
+                offset=8)
+
+        retval = self.get_one_struct(sid=1, struct_id=1)
+        data = json.loads(retval.data)
+
+        struct = data["structs"]
+
+        # do we have all the members
+        self.assertEqual(len(struct["members"]), 4)
+        self.assertEqual(struct["size"], 12)
+
+        member = struct["members"][0]
+        self.assertIn("MemberName1", member["name"])
+        self.assertEqual(4, member["size"])
+        self.assertEqual(0, member["offset"])
+
+        member = struct["members"][1]
+        self.assertIn("MemberName2", member["name"])
+        self.assertEqual(2, member["size"])
+        self.assertEqual(4, member["offset"])
+
+        member = struct["members"][2]
+        self.assertIn("MemberName3", member["name"])
+        self.assertEqual(2, member["size"])
+        self.assertEqual(6, member["offset"])
+
+        member = struct["members"][3]
+        self.assertIn("MemberName4", member["name"])
+        self.assertEqual(4, member["size"])
+        self.assertEqual(8, member["offset"])
+
+
+    def test_struct_member_update(self):
+        """
+            Update size, name or offset
+        """
+        self.create_struct(sid=1, name="StructName1")
+        self.create_struct_member(struct_id=1,
+                mname="MemberName1",
+                size=4,
+                offset=0)
+
+        self.create_struct_member(struct_id=1,
+                mname="MemberName2",
+                size=2,
+                offset=4)
+
+        retval = self.update_struct_member_name(struct_id=1,
+                mid=1,
+                newname="NewMemberName1")
+
+        self.assertEqual(retval.status_code, 200)
+        data = json.loads(retval.data)
+        self.assertTrue(data['result'])
+
+        retval = self.get_one_struct(sid=1, struct_id=1)
+        data = json.loads(retval.data)
+        mstruct = data['structs']
+        member = mstruct['members'][0]
+        self.assertIn('NewMemberName1', member['name'])
+
+        # test when downgrading the size of first member
+        retval = self.update_struct_member_size(struct_id=1,
+                mid=1,
+                newsize=2)
+        self.assertEqual(retval.status_code, 200)
+        data = json.loads(retval.data)
+        self.assertTrue(data["result"])
+
+        retval = self.get_one_struct(sid=1, struct_id=1)
+        data = json.loads(retval.data)
+        mstruct = data['structs']
+        member = mstruct['members'][0]
+        self.assertEqual(member['size'], 2)
+        self.assertEqual(mstruct['size'], 6)
+
+        # test when downgrading the last member size
+        retval = self.update_struct_member_size(struct_id=1,
+                mid=2,
+                newsize=1)
+        retval = self.get_one_struct(sid=1, struct_id=1)
+        data = json.loads(retval.data)
+        mstruct = data['structs']
+        member = mstruct['members'][1]
+        self.assertEqual(member['size'], 1)
+        self.assertEqual(mstruct['size'], 5)
+
+
+        # test when upgrading the last member size
+        retval = self.update_struct_member_size(struct_id=1,
+                mid=2,
+                newsize=4)
+
+        self.assertEqual(retval.status_code, 200)
+        data = json.loads(retval.data)
+        self.assertTrue(data["result"])
+
+        retval = self.get_one_struct(sid=1, struct_id=1)
+
+        data = json.loads(retval.data)
+        mstruct = data['structs']
+        member = mstruct['members'][1]
+        self.assertEqual(member['size'], 4)
+        self.assertEqual(mstruct['size'], 8)
+
+        # if upgrading the size and overlapping the next member,
+        # adopt the same behavior as IDA and remove the second member
+        # TODO!!!
+        # self.assertTrue(False)
 
 
 if __name__ == '__main__':
