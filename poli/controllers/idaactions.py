@@ -11,8 +11,8 @@
 import datetime
 
 from poli import app, db
-from poli.models.idaactions import IDANameAction, IDACommentAction
 from poli.models.idaactions import IDAAction, IDAActionSchema
+from poli.models.idaactions import IDANameAction, IDACommentAction
 from poli.models.idaactions import IDAStruct, IDAStructSchema
 from poli.models.idaactions import IDAStructMember
 from poli.models.sample import Sample
@@ -22,6 +22,19 @@ class IDAActionsController(object):
     """
         Manage the recorded actions for IDA Pro.
     """
+    @staticmethod
+    def get_all(sid=None, timestamp=None):
+        if sid is None:
+            return False
+        query = IDAAction.query
+        query= query.filter(
+            IDAAction.samples.any(Sample.id == sid))
+        if timestamp is not None:
+            query = query.filter(timestamp>=timestamp)
+        schema = IDAActionSchema(many=True)
+        return schema.dump(query.all()).data
+
+
 
     @staticmethod
     def add_comment(address, data):
