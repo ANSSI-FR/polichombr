@@ -191,6 +191,9 @@ class SkelConnection(object):
             @arg : data dictionary
             @return : dict issued from JSON
         """
+        if not self.is_online:
+            g_logger.error("Cannot send requests while not connected")
+            raise IOError
         headers = {"Accept-encoding": "gzip, deflate",
                    "Content-type": "application/json",
                    "Connection": "keep-alive",
@@ -223,6 +226,9 @@ class SkelConnection(object):
             @arg : data dictionary
             @return : dict issued from JSON
         """
+        if not self.is_online:
+            g_logger.error("Cannot send requests while not connected")
+            raise IOError
         headers = {"Accept-encoding": "gzip, deflate",
                    "Content-type": "application/json",
                    "Connection": "keep-alive",
@@ -263,6 +269,51 @@ class SkelConnection(object):
         else:
             g_logger.error("Cannot send comment %s ( 0x%x )" % (comment, address))
         return res["result"]
+
+    def send_sample(self, filedata):
+        endpoint = "/api/1.0/samples/"
+        headers = {"Accept-encoding": "gzip, deflate",
+                   "X-API-Key": self.api_key
+                   }
+        method = "POST"
+        boundary = "70f6e331562f4b8f98e5f9590e0ffb8e"
+        headers["Content-type"] = "multipart/form-data; boundary="+boundary
+        body = "--" + boundary
+        body += "\r\n"
+        body += "Content-Disposition: form-data; name=\"filename\"\r\n"
+        body += "\r\n"
+        body += idc.GetInputFile()
+        body += "\r\n\r\n"
+        body += "--" + boundary + "\r\n"
+
+        body += "Content-Disposition: form-data; name=\"file\"; filename=\"file\"\r\n"
+        body += "\r\n"
+        body += filedata.read()
+        body += "\r\n--"
+        body += boundary
+        body += "--\r\n"
+
+        self.h_conn.request(method, endpoint, body, headers)
+        res = self.h_conn.getresponse()
+        data = res.read()
+        try:
+            result = json.loads(data)
+        except:
+            g_logger.exception("Cannot load json data from server")
+
+    def get_sample_id(self):
+        """
+            Query the server for the sample ID
+        """
+        endpoint = "/api/1.0/samples/"
+        endpoint += lower(GetInputMD5())
+        endpoint += "/"
+        data = self.poli_get(endpoint)
+        if data["sample_id"] is not None:
+            return data["sample_id"]
+        else:
+            return False
+
 
     def get_comments(self):
         endpoint = self.prepare_endpoint('comments')
@@ -345,14 +396,44 @@ def push_change(cmd, param1, param2):
 def push_functions_names():
     """
         We push all the function names from the current IDB
+        Also push the functions comments
     """
     global skel_conn
 
     for addr in idautils.Functions(idc.MinEA(), idc.MaxEA()):
         fname = GetFunctionName(addr)
-        if fname != "" and not hasSubNoppedPrefix(fname):
+        if fname != "" and not SkelUtils.hasSubNoppedPrefix(fname):
             if not skel_conn.push_name(addr, fname):
                 return False
+
+        for rpt_flag in [0, 1]:
+            func_cmt = GetFunctionCmt(addr, rpt_flag)
+            if func_cmt != "":
+                skel_conn.push_comment(addr, func_cmt)
+    return True
+
+def push_comms():
+    """
+        Push already defined comments
+    """
+    global skel_conn
+    black_list = [
+        "size_t", "int", "LPSTR", "char", "char *", "lpString",
+        "unsigned int", "void *", "indirect table for switch statement",
+        "this", "jump table for switch statement", "switch jump"]
+    for i in range(idc.MinEA(), idc.MaxEA()):
+        cmt = Comment(i)
+        if cmt is not None and cmt not in black_list:
+            if not skel_conn.push_comment(i, cmt):
+                return False
+        cmt = RptCmt(i)
+        if cmt is not None and cmt not in black_list:
+            if not skel_conn.push_comment(i, cmt):
+                return False
+        # if idc.GetFunctionCmt(function_ea,0) != "":
+        #    push_change("idc.SetFunctionCmt",shex(function_ea),idc.GetFunctionCmt(i,0))
+        # elif idc.GetFunctionCmt(function_ea,1) != "":
+        #    push_change("idc.SetFunctionCmt",shex(function_ea),idc.GetFunctionCmt(function_ea,1))
     return True
 
 
@@ -362,6 +443,7 @@ def startup():
         and pull the remote ones
     """
     push_functions_names()
+    push_comms()
     return sync_names()
 
 
@@ -418,19 +500,14 @@ def get_online(*args):
 
     SaveBase(backup_file, idaapi.DBFL_TEMP)
 
-    # test si le sample courant existe sur poli et si non, on le cree :]
-    if poli_id == 0:
-        data = skel_conn.poli_get(
-            "/api/1.0/samples/" +
-            lower(
-                GetInputMD5()) +
-            "/")
-        if data["sample_id"] is not None:
-            sample_id = data["sample_id"]
-        else:
-            g_logger.error("Cannot find remote sample")
-            # XXX upload sample!
-            skel_conn.get_offline()
+    # test if the remote sample exists
+    if sample_id == 0:
+        sample_id = skel_conn.get_sample_id()
+        if not sample_id:
+            g_logger.warning("Sample not found on server, uploading it")
+            skel_conn.send_sample(open(idc.GetInputFile(), 'rb'))
+            sample_id = skel_conn.get_sample_id()
+            g_logger.info("Sample ID: %d" % sample_id)
             return True
     g_logger.info("[+] First synchronization finished")
     return True
@@ -497,8 +574,8 @@ def init_skelenox():
     skel_settings.online_at_startup = True
 
     if not get_online():
-            g_logger.error("Cannot get online =(")
-            return False
+        g_logger.error("Cannot get online =(")
+        return False
 
     # Synchronize the sample
     if not startup():
@@ -512,29 +589,7 @@ def init_skelenox():
     return
 
 
-def push_comms():
-    global skel_conn
-    commBL = [
-        "size_t", "int", "LPSTR", "char", "char *", "lpString", "unsigned int", "void *",
-        "indirect table for switch statement", "this", "jump table for switch statement", "switch jump"]
-    for i in range(idc.MinEA(), idc.MaxEA()):
-        if idc.GetCommentEx(
-                i, 0) is not None and not idc.GetCommentEx(i, 0) in commBL:
-            if not skel_conn.push_comment(i, idc.GetCommentEx(i, 0)):
-                return False
-        elif idc.GetCommentEx(i, 1) is not None and not idc.GetCommentEx(i, 1) in commBL:
-            if not skel_conn.push_comment(i, idc.GetCommentEx(i, 1)):
-                return False
-    for function_ea in idautils.Functions(idc.MinEA(), idc.MaxEA()):
-        fName = idc.GetFunctionName(function_ea)
-        if hasSubNoppedPrefix(fName) is False:
-            if not skel_conn.push_name(function_ea, fName):
-                g_logger.error("Error sending function name %s" % (fName) )
-        # if idc.GetFunctionCmt(function_ea,0) != "":
-        #    push_change("idc.SetFunctionCmt",shex(function_ea),idc.GetFunctionCmt(i,0))
-        # elif idc.GetFunctionCmt(function_ea,1) != "":
-        #    push_change("idc.SetFunctionCmt",shex(function_ea),idc.GetFunctionCmt(function_ea,1))
-    return True
+
 class SkelHooks(object):
     """
         Class containing the three different hooks for skelenox
@@ -636,7 +691,7 @@ class SkelHooks(object):
                         newtype = ""
                     else:
                         newtype = SkelUtils.prepare_parse_type(newtype, self.addr)
-                    push_change("idc.SetType", shex(self.addr), newtype)
+                    push_change("idc.SetType", SkelUtils.shex(self.addr), newtype)
                 elif self.cmdname == "OpStructOffset":
                     print "Fixme, used when typing a struct member/stack var/data pointer to a struct offset "
             except KeyError:
@@ -644,12 +699,22 @@ class SkelHooks(object):
             return 0
 
     class SkelIDBHook(idaapi.IDB_Hooks):
+        """
+            IDB hooks, subclassed from ida_idp.py
+        """
         def __init__(self):
             idaapi.IDB_Hooks.__init__(self)
 
         def cmt_changed(self, *args):
-            print "IDB: comment changed"
-            print args
+            """
+                A comment changed somewhere
+            """
+            addr, rpt = args
+            if rpt:
+                cmt = RptCmt(addr)
+            else:
+                cmt = Comment(addr)
+            skel_conn.push_comment(addr, cmt)
             return idaapi.IDB_Hooks.cmt_changed(self, *args)
 
         def struc_created(self, *args):
@@ -736,9 +801,6 @@ class SkelHooks(object):
             return idaapi.IDP_Hooks.custom_out(self)
 
         def rename(self, *args):
-            print "Going to rename something"
-            ea, name = args
-            print ea, name
             return idaapi.IDP_Hooks.rename(self, *args)
 
         def renamed(self, *args):
@@ -749,7 +811,7 @@ class SkelHooks(object):
                     # XXX push_new_local_name(ea, new_name)
                     pass
                 else:
-                    # XXX push_new_name(ea, new_name)
+                    skel_conn.push_name(ea, new_name)
                     pass
             else:
                 print "ea outside program..."
