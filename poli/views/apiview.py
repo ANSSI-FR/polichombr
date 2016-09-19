@@ -10,7 +10,7 @@
 
 import os
 
-from poli import api, apiview
+from poli import api, apiview, app
 from poli.models.family import FamilySchema
 from poli.models.sample import Sample, SampleSchema
 
@@ -254,7 +254,24 @@ def api_get_unique_sample(sid):
 
 @apiview.route('/samples/<int:sid>/', methods=['POST'])
 def api_post_unique_sample(sid):
-    pass
+    abort(404)
+
+@apiview.route('/samples/<int:sid>/analysis/', methods=['GET'])
+def api_get_sample_full_analysis(sid):
+    return jsonify({'analysis': 'Not implemented'})
+
+@apiview.route('/samples/<int:sid>/analysis/analyzeit/', methods=['GET'])
+def api_get_sample_analyzeit(sid):
+    return jsonify({'analyzeit': 'Not implemented'})
+
+@apiview.route('/samples/<int:sid>/analysis/strings/', methods=['GET'])
+def api_get_sample_strings(sid):
+    return jsonify({'strings': 'Not implemented'})
+
+
+@apiview.route('/samples/<int:sid>/analysis/peinfo/', methods=['GET'])
+def api_get_sample_peinfo(sid):
+    return jsonify({'peinfo': 'not implemented'})
 
 
 @apiview.route('/samples/<int:sid>/families/', methods=['POST'])
@@ -353,7 +370,83 @@ def api_post_sample_names(sid):
     action_id = api.idacontrol.add_name(addr, name)
     result = api.samplecontrol.add_idaaction(sid, action_id)
     if result is True:
-        result = api.samplecontrol.rename_func_from_action(sid, addr, name)
+        api.samplecontrol.rename_func_from_action(sid, addr, name)
+        # we don't care if the function is renamed for a global name,
+        # so if the name is created return True anyway
+    return jsonify({'result': result})
+
+@apiview.route('/samples/<int:sid>/structs/', methods=['POST'])
+def api_create_struct(sid):
+    data = request.json
+    if data is None:
+        abort(500)
+    result = False
+    name = data['name']
+    app.logger.debug("Creating structure %s" % name)
+    mstruct = api.idacontrol.create_struct(name=name)
+    if mstruct is not False:
+        result = api.samplecontrol.add_idaaction(sid, mstruct)
+    return jsonify({'result': result, 'structs':[{'id':mstruct}] })
+
+@apiview.route('/samples/<int:sid>/structs/', methods=['GET'])
+def api_get_sample_structs(sid):
+    structs = api.idacontrol.get_structs(sid)
+    return jsonify({'structs': structs})
+
+
+@apiview.route('/samples/<int:sid>/structs/<int:struct_id>/', methods=['GET'])
+def api_get_one_structs(sid, struct_id):
+    structs = api.idacontrol.get_one_struct(sid, struct_id)
+
+    return jsonify({'structs': structs})
+
+
+@apiview.route('/samples/<int:sid>/structs/<int:struct_id>/members/',
+                methods=['POST'])
+def api_create_struct_member(sid, struct_id):
+    result = False
+    structs = None
+    data = request.json
+    if data is None:
+        abort(500)
+    name = data["name"]
+    size = data["size"]
+    offset = data["offset"]
+    mid = api.idacontrol.create_struct_member(name=name, size=size, offset=offset)
+    if mid is None:
+        result = False
+    else:
+        result = api.idacontrol.add_member_to_struct(struct_id, mid)
+    return jsonify({'result': result})
+
+@apiview.route('/samples/<int:sid>/structs/<int:struct_id>/members/',
+                methods=['PATCH'])
+def api_update_struct_member(sid, struct_id):
+    data = request.json
+    if data is None:
+        abort(500)
+    mid = data["mid"]
+    result = False
+    if 'newname' in data.keys():
+        result = api.idacontrol.change_struct_member_name(sid, mid, data["newname"])
+    if 'newsize' in data.keys():
+        result = api.idacontrol.change_struct_member_size(sid, mid, data["newsize"])
+    return jsonify({'result': result})
+
+@apiview.route('/samples/<int:sid>/structs/<int:struct_id>/members/',
+                methods=['GET'])
+def api_get_struct_member(sid, struct_id):
+    result = False
+    structs = None
+    return jsonify({'result': result, 'structs': structs})
+
+@apiview.route('/samples/<int:sid>/structs/<int:struct_id>/members/',
+                methods=['DELETE'])
+def api_delete_struct_member(sid, struct_id):
+    """
+        TODO : implement and test
+    """
+    result = False
     return jsonify({'result': result})
 
 
