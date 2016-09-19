@@ -18,4 +18,4 @@ install:
 before_script:
   - python utils/db_create.py
 
-script: python tests/full_tests.py
+script: python tests/full_tests.py && python tests/api_tests.py
