@@ -105,6 +105,7 @@ class IDAActionsController(object):
             return False
         mstruct = IDAStruct()
         mstruct.name = name
+        mstruct.data = name
         mstruct.timestamp = datetime.datetime.now()
         mstruct.size = 0
         db.session.add(mstruct)
