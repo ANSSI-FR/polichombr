@@ -185,7 +185,7 @@ class SkelConnection(object):
             self.h_conn.close()
         self.is_online = False
 
-    def poli_post(self, endpoint="/", data=None):
+    def poli_request(self, endpoint, data, method="POST"):
         """
             @arg : endpoint The API target endpoint
             @arg : data dictionary
@@ -196,19 +196,17 @@ class SkelConnection(object):
             raise IOError
         headers = {"Accept-encoding": "gzip, deflate",
                    "Content-type": "application/json",
-                   "Connection": "keep-alive",
                    "Accept": "*/*;q=0.8",
                    "Accept-Language": "en-US,en;q=0.5",
                    "Connection": "Keep-Alive",
                    "X-API-Key": self.api_key
-                   }
-        method = "POST"
+                  }
         json_data = json.dumps(data)
         self.h_conn.request(method, endpoint, json_data, headers)
         res = self.h_conn.getresponse()
 
         if res.status != 200:
-            g_logger.error("The POST request didn't go as expected")
+            g_logger.error("The %s request didn't go as expected"%(method))
         contentType = res.getheader("Content-Encoding")
         if contentType == "gzip":
             buf = StringIO(res.read())
@@ -220,41 +218,20 @@ class SkelConnection(object):
             raise IOError
         return result
 
-    def poli_get(self, endpoint="/", data=None):
-        """
-            @arg : endpoint The API target endpoint
-            @arg : data dictionary
-            @return : dict issued from JSON
-        """
-        if not self.is_online:
-            g_logger.error("Cannot send requests while not connected")
-            raise IOError
-        headers = {"Accept-encoding": "gzip, deflate",
-                   "Content-type": "application/json",
-                   "Connection": "keep-alive",
-                   "Accept": "*/*;q=0.8",
-                   "Accept-Language": "en-US,en;q=0.5",
-                   "Connection": "Keep-Alive",
-                   "X-API-Key": self.api_key
-                   }
-        method = "GET"
-        json_data = json.dumps(data)
-        self.h_conn.request(method, endpoint, json_data, headers)
-        res = self.h_conn.getresponse()
+    def poli_post(self, endpoint="/", data=None):
+        result = self.poli_request(endpoint, data, method='POST')
+        return result
 
-        if res.status != 200:
-            g_logger.error("The GET request didn't go as expected")
-        contentType = res.getheader("Content-Encoding")
-        if contentType == "gzip":
-            buf = StringIO(res.read())
-            res = gzip.GzipFile(fileobj=buf)
-        data = res.read()
-        try:
-            result = json.loads(data)
-        except:
-            g_logger.exception("Coulnt parse the JSON data")
-            print data
-            raise IOError
+    def poli_get(self, endpoint="/", data=None):
+        result = self.poli_request(endpoint, data, method='GET')
+        return result
+
+    def poli_put(self, endpoint="/", data=None):
+        result = self.poli_request(endpoint, data, method='PUT')
+        return result
+
+    def poli_delete(self, endpoint='/', data=None):
+        result = self.poli_request(endpoint, data, method='DELETE')
         return result
 
     def push_comment(self, address=0, comment=None):
@@ -336,6 +313,21 @@ class SkelConnection(object):
         else:
             g_logger.error("failed to send name %s" % (name))
         return True
+
+    def create_struct(self, struct_name):
+        """
+            Create a structure in the database
+            @arg:
+                the structure name
+            @return:
+                The struct id, False if failed
+        """
+        endpoint = self.prepare_endpoint('structs')
+        data = dict(name=struct_name)
+        res = self.poli_post(endpoint, data)
+        if not res["result"]:
+            return False
+        return res["id"]
 
     @staticmethod
     def prepare_endpoint(action):
@@ -702,6 +694,7 @@ class SkelHooks(object):
                 cmt = RptCmt(addr)
             else:
                 cmt = Comment(addr)
+            # TODO : blacklist
             skel_conn.push_comment(addr, cmt)
             return idaapi.IDB_Hooks.cmt_changed(self, *args)
 
@@ -709,8 +702,19 @@ class SkelHooks(object):
             """
                 args -> id
             """
-            print "New structure %s created" % idaapi.get_struc_name(args[0])
+            struct_name = idaapi.get_struc_name(args[0])
+            skel_conn.create_struct(struct_name)
+
+            g_logger.debug("New structure %s created" % struct_name)
+
             return idaapi.IDB_Hooks.struc_created(self, *args)
+
+        def struc_member_created(self, *args):
+            """
+                struc_member_created(self, sptr, mptr) -> int
+            """
+            print args
+            return idaapi.IDB_Hooks.struc_member_created(self, *args)
 
         def deleting_struc(self, *args):
             """
@@ -965,24 +969,35 @@ def push_functions_names():
                 skel_conn.push_comment(addr, func_cmt)
     return True
 
+def filter_coms_black_list(cmt):
+    black_list = [
+        "size_t", "int", "LPSTR", "char", "char *", "lpString",
+        "dw", "lp", "Str", "Dest", "Src", "cch", "Dst", "jumptable", "switch ",
+        "unsigned int", "void *", "indirect table for switch statement", "Size"
+        "this", "jump table for", "switch jump", "nSize", "hInternet", "hObject",
+        "SEH", "Exception handler", "Source", "Size", "Val", "Time",
+        "struct"]
+    for elem in black_list:
+        if elem in cmt[:len(elem)+1]:
+            return False
+    return True
+
 def push_comms():
     """
         Push already defined comments
     """
     global skel_conn
-    black_list = [
-        "size_t", "int", "LPSTR", "char", "char *", "lpString",
-        "unsigned int", "void *", "indirect table for switch statement",
-        "this", "jump table for switch statement", "switch jump"]
-    for i in range(idc.MinEA(), idc.MaxEA()):
-        cmt = Comment(i)
-        if cmt is not None and cmt not in black_list:
-            if not skel_conn.push_comment(i, cmt):
+    addr = idc.MinEA()
+    while addr != idc.BADADDR:
+        cmt = Comment(addr)
+        if cmt is not None and filter_coms_black_list(cmt):
+            if not skel_conn.push_comment(addr, cmt):
                 return False
-        cmt = RptCmt(i)
-        if cmt is not None and cmt not in black_list:
-            if not skel_conn.push_comment(i, cmt):
+        cmt = RptCmt(addr)
+        if cmt is not None and filter_coms_black_list(cmt):
+            if not skel_conn.push_comment(addr, cmt):
                 return False
+        addr = NextHead(addr)
         # if idc.GetFunctionCmt(function_ea,0) != "":
         #    push_change("idc.SetFunctionCmt",shex(function_ea),idc.GetFunctionCmt(i,0))
         # elif idc.GetFunctionCmt(function_ea,1) != "":
@@ -1072,7 +1087,8 @@ def end_skelenox():
     """
     global sample_id, skel_conn, skel_hooks
     skel_conn.close_connection()
-    skel_hooks.cleanup_hooks()
+    if skel_hooks is not None:
+        skel_hooks.cleanup_hooks()
     g_logger.info("Skelenox terminated")
     sample_id = 0
     return
@@ -1141,6 +1157,8 @@ def init_skelenox():
     g_logger.info("Skelenox init finished")
     return
 
+class SkelCore(object):
+    pass
 
 
 
