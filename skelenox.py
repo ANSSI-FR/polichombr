@@ -327,7 +327,18 @@ class SkelConnection(object):
         res = self.poli_post(endpoint, data)
         if not res["result"]:
             return False
-        return res["id"]
+        id = res["structs"][0]["id"]
+        return id
+
+    def create_struc_member(struct_id, start_offset):
+        """
+        XXX :
+            [ ] Get struct id from name
+            [ ] 
+        """
+        endpoint = self.prepare_endpoint('structs')
+        return False
+
 
     @staticmethod
     def prepare_endpoint(action):
@@ -713,7 +724,13 @@ class SkelHooks(object):
             """
                 struc_member_created(self, sptr, mptr) -> int
             """
-            print args
+            global sptr, mptr
+            sptr, mptr = args
+            print dir(sptr)
+            print dir(mptr)
+            m_start_offset = mptr.soff
+            m_end_offset = mptr.eoff
+
             return idaapi.IDB_Hooks.struc_member_created(self, *args)
 
         def deleting_struc(self, *args):
@@ -721,7 +738,6 @@ class SkelHooks(object):
             deleting_struc(self, sptr) -> int
             """
             print "DELETING STRUCT"
-            print args
             return idaapi.IDB_Hooks.deleting_struc(self, *args)
 
         def renaming_struc(self, *args):
@@ -759,7 +775,6 @@ class SkelHooks(object):
             mystruct, mymember, newname = args
             print mymember
             print dir(mymember)
-
             return idaapi.IDB_Hooks.renaming_struc_member(self, *args)
 
         def changing_struc_member(self, *args):
@@ -965,7 +980,7 @@ def push_functions_names():
 
         for rpt_flag in [0, 1]:
             func_cmt = GetFunctionCmt(addr, rpt_flag)
-            if func_cmt != "":
+            if func_cmt != "" and  filter_coms_black_list(func_cmt):
                 skel_conn.push_comment(addr, func_cmt)
     return True
 
@@ -976,7 +991,7 @@ def filter_coms_black_list(cmt):
         "unsigned int", "void *", "indirect table for switch statement", "Size"
         "this", "jump table for", "switch jump", "nSize", "hInternet", "hObject",
         "SEH", "Exception handler", "Source", "Size", "Val", "Time",
-        "struct"]
+        "struct", "unsigned __int"]
     for elem in black_list:
         if elem in cmt[:len(elem)+1]:
             return False
@@ -988,16 +1003,16 @@ def push_comms():
     """
     global skel_conn
     addr = idc.MinEA()
-    while addr != idc.BADADDR:
-        cmt = Comment(addr)
-        if cmt is not None and filter_coms_black_list(cmt):
-            if not skel_conn.push_comment(addr, cmt):
-                return False
-        cmt = RptCmt(addr)
-        if cmt is not None and filter_coms_black_list(cmt):
-            if not skel_conn.push_comment(addr, cmt):
-                return False
-        addr = NextHead(addr)
+    # while addr != idc.BADADDR:
+        # cmt = Comment(addr)
+        # if cmt is not None and filter_coms_black_list(cmt):
+            # if not skel_conn.push_comment(addr, cmt):
+                # return False
+        # cmt = RptCmt(addr)
+        # if cmt is not None and filter_coms_black_list(cmt):
+            # if not skel_conn.push_comment(addr, cmt):
+                # return False
+    #     addr = NextHead(addr)
         # if idc.GetFunctionCmt(function_ea,0) != "":
         #    push_change("idc.SetFunctionCmt",shex(function_ea),idc.GetFunctionCmt(i,0))
         # elif idc.GetFunctionCmt(function_ea,1) != "":
@@ -1141,6 +1156,8 @@ def init_skelenox():
     last_saved = time.time()
 
     skel_settings.online_at_startup = True
+    if skel_hooks is not None:
+        skel_hooks.cleanup_hooks()
 
     if not get_online():
         g_logger.error("Cannot get online =(")
