@@ -4,11 +4,15 @@ import argparse
 import requests
 
 
-def send_sample(sample="", family=None):
+def send_sample(sample="", family=None, tlp=None):
     data = open(sample, 'rb').read()
 
     files = {'file': data}
     payload = {'filename': sample}
+    print tlp
+    print type(tlp)
+    if tlp is not None:
+        payload['tlp_level'] = tlp
 
     if family is not None:
         r = requests.get("http://localhost:5000/api/1.0/family/"+family)
@@ -19,6 +23,8 @@ def send_sample(sample="", family=None):
 
     r = requests.post("http://localhost:5000/api/1.0/samples/",
                       files=files, data=payload)
+    print r.status_code
+    print r.json()
     res = r.json()
     sid = res['sample']['id']
     print "Uploaded sample ID : ", sid
@@ -34,6 +40,8 @@ if __name__ == "__main__":
     parser = argparse.ArgumentParser(description="Send sample via the API")
     parser.add_argument('samples', help='the samples files', nargs='+')
     parser.add_argument('--family', help='associated family')
+    parser.add_argument('--tlp', type=int,
+            help="The TLP level, can be from 1 to 5, 1=TLPWHITE / 5=TLPBLACK")
     args = parser.parse_args()
     for sample in args.samples:
-        send_sample(sample, args.family)
+        send_sample(sample, args.family, args.tlp)

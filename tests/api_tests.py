@@ -164,6 +164,7 @@ class ApiTestCase(unittest.TestCase):
         data = json.loads(retval.data)
         self.assertEqual(data['error'], 400)
 
+
     def test_get_multiples_sample_info(self):
         retval = self.app.get('/api/1.0/samples/')
         self.assertEqual(retval.status_code, 200)
@@ -183,6 +184,9 @@ class ApiTestCase(unittest.TestCase):
         self.assertEqual(data['samples'][0]['size'], 12361)
 
     def test_get_analysis_data(self):
+        """
+            TODO
+        """
         retval = self.app.get('/api/1.0/samples/1/analysis/')
         self.assertEqual(retval.status_code, 200)
 
@@ -191,22 +195,69 @@ class ApiTestCase(unittest.TestCase):
         self.assertIn('analysis', data.keys())
 
     def test_get_analyzeit_data(self):
+        """
+            TODO
+        """
         retval = self.app.get('/api/1.0/samples/1/analysis/analyzeit/')
         self.assertEqual(retval.status_code, 200)
         data = json.loads(retval.data)
         self.assertEqual(len(data), 1)
 
     def test_get_peinfo_data(self):
+        """
+            TODO
+        """
         retval = self.app.get('/api/1.0/samples/1/analysis/peinfo/')
         self.assertEqual(retval.status_code, 200)
         data = json.loads(retval.data)
         self.assertEqual(len(data), 1)
 
     def test_get_strings_data(self):
+        """
+            TODO
+        """
         retval = self.app.get('/api/1.0/samples/1/analysis/strings/')
         self.assertEqual(retval.status_code, 200)
         data = json.loads(retval.data)
         self.assertEqual(len(data), 1)
+
+    def test_family_creation(self):
+        """
+            This will test the families creation and access
+        """
+        retval = self.app.post('/api/1.0/family/',
+                data=json.dumps(dict(name='TESTFAMILY1')),
+                content_type="application/json")
+
+        self.assertEqual(retval.status_code, 200)
+        data = json.loads(retval.data)
+        self.assertEqual(data['family'], 1)
+
+        retval = self.app.get('/api/1.0/families/')
+        self.assertEqual(retval.status_code, 200)
+        data = json.loads(retval.data)
+        self.assertEqual(len(data['families']), 1)
+        family = data['families'][0]
+        self.assertIn(family['name'], 'TESTFAMILY1')
+
+
+    def test_family_tlp(self):
+        """
+            Test the TLP level affectation for a family
+        """
+        retval = self.app.post('/api/1.0/family/',
+                data=json.dumps(dict(name='TESTFAMILY1', tlp_level=5)),
+                content_type="application/json")
+
+        self.assertEqual(retval.status_code, 200)
+
+        retval = self.app.get('/api/1.0/family/1/')
+        self.assertEqual(retval.status_code, 200)
+        data = json.loads(retval.data)
+        family = data['family']
+        self.assertEqual(family["TLP_sensibility"], 5)
+
+
 
     def test_push_comments(self):
         retval = self.push_comment(address=0xDEADBEEF, comment="TESTCOMMENT1")
