@@ -157,6 +157,8 @@ def api_post_families():
         @return the created family id
     """
     data = request.json
+    if data is None:
+        return jsonify({'error': "Invalid arguments supplied"}), 400
     fname = data['name']
     tlp_level = TLPLevel.TLPAMBER
     try:
@@ -165,8 +167,12 @@ def api_post_families():
         app.logger.warning("No TLP for family, default to AMBER")
 
     pfam = None
-    if data['parent']:
-        pfam = api.familycontrol.get_by_name(data['parent'])
+
+    try:
+        if data['parent']:
+            pfam = api.familycontrol.get_by_name(data['parent'])
+    except KeyError:
+        pass
 
     fam = api.familycontrol.create(fname, parentfamily=pfam)
     if fam is None:
@@ -186,6 +192,16 @@ def api_get_family(fname):
     data = fschema.dump(fam).data
     return jsonify({"family": data})
 
+
+@apiview.route('/family/<fid>/', methods=['GET'])
+def api_get_family_by_id(fid):
+    fam = api.familycontrol.get_by_id(fid)
+    if fam is None:
+        result = None
+    else:
+        schema = FamilySchema()
+        result = schema.dump(fam).data
+    return jsonify({"family": result})
 
 @apiview.route('/family/<fam_name>', methods=['POST'])
 def api_post_family(fam_name):
