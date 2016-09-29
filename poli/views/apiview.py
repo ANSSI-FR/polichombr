@@ -13,6 +13,7 @@ import os
 from poli import api, apiview, app
 from poli.models.family import FamilySchema
 from poli.models.sample import Sample, SampleSchema
+from poli.models.models import TLPLevel
 
 from flask import jsonify, request, redirect, send_file, abort, make_response
 
@@ -142,6 +143,9 @@ def api_family_export_samplesioc(family_id, tlp_level):
 
 @apiview.route('/families/', methods=['GET'])
 def api_get_families():
+    """
+        Exports all the families
+    """
     result = api.familycontrol.get_all_schema()
     return jsonify(result)
 
@@ -154,14 +158,21 @@ def api_post_families():
     """
     data = request.json
     fname = data['name']
+    tlp_level = TLPLevel.TLPAMBER
+    try:
+        tlp_level = data['tlp_level']
+    except KeyError:
+        app.logger.warning("No TLP for family, default to AMBER")
+
+    pfam = None
     if data['parent']:
         pfam = api.familycontrol.get_by_name(data['parent'])
-        fam = api.familycontrol.create(fname, parentfamily=pfam)
-    else:
-        fam = api.familycontrol.create(fname)
+
+    fam = api.familycontrol.create(fname, parentfamily=pfam)
     if fam is None:
-        fid = 0
+        fid = None
     else:
+        api.familycontrol.set_tlp_level(fam, tlp_level, no_propagation=True)
         fid = fam.id
     return jsonify({'family': fid})
 
@@ -229,15 +240,35 @@ def api_post_samples():
     @arg: binary data : the sample content
     @return : the sample ID
     """
+
     mfile = request.files['file']
     if not mfile:
-        return -1
-    orig_filename = request.form['filename']
-    sid = api.create_sample_and_run_analysis(mfile, orig_filename)
-    if sid == -1:
-        return redirect('404')
+        return jsonify({'error': "You must provide a file object for sample creation"}, 400)
 
-    result = api.samplecontrol.schema_export(sid)
+    tlp_level = TLPLevel.TLPAMBER
+    try:
+        tlp_level = int(request.form["tlp_level"])
+    except KeyError:
+        app.logger.debug("Could not find the tlp_level key")
+        pass
+
+    orig_filename = request.form['filename']
+    msample = api.create_sample_and_run_analysis(mfile, orig_filename)
+    if msample is None:
+        return jsonify({'error': "Cannot create sample"}, 500)
+
+    if tlp_level not in range(1, 6):
+        print tlp_level
+        print type(tlp_level)
+        app.logger.warning("Incorrect TLP level, defaulting to AMBER")
+        tlp_level = TLPLevel.TLPAMBER
+
+    result = api.samplecontrol.set_tlp_level(msample, tlp_level)
+    if result is False:
+        app.logger.warning("Cannot set TLP level for sample %d " % msample.id)
+
+    result = api.samplecontrol.schema_export(msample)
+
     return jsonify({'sample': result})
 
 

@@ -182,7 +182,7 @@ class SampleController(object):
             Change file's TLP level.
         """
         if TLPLevel.tostring(tlp_level) == "":
-            return None
+            return False
         for family in sample.families:
             if family.TLP_sensibility > tlp_level:
                 return False

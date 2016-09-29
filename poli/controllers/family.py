@@ -35,9 +35,8 @@ class FamilyController(object):
     def create(self, name, parentfamily=None):
         """
             @name: family name
-            @tlplevel: TLP level
             @parentfamily: parent family
-            @return None if incorrect arg, family id if created|exists
+            @return None if incorrect arg, family object if created|exists
         """
         if Family.query.filter_by(name=name).count() != 0:
             return Family.query.filter_by(name=name).first()
