@@ -31,9 +31,81 @@ Return the sample's binary file
 
 #### `/samples/<int:sid>/matches/`
 
-#### `/samples/<int:sid>/comments/`
 
 #### `/samples/<int:sid>/names/`
+Example:
+getting all the renamed functions:
+```
+	curl -XGET http://127.0.0.1/api/1.0/samples/1/names/
+```
+Result:
+```
+{
+	"names": [
+	{
+		"address": 4206256,
+		"data": "TestName1",
+		"timestamp": "2016-09-19T17:28:12.504460+00:00",
+		"type": "idanames"
+	},
+	{
+		"address": 4206262,
+		"data": "TestName2",
+		"timestamp": "2016-09-19T17:28:12.557204+00:00",
+		"type": "idanames"
+	}]
+}
+```
+
+You can also filter by address or get all the names defined after a certain timestamp
+Example:
+```
+	curl -XGET http://127.0.0.1/api/1.0/samples/1/names/?timestamp=2016-09-19T17:28:12.504460+00:00
+```
+Result:
+```
+{
+	"names": [
+	{
+		"address": 4206262,
+		"data": "TestName2",
+		"timestamp": "2016-09-19T17:28:12.557204+00:00",
+		"type": "idanames"
+	}]
+}
+```
+
+#### `/samples/<int:sid>/comments/`
+Idem as the names, get the defined comments,
+eventually filtered out by address or timestamp
+
+#### `/samples/<int:sid>/structs/`
+Get the defined structures.
+
+```
+	curl -XGET http://127.0.0.1/api/1.0/samples/1/names/
+```
+Result:
+```
+{
+  "structs": [
+    {
+      "id": 13418,
+      "members": [],
+      "name": "TestStructure2",
+      "size": 0,
+      "timestamp": "2016-09-20T07:27:19.669853+00:00"
+    },
+    {
+      "id": 13580,
+      "members": [],
+      "name": "TestStructure3",
+      "size": 0,
+      "timestamp": "2016-09-20T07:28:29.180566+00:00"
+    }
+  ]
+}
+```
 
 
 ## `/families/`

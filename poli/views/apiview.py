@@ -36,7 +36,9 @@ def api_404_handler(error):
 
 @apiview.errorhandler(500)
 def api_500_handler(error):
-    return jsonify({'error': 500}), 500
+    return jsonify({'error': 500,
+                    'error_description':error.description,
+                    'error_message': error.message}), 500
 
 
 @apiview.errorhandler(400)
@@ -44,7 +46,6 @@ def api_400_handler(error):
     return jsonify({'error': 400,
                     'error_description': error.description,
                     'error_message': error.message}), 400
-
 
 @apiview.route('/api/')
 @apiview.route('/')
@@ -70,7 +71,6 @@ def api_help():
 """
     Families
 """
-
 
 @apiview.route(
     '/family/<family_id>/export/<tlp_level>/detection/yara',
@@ -158,7 +158,7 @@ def api_post_families():
     """
     data = request.json
     if data is None:
-        return jsonify({'error': "Invalid arguments supplied"}), 400
+        abort(400,"Missing arguments")
     fname = data['name']
     tlp_level = TLPLevel.TLPAMBER
     try:
@@ -224,7 +224,7 @@ def api_get_sample_id_from_hash(shash):
     elif len(shash) == 64:
         s = Sample.query.filter_by(sha256=shash).first()
     else:
-        abort(400)
+        abort(400, "Invalid hash length")
     if s is not None:
         return jsonify({'sample_id': s.id})
     return jsonify({'sample_id': None})
@@ -259,7 +259,7 @@ def api_post_samples():
 
     mfile = request.files['file']
     if not mfile:
-        return jsonify({'error': "You must provide a file object for sample creation"}, 400)
+        abort(400, "You must provide a file object")
 
     tlp_level = TLPLevel.TLPAMBER
     try:
@@ -271,7 +271,7 @@ def api_post_samples():
     orig_filename = request.form['filename']
     msample = api.create_sample_and_run_analysis(mfile, orig_filename)
     if msample is None:
-        return jsonify({'error': "Cannot create sample"}, 500)
+        abort(500, "Cannot create sample")
 
     if tlp_level not in range(1, 6):
         print tlp_level
@@ -362,8 +362,14 @@ def api_get_sample_comments(sid):
                 (ie, how old you want the comments)
                 default = 0, no limit
     """
-    data = request.json
-    data = api.idacontrol.get_comments(sid)
+    data = request.args
+    current_timestamp, addr = None, None
+    if data is not None:
+        if 'timestamp' in data.keys():
+            current_timestamp = data['timestamp']
+        if 'addr' in data.keys():
+            addr = int(data['addr'], 16)
+    data = api.idacontrol.get_comments(sid, addr, current_timestamp)
     return jsonify({'comments': data})
 
 
@@ -373,10 +379,10 @@ def api_post_sample_comments(sid):
         Upload a new comment for a sample
     """
     if request.json is None:
-        abort(500)
+        abort(400, "No JSON data")
     data = request.json
-    if "address" not in data.keys():
-        abort(500)
+    if "address" not in data.keys() or "comment" not in data.keys():
+        abort(400, "Missing comment or address arguments")
     address = data['address']
     comment = data['comment']
     action_id = api.idacontrol.add_comment(address, comment)
@@ -393,13 +399,13 @@ def api_get_sample_names(sid):
         @arg : timestamp Limit the timeframe for names
                 default = 0, no limit
     """
-    data = request.json
+    data = request.args
     current_timestamp, addr = None, None
     if data is not None:
         if 'timestamp' in data.keys():
             current_timestamp = data['timestamp']
         if 'addr' in data.keys():
-            addr = data['addr']
+            addr = int(data['addr'], 16)
     data = api.idacontrol.get_names(sid, addr, current_timestamp)
     return jsonify({'names': data})
 
@@ -426,7 +432,7 @@ def api_post_sample_names(sid):
 def api_create_struct(sid):
     data = request.json
     if data is None:
-        abort(500)
+        abort(400, "Missing JSON data")
     result = False
     name = data['name']
     app.logger.debug("Creating structure %s" % name)
@@ -437,7 +443,10 @@ def api_create_struct(sid):
 
 @apiview.route('/samples/<int:sid>/structs/', methods=['GET'])
 def api_get_sample_structs(sid):
-    structs = api.idacontrol.get_structs(sid)
+    timestamp = None
+    if request.args is not None and 'timestamp' in request.args.keys():
+        timestamp = request.args['timestamp']
+    structs = api.idacontrol.get_structs(sid, timestamp)
     return jsonify({'structs': structs})
 
 
@@ -455,7 +464,7 @@ def api_create_struct_member(sid, struct_id):
     structs = None
     data = request.json
     if data is None:
-        abort(500)
+        abort(400, "Missing JSON data")
     name = data["name"]
     size = data["size"]
     offset = data["offset"]
@@ -471,7 +480,7 @@ def api_create_struct_member(sid, struct_id):
 def api_update_struct_member(sid, struct_id):
     data = request.json
     if data is None:
-        abort(500)
+        abort(400, "Missing JSON data")
     mid = data["mid"]
     result = False
     if 'newname' in data.keys():
