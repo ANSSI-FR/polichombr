@@ -31,4 +31,4 @@ class TLPLevel:
 
     @classmethod
     def fromstring(cls, val):
-        return getattr(cls, s, None)
+        return getattr(cls, val, None)
