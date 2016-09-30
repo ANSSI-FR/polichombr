@@ -459,13 +459,13 @@ def api_get_sample_structs(sid):
 
 @apiview.route('/samples/<int:sid>/structs/<int:struct_id>/', methods=['GET'])
 def api_get_one_structs(sid, struct_id):
-    structs = api.idacontrol.get_one_struct(sid, struct_id)
+    structs = api.idacontrol.get_one_struct(struct_id)
 
     return jsonify({'structs': structs})
 
 
 @apiview.route('/samples/<int:sid>/structs/<int:struct_id>/members/',
-                methods=['POST'])
+               methods=['POST'])
 def api_create_struct_member(sid, struct_id):
     result = False
     data = request.json
@@ -485,7 +485,7 @@ def api_create_struct_member(sid, struct_id):
 
 
 @apiview.route('/samples/<int:sid>/structs/<int:struct_id>/members/',
-                methods=['PATCH'])
+               methods=['PATCH'])
 def api_update_struct_member(sid, struct_id):
     data = request.json
     if data is None:
@@ -493,14 +493,16 @@ def api_update_struct_member(sid, struct_id):
     mid = data["mid"]
     result = False
     if 'newname' in data.keys():
-        result = api.idacontrol.change_struct_member_name(sid, mid, data["newname"])
+        result = api.idacontrol.change_struct_member_name(sid, mid,
+                                                          data["newname"])
     if 'newsize' in data.keys():
-        result = api.idacontrol.change_struct_member_size(sid, mid, data["newsize"])
+        result = api.idacontrol.change_struct_member_size(sid, mid,
+                                                          data["newsize"])
     return jsonify({'result': result})
 
 
 @apiview.route('/samples/<int:sid>/structs/<int:struct_id>/members/',
-                methods=['GET'])
+               methods=['GET'])
 def api_get_struct_member(sid, struct_id):
     result = False
     structs = None
@@ -508,7 +510,7 @@ def api_get_struct_member(sid, struct_id):
 
 
 @apiview.route('/samples/<int:sid>/structs/<int:struct_id>/members/',
-                methods=['DELETE'])
+               methods=['DELETE'])
 def api_delete_struct_member(sid, struct_id):
     """
         TODO : implement and test
