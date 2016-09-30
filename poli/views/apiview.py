@@ -346,10 +346,21 @@ def api_set_sample_abstract(sid):
         @arg: abstract Markdown for the abstract
     """
     data = request.json
+    if data is None or 'abstract' not in data.keys():
+        abort(400, 'Invalid JSON data provided')
     abstract = data['abstract']
     samp = api.samplecontrol.get_by_id(sid)
     result = api.samplecontrol.set_abstract(samp, abstract)
     return jsonify({'result': result})
+
+@apiview.route('/samples/<int:sid>/abstract/', methods=['GET'])
+def api_get_sample_abstract(sid):
+    sample = api.samplecontrol.get_by_id(sid)
+    if sample is None:
+        abort(404)
+    result = sample.abstract
+    return jsonify({'abstract':result})
+
 
 
 @apiview.route('/samples/<int:sid>/comments/', methods=['GET'])
