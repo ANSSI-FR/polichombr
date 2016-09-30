@@ -1,13 +1,19 @@
-sudo: required
+sudo: false
+
+addons:
+  apt:
+    packages:
+      - ruby
+      - libffi-dev
+      - python-dev
+      - graphviz
+      - gcc
+      - libssl-dev
 
 language: python
 
 python:
   - 2.7
-
-before_install:
-  - sudo apt-get -qq update
-  - sudo apt-get install -qq -y ruby libffi-dev python-dev graphviz gcc libssl-dev
 
 install:
   - wget https://github.com/jjyg/metasm/archive/master.zip

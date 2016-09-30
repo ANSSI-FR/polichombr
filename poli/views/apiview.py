@@ -13,6 +13,7 @@ import os
 from poli import api, apiview, app
 from poli.models.family import FamilySchema
 from poli.models.sample import Sample, SampleSchema
+from poli.models.models import TLPLevel
 
 from flask import jsonify, request, redirect, send_file, abort, make_response
 
@@ -35,7 +36,9 @@ def api_404_handler(error):
 
 @apiview.errorhandler(500)
 def api_500_handler(error):
-    return jsonify({'error': 500}), 500
+    return jsonify({'error': 500,
+                    'error_description':error.description,
+                    'error_message': error.message}), 500
 
 
 @apiview.errorhandler(400)
@@ -43,7 +46,6 @@ def api_400_handler(error):
     return jsonify({'error': 400,
                     'error_description': error.description,
                     'error_message': error.message}), 400
-
 
 @apiview.route('/api/')
 @apiview.route('/')
@@ -69,7 +71,6 @@ def api_help():
 """
     Families
 """
-
 
 @apiview.route(
     '/family/<family_id>/export/<tlp_level>/detection/yara',
@@ -142,6 +143,9 @@ def api_family_export_samplesioc(family_id, tlp_level):
 
 @apiview.route('/families/', methods=['GET'])
 def api_get_families():
+    """
+        Exports all the families
+    """
     result = api.familycontrol.get_all_schema()
     return jsonify(result)
 
@@ -153,15 +157,28 @@ def api_post_families():
         @return the created family id
     """
     data = request.json
+    if data is None:
+        abort(400,"Missing arguments")
     fname = data['name']
-    if data['parent']:
-        pfam = api.familycontrol.get_by_name(data['parent'])
-        fam = api.familycontrol.create(fname, parentfamily=pfam)
-    else:
-        fam = api.familycontrol.create(fname)
+    tlp_level = TLPLevel.TLPAMBER
+    try:
+        tlp_level = data['tlp_level']
+    except KeyError:
+        app.logger.warning("No TLP for family, default to AMBER")
+
+    pfam = None
+
+    try:
+        if data['parent']:
+            pfam = api.familycontrol.get_by_name(data['parent'])
+    except KeyError:
+        pass
+
+    fam = api.familycontrol.create(fname, parentfamily=pfam)
     if fam is None:
-        fid = 0
+        fid = None
     else:
+        api.familycontrol.set_tlp_level(fam, tlp_level, no_propagation=True)
         fid = fam.id
     return jsonify({'family': fid})
 
@@ -175,6 +192,16 @@ def api_get_family(fname):
     data = fschema.dump(fam).data
     return jsonify({"family": data})
 
+
+@apiview.route('/family/<fid>/', methods=['GET'])
+def api_get_family_by_id(fid):
+    fam = api.familycontrol.get_by_id(fid)
+    if fam is None:
+        result = None
+    else:
+        schema = FamilySchema()
+        result = schema.dump(fam).data
+    return jsonify({"family": result})
 
 @apiview.route('/family/<fam_name>', methods=['POST'])
 def api_post_family(fam_name):
@@ -197,7 +224,7 @@ def api_get_sample_id_from_hash(shash):
     elif len(shash) == 64:
         s = Sample.query.filter_by(sha256=shash).first()
     else:
-        abort(400)
+        abort(400, "Invalid hash length")
     if s is not None:
         return jsonify({'sample_id': s.id})
     return jsonify({'sample_id': None})
@@ -229,15 +256,35 @@ def api_post_samples():
     @arg: binary data : the sample content
     @return : the sample ID
     """
+
     mfile = request.files['file']
     if not mfile:
-        return -1
-    orig_filename = request.form['filename']
-    sid = api.create_sample_and_run_analysis(mfile, orig_filename)
-    if sid == -1:
-        return redirect('404')
+        abort(400, "You must provide a file object")
 
-    result = api.samplecontrol.schema_export(sid)
+    tlp_level = TLPLevel.TLPAMBER
+    try:
+        tlp_level = int(request.form["tlp_level"])
+    except KeyError:
+        app.logger.debug("Could not find the tlp_level key")
+        pass
+
+    orig_filename = request.form['filename']
+    msample = api.create_sample_and_run_analysis(mfile, orig_filename)
+    if msample is None:
+        abort(500, "Cannot create sample")
+
+    if tlp_level not in range(1, 6):
+        print tlp_level
+        print type(tlp_level)
+        app.logger.warning("Incorrect TLP level, defaulting to AMBER")
+        tlp_level = TLPLevel.TLPAMBER
+
+    result = api.samplecontrol.set_tlp_level(msample, tlp_level)
+    if result is False:
+        app.logger.warning("Cannot set TLP level for sample %d " % msample.id)
+
+    result = api.samplecontrol.schema_export(msample)
+
     return jsonify({'sample': result})
 
 
@@ -315,8 +362,14 @@ def api_get_sample_comments(sid):
                 (ie, how old you want the comments)
                 default = 0, no limit
     """
-    data = request.json
-    data = api.idacontrol.get_comments(sid)
+    data = request.args
+    current_timestamp, addr = None, None
+    if data is not None:
+        if 'timestamp' in data.keys():
+            current_timestamp = data['timestamp']
+        if 'addr' in data.keys():
+            addr = int(data['addr'], 16)
+    data = api.idacontrol.get_comments(sid, addr, current_timestamp)
     return jsonify({'comments': data})
 
 
@@ -326,10 +379,10 @@ def api_post_sample_comments(sid):
         Upload a new comment for a sample
     """
     if request.json is None:
-        abort(500)
+        abort(400, "No JSON data")
     data = request.json
-    if "address" not in data.keys():
-        abort(500)
+    if "address" not in data.keys() or "comment" not in data.keys():
+        abort(400, "Missing comment or address arguments")
     address = data['address']
     comment = data['comment']
     action_id = api.idacontrol.add_comment(address, comment)
@@ -346,13 +399,13 @@ def api_get_sample_names(sid):
         @arg : timestamp Limit the timeframe for names
                 default = 0, no limit
     """
-    data = request.json
+    data = request.args
     current_timestamp, addr = None, None
     if data is not None:
         if 'timestamp' in data.keys():
             current_timestamp = data['timestamp']
         if 'addr' in data.keys():
-            addr = data['addr']
+            addr = int(data['addr'], 16)
     data = api.idacontrol.get_names(sid, addr, current_timestamp)
     return jsonify({'names': data})
 
@@ -379,7 +432,7 @@ def api_post_sample_names(sid):
 def api_create_struct(sid):
     data = request.json
     if data is None:
-        abort(500)
+        abort(400, "Missing JSON data")
     result = False
     name = data['name']
     app.logger.debug("Creating structure %s" % name)
@@ -390,7 +443,10 @@ def api_create_struct(sid):
 
 @apiview.route('/samples/<int:sid>/structs/', methods=['GET'])
 def api_get_sample_structs(sid):
-    structs = api.idacontrol.get_structs(sid)
+    timestamp = None
+    if request.args is not None and 'timestamp' in request.args.keys():
+        timestamp = request.args['timestamp']
+    structs = api.idacontrol.get_structs(sid, timestamp)
     return jsonify({'structs': structs})
 
 
@@ -408,7 +464,7 @@ def api_create_struct_member(sid, struct_id):
     structs = None
     data = request.json
     if data is None:
-        abort(500)
+        abort(400, "Missing JSON data")
     name = data["name"]
     size = data["size"]
     offset = data["offset"]
@@ -424,7 +480,7 @@ def api_create_struct_member(sid, struct_id):
 def api_update_struct_member(sid, struct_id):
     data = request.json
     if data is None:
-        abort(500)
+        abort(400, "Missing JSON data")
     mid = data["mid"]
     result = False
     if 'newname' in data.keys():

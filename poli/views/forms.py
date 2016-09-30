@@ -8,7 +8,7 @@
         Forms used in the web interface.
 """
 
-from flask_wtf import Form
+from flask_wtf import FlaskForm
 from flask_security import RegisterForm
 from wtforms import StringField, FileField, SelectField
 from wtforms import SubmitField, TextAreaField, BooleanField
@@ -22,7 +22,7 @@ from poli.models.models import TLPLevel
     USER forms.
 """
 
-class ChgThemeForm(Form):
+class ChgThemeForm(FlaskForm):
     """
     Change user's theme.
     """
@@ -35,7 +35,7 @@ class ChgThemeForm(Form):
     changetheme = SubmitField(u'Submit')
 
 
-class ChgNickForm(Form):
+class ChgNickForm(FlaskForm):
     """
     Change user's nickname (login).
     """
@@ -43,7 +43,7 @@ class ChgNickForm(Form):
     changenick = SubmitField(u'Submit')
 
 
-class ChgNameForm(Form):
+class ChgNameForm(FlaskForm):
     """
     Change user's full name.
     """
@@ -51,7 +51,7 @@ class ChgNameForm(Form):
     changename = SubmitField(u'Submit')
 
 
-class ChgPassForm(Form):
+class ChgPassForm(FlaskForm):
     """
     Change user's password.
     """
@@ -66,7 +66,7 @@ class ChgPassForm(Form):
     changepass = SubmitField(u'Submit')
 
 
-class LoginForm(Form):
+class LoginForm(FlaskForm):
     """
     User login.
     """
@@ -75,7 +75,7 @@ class LoginForm(Form):
     userlogin = SubmitField(u'Submit')
 
 
-class UserRegistrationForm(Form):
+class UserRegistrationForm(FlaskForm):
     """
     User registration.
     """
@@ -98,7 +98,7 @@ class UserRegistrationForm(Form):
 """
 
 
-class CreateCheckListForm(Form):
+class CreateCheckListForm(FlaskForm):
     """
     Create new checklist item.
     """
@@ -114,7 +114,7 @@ class CreateCheckListForm(Form):
 """
 
 
-class YaraForm(Form):
+class YaraForm(FlaskForm):
     """
     Create yara.
     """
@@ -139,7 +139,7 @@ class YaraForm(Form):
 """
 
 
-class FamilyForm(Form):
+class FamilyForm(FlaskForm):
     """
     Create family.
     """
@@ -147,7 +147,7 @@ class FamilyForm(Form):
     createfamily = SubmitField(u'Submit')
 
 
-class AddSubFamilyForm(Form):
+class AddSubFamilyForm(FlaskForm):
     """
     Create sub-family.
     """
@@ -155,7 +155,7 @@ class AddSubFamilyForm(Form):
     subfamily = SubmitField(u'Create')
 
 
-class UploadFamilyFileForm(Form):
+class UploadFamilyFileForm(FlaskForm):
     """
     Add family file.
     """
@@ -173,7 +173,7 @@ class UploadFamilyFileForm(Form):
     uploadfile = SubmitField(u'Submit')
 
 
-class CreateDetectionItemForm(Form):
+class CreateDetectionItemForm(FlaskForm):
     """
     Add detection item.
     """
@@ -206,7 +206,7 @@ class CreateDetectionItemForm(Form):
     createitem = SubmitField(u'Create')
 
 
-class ChangeTLPForm(Form):
+class ChangeTLPForm(FlaskForm):
     """
     Change TLP level.
     """
@@ -223,7 +223,7 @@ class ChangeTLPForm(Form):
     changetlp = SubmitField(u'Change TLP level')
 
 
-class ChangeStatusForm(Form):
+class ChangeStatusForm(FlaskForm):
     """
     Change analysis status.
     """
@@ -241,7 +241,7 @@ class ChangeStatusForm(Form):
     changestatus = SubmitField(u'Change status')
 
 
-class AddYaraToFamilyForm(Form):
+class AddYaraToFamilyForm(FlaskForm):
     """
     Add yara rule.
     """
@@ -253,7 +253,7 @@ class AddYaraToFamilyForm(Form):
     addyarafam = SubmitField(u'Submit')
 
 
-class RenameForm(Form):
+class RenameForm(FlaskForm):
     """
     Rename.
     """
@@ -262,7 +262,7 @@ class RenameForm(Form):
     rename = SubmitField(u'Rename')
 
 
-class FamilyAbstractForm(Form):
+class FamilyAbstractForm(FlaskForm):
     """
     Edit abstract.
     """
@@ -274,7 +274,7 @@ class FamilyAbstractForm(Form):
     familyabstract = SubmitField(u'Submit')
 
 
-class ExportFamilyForm(Form):
+class ExportFamilyForm(FlaskForm):
     """
     Export family data.
     """
@@ -306,7 +306,7 @@ class ExportFamilyForm(Form):
 """
 
 
-class UploadSampleForm(Form):
+class UploadSampleForm(FlaskForm):
     """
     Upload sample.
     """
@@ -324,7 +324,7 @@ class UploadSampleForm(Form):
     uploadsample = SubmitField(u'Submit')
 
 
-class AddSampleToFamilyForm(Form):
+class AddSampleToFamilyForm(FlaskForm):
     """
     Add sample to family.
     """
@@ -336,7 +336,7 @@ class AddSampleToFamilyForm(Form):
     addsample = SubmitField(u'Submit')
 
 
-class SampleAbstractForm(Form):
+class SampleAbstractForm(FlaskForm):
     """
     Edit abstract.
     """
@@ -347,7 +347,7 @@ class SampleAbstractForm(Form):
     sampleabstract = SubmitField(u'Submit')
 
 
-class CompareMachocForm(Form):
+class CompareMachocForm(FlaskForm):
     """
     Compare to other samples.
     """
@@ -356,7 +356,7 @@ class CompareMachocForm(Form):
     compare = SubmitField(u'Compare!')
 
 
-class ExportMachexForm(Form):
+class ExportMachexForm(FlaskForm):
     """
     Export MACHEX data.
     """
@@ -375,7 +375,7 @@ class ExportMachexForm(Form):
     export = SubmitField(u'Submit')
 
 
-class ImportForm(Form):
+class ImportForm(FlaskForm):
     """
     Import MACHEX data.
     """
@@ -399,7 +399,7 @@ class ImportForm(Form):
 """
 
 
-class FullTextSearchForm(Form):
+class FullTextSearchForm(FlaskForm):
     """
     Full-text search.
     """
@@ -407,7 +407,7 @@ class FullTextSearchForm(Form):
     search = SubmitField(u'Submit')
 
 
-class MachocHashSearchForm(Form):
+class MachocHashSearchForm(FlaskForm):
     """
     Full machoc hash search.
     """
@@ -416,7 +416,7 @@ class MachocHashSearchForm(Form):
     search = SubmitField(u'Submit')
 
 
-class HashSearchForm(Form):
+class HashSearchForm(FlaskForm):
     """
     Hash search.
     """
