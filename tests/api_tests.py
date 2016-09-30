@@ -50,7 +50,7 @@ class ApiTestCase(unittest.TestCase):
                                data=dict({'file': (data, "toto")},
                                          level=1, family=0),
                                follow_redirects=True)
-        sleep(2)
+        sleep(1)
         return retval
 
     def push_comment(self, sid=1, address=None, comment=None):
@@ -340,8 +340,6 @@ class ApiTestCase(unittest.TestCase):
         self.assertEqual(len(data["structs"]), 1)
 
 
-
-
     def test_push_name(self):
         """
             Simulate a renaming done from IDA
@@ -575,6 +573,20 @@ class ApiTestCase(unittest.TestCase):
         # adopt the same behavior as IDA and remove the second member
         # TODO!!!
         # self.assertTrue(False)
+
+    def test_sample_abstract(self):
+        data = json.dumps(dict(abstract="This is a test for abstract"))
+        retval = self.app.post('/api/1.0/samples/1/abstract/', data=data,
+                               content_type="application/json")
+        self.assertEqual(retval.status_code, 200)
+        result = json.loads(retval.data)
+        self.assertTrue(result['result'])
+
+        retval = self.app.get('/api/1.0/samples/1/abstract/')
+        self.assertEqual(retval.status_code, 200)
+        result = json.loads(retval.data)
+        self.assertIn(result['abstract'], 'This is a test for abstract')
+
 
 
 if __name__ == '__main__':
