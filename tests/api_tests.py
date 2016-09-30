@@ -3,6 +3,7 @@ import os
 import unittest
 import tempfile
 import json
+import datetime
 from time import sleep
 from StringIO import StringIO
 
@@ -299,6 +300,47 @@ class ApiTestCase(unittest.TestCase):
         self.assertEqual(data['comments'][0]["address"], 0xDEADBEEF)
         self.assertIn(data['comments'][1]["data"], "TESTCOMMENT2")
         self.assertEqual(data['comments'][1]["address"], 0xBADF00D)
+
+
+    def test_action_timestamp(self):
+        self.push_comment(address=0xDEADBEEF, comment="TESTCOMMENT1")
+        offset = str(datetime.datetime.now() + datetime.timedelta(days=1))
+        retval = self.app.get('/api/1.0/samples/1/comments/?timestamp='+offset)
+        self.assertEqual(retval.status_code, 200)
+        data = json.loads(retval.data)
+        self.assertEqual(len(data["comments"]), 0)
+
+        retval = self.app.get('/api/1.0/samples/1/comments/')
+        self.assertEqual(retval.status_code, 200)
+        data = json.loads(retval.data)
+        self.assertEqual(len(data["comments"]), 1)
+
+        self.push_name(address=0xDEADBEEF, name="TESTNAME")
+        offset = str(datetime.datetime.now() + datetime.timedelta(days=1))
+        retval = self.app.get('/api/1.0/samples/1/names/?timestamp='+offset)
+        self.assertEqual(retval.status_code, 200)
+        data = json.loads(retval.data)
+        self.assertEqual(len(data["names"]), 0)
+
+        retval = self.app.get('/api/1.0/samples/1/names/')
+        self.assertEqual(retval.status_code, 200)
+        data = json.loads(retval.data)
+        self.assertEqual(len(data["names"]), 1)
+
+        self.create_struct(name="TESTSTRUCTURE")
+        offset = str(datetime.datetime.now() + datetime.timedelta(days=1))
+        retval = self.app.get('/api/1.0/samples/1/structs/?timestamp='+offset)
+        self.assertEqual(retval.status_code, 200)
+        data = json.loads(retval.data)
+        self.assertEqual(len(data["structs"]), 0)
+
+        retval = self.app.get('/api/1.0/samples/1/structs/')
+        self.assertEqual(retval.status_code, 200)
+        data = json.loads(retval.data)
+        self.assertEqual(len(data["structs"]), 1)
+
+
+
 
     def test_push_name(self):
         """
