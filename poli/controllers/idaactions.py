@@ -111,7 +111,7 @@ class IDAActionsController(object):
         return schema.dump(data).data
 
     @staticmethod
-    def get_one_struct(sid, struct_id):
+    def get_one_struct(struct_id):
         """
             Get only one structure
         """
@@ -134,7 +134,7 @@ class IDAActionsController(object):
         return member.id
 
     @staticmethod
-    def add_member_to_struct(struct_id=None, mid=None, offset=None):
+    def add_member_to_struct(struct_id=None, mid=None):
         """
 
         """

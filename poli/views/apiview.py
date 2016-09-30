@@ -15,7 +15,7 @@ from poli.models.family import FamilySchema
 from poli.models.sample import Sample, SampleSchema
 from poli.models.models import TLPLevel
 
-from flask import jsonify, request, redirect, send_file, abort, make_response
+from flask import jsonify, request, send_file, abort, make_response
 
 
 def plain_text(data):
@@ -37,7 +37,7 @@ def api_404_handler(error):
 @apiview.errorhandler(500)
 def api_500_handler(error):
     return jsonify({'error': 500,
-                    'error_description':error.description,
+                    'error_description': error.description,
                     'error_message': error.message}), 500
 
 
@@ -46,6 +46,7 @@ def api_400_handler(error):
     return jsonify({'error': 400,
                     'error_description': error.description,
                     'error_message': error.message}), 400
+
 
 @apiview.route('/api/')
 @apiview.route('/')
@@ -67,10 +68,6 @@ def api_help():
     """
     return plain_text(text)
 
-
-"""
-    Families
-"""
 
 @apiview.route(
     '/family/<family_id>/export/<tlp_level>/detection/yara',
@@ -158,7 +155,7 @@ def api_post_families():
     """
     data = request.json
     if data is None:
-        abort(400,"Missing arguments")
+        abort(400, "Missing arguments")
     fname = data['name']
     tlp_level = TLPLevel.TLPAMBER
     try:
@@ -203,16 +200,13 @@ def api_get_family_by_id(fid):
         result = schema.dump(fam).data
     return jsonify({"family": result})
 
+
 @apiview.route('/family/<fam_name>', methods=['POST'])
 def api_post_family(fam_name):
     """
         TODO
     """
     abort(404)
-
-"""
-    Samples
-"""
 
 
 @apiview.route('/samples/<shash>/')
@@ -266,7 +260,6 @@ def api_post_samples():
         tlp_level = int(request.form["tlp_level"])
     except KeyError:
         app.logger.debug("Could not find the tlp_level key")
-        pass
 
     orig_filename = request.form['filename']
     msample = api.create_sample_and_run_analysis(mfile, orig_filename)
@@ -274,8 +267,6 @@ def api_post_samples():
         abort(500, "Cannot create sample")
 
     if tlp_level not in range(1, 6):
-        print tlp_level
-        print type(tlp_level)
         app.logger.warning("Incorrect TLP level, defaulting to AMBER")
         tlp_level = TLPLevel.TLPAMBER
 
@@ -303,13 +294,16 @@ def api_get_unique_sample(sid):
 def api_post_unique_sample(sid):
     abort(404)
 
+
 @apiview.route('/samples/<int:sid>/analysis/', methods=['GET'])
 def api_get_sample_full_analysis(sid):
     return jsonify({'analysis': 'Not implemented'})
 
+
 @apiview.route('/samples/<int:sid>/analysis/analyzeit/', methods=['GET'])
 def api_get_sample_analyzeit(sid):
     return jsonify({'analyzeit': 'Not implemented'})
+
 
 @apiview.route('/samples/<int:sid>/analysis/strings/', methods=['GET'])
 def api_get_sample_strings(sid):
@@ -353,14 +347,14 @@ def api_set_sample_abstract(sid):
     result = api.samplecontrol.set_abstract(samp, abstract)
     return jsonify({'result': result})
 
+
 @apiview.route('/samples/<int:sid>/abstract/', methods=['GET'])
 def api_get_sample_abstract(sid):
     sample = api.samplecontrol.get_by_id(sid)
     if sample is None:
         abort(404)
     result = sample.abstract
-    return jsonify({'abstract':result})
-
+    return jsonify({'abstract': result})
 
 
 @apiview.route('/samples/<int:sid>/comments/', methods=['GET'])
@@ -439,6 +433,7 @@ def api_post_sample_names(sid):
         # so if the name is created return True anyway
     return jsonify({'result': result})
 
+
 @apiview.route('/samples/<int:sid>/structs/', methods=['POST'])
 def api_create_struct(sid):
     data = request.json
@@ -450,7 +445,8 @@ def api_create_struct(sid):
     mstruct = api.idacontrol.create_struct(name=name)
     if mstruct is not False:
         result = api.samplecontrol.add_idaaction(sid, mstruct)
-    return jsonify({'result': result, 'structs':[{'id':mstruct}] })
+    return jsonify({'result': result, 'structs': [{'id': mstruct}]})
+
 
 @apiview.route('/samples/<int:sid>/structs/', methods=['GET'])
 def api_get_sample_structs(sid):
@@ -472,19 +468,21 @@ def api_get_one_structs(sid, struct_id):
                 methods=['POST'])
 def api_create_struct_member(sid, struct_id):
     result = False
-    structs = None
     data = request.json
     if data is None:
         abort(400, "Missing JSON data")
     name = data["name"]
     size = data["size"]
     offset = data["offset"]
-    mid = api.idacontrol.create_struct_member(name=name, size=size, offset=offset)
+    mid = api.idacontrol.create_struct_member(name=name,
+                                              size=size,
+                                              offset=offset)
     if mid is None:
         result = False
     else:
         result = api.idacontrol.add_member_to_struct(struct_id, mid)
     return jsonify({'result': result})
+
 
 @apiview.route('/samples/<int:sid>/structs/<int:struct_id>/members/',
                 methods=['PATCH'])
@@ -500,12 +498,14 @@ def api_update_struct_member(sid, struct_id):
         result = api.idacontrol.change_struct_member_size(sid, mid, data["newsize"])
     return jsonify({'result': result})
 
+
 @apiview.route('/samples/<int:sid>/structs/<int:struct_id>/members/',
                 methods=['GET'])
 def api_get_struct_member(sid, struct_id):
     result = False
     structs = None
     return jsonify({'result': result, 'structs': structs})
+
 
 @apiview.route('/samples/<int:sid>/structs/<int:struct_id>/members/',
                 methods=['DELETE'])

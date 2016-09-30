@@ -85,18 +85,14 @@ class FamilyStatus:
     def fromstring(cls, val):
         return getattr(cls, val, None)
 
-"""
-    Yara signatures relationship (auto-classification).
-"""
+# Yara signatures relationship (auto-classification).
 familytoyara = db.Table('familytoyara',
                         db.Column('yara_id', db.Integer,
                                   db.ForeignKey('yararule.id')),
                         db.Column('family_id', db.Integer,
                                   db.ForeignKey('family.id'))
                         )
-"""
-    Samples relationship.
-"""
+# Samples relationship.
 familytosample = db.Table('familytosample',
                           db.Column('sample_id', db.Integer,
                                     db.ForeignKey('sample.id')),
