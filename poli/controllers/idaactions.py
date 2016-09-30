@@ -130,7 +130,7 @@ class IDAActionsController(object):
         member.name = name
         member.size = size
         member.offset = offset
-        IDAStruct.db.session.add(member)
+        db.session.add(member)
         db.session.commit()
         return member.id
 
