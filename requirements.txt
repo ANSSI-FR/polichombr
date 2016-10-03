@@ -7,8 +7,8 @@ flask-sqlalchemy
 Flask-Testing
 flask-wtf
 future
+pycparser
 graphviz
-markdown
 marshmallow-sqlalchemy
 pefile
 python-magic
