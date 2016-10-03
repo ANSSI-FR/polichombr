@@ -158,12 +158,9 @@ class SkelConnection(object):
             Initiate connection handle
         """
         if self.http_debug is True:
-            self.h_conn = httplib.HTTPConnection(
-                self.poli_server, self.poli_port)
-        else:
-            self.ctx = ssl._create_unverified_context()
-            self.h_conn = httplib.HTTPSConnection(
-                self.poli_server, context=self.ctx)
+            g_logger.debug("HTTPS is not managed at the moment...")
+        self.h_conn = httplib.HTTPConnection(
+            self.poli_server, self.poli_port)
         self.h_conn.connect()
         self.is_online = True
 
@@ -251,7 +248,6 @@ class SkelConnection(object):
     def push_comment(self, address=0, comment=None):
         if comment is None:
             return False
-        global sample_id
         data = {"address": address,
                 "comment": comment}
         endpoint = self.prepare_endpoint('comments')
@@ -275,7 +271,6 @@ class SkelConnection(object):
     def push_name(self, address=0, name=None):
         if name is None:
             return False
-        global sample_id
         data = {"address": address,
                 "name": name}
         endpoint = self.prepare_endpoint('names')
@@ -304,16 +299,16 @@ def push_change(cmd, param1, param2):
     """
         XXX : todo
     """
-    global skel_conn, sample_id
+    global sample_id
     g_logger.debug("[+] " + cmd + " => " + param1 + " :: " + param2 + " -- SENT")
     return True
 
 
 def push_functions_names():
     """
-        update les noms de fonctions depuis l'idb actuel
+        Push the defined function names
     """
-    global sample_id
+    global skel_conn
 
     for addr in idautils.Functions(idc.MinEA(), idc.MaxEA()):
         fname = GetFunctionName(addr)
@@ -360,7 +355,7 @@ def execute_rename(name):
 
 
 def sync_names(full_synchro=False):
-    global sample_id, skel_conn, last_timestamp
+    global sample_id, skel_conn
 
     if not skel_conn.is_online:
         g_logger.error("[!] Error, cannot sync while offline")

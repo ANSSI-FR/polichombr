@@ -394,6 +394,7 @@ class ApiTestCase(unittest.TestCase):
         """
         # create structs
         retval = self.create_struct(sid=1, name="StructName1")
+        self.assertEqual(retval.status_code, 200)
         data = json.loads(retval.data)
         self.assertTrue(data["result"])
 
@@ -403,6 +404,7 @@ class ApiTestCase(unittest.TestCase):
 
         # get the structs
         retval = self.get_all_structs(sid=1)
+        self.assertEqual(retval.status_code, 200)
         data = json.loads(retval.data)
         self.assertEqual(2, len(data["structs"]))
         struct1 = data["structs"][0]
@@ -467,6 +469,7 @@ class ApiTestCase(unittest.TestCase):
                 offset=8)
 
         retval = self.get_one_struct(sid=1, struct_id=1)
+        self.assertEqual(retval.status_code, 200)
         data = json.loads(retval.data)
 
         struct = data["structs"]

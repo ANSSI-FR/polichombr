@@ -3,6 +3,7 @@
     Global app configuration
 """
 import os
+import uuid
 DEBUG = True
 BASE_DIR = os.path.abspath(os.path.dirname(__file__))
 
@@ -22,11 +23,11 @@ BOOTSTRAP_SERVE_LOCAL = True
 
 # security options
 CSRF_ENABLED     = True
-CSRF_SESSION_KEY = "secret"
-SECRET_KEY = "secret"
+CSRF_SESSION_KEY = str(uuid.uuid4())
+SECRET_KEY = str(uuid.uuid4())
 USERS_CAN_REGISTER = True
 SECURITY_PASSWORD_HASH = 'pbkdf2_sha512'
-SECURITY_PASSWORD_SALT = 'secret'
+SECURITY_PASSWORD_SALT = 'CHANGEMEINPRODUCTION'
 SECURITY_TRACKABLE = True
 
 

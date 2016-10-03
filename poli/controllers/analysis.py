@@ -83,7 +83,6 @@ class AnalysisFactory(object):
             except Exception as e:
                 app.logger.error("Could not load task %s : %s" % (p_name, e))
                 app.logger.exception(e)
-                pass
         return True
 
 
