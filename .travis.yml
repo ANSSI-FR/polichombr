@@ -17,8 +17,9 @@ python:
 
 install:
   - pip install -r requirements.txt
+  - pip install coverage
 
 before_script:
   - python utils/db_create.py
 
-script: python tests/full_tests.py && python tests/api_tests.py
+script: coverage run -m unittest discover tests/
