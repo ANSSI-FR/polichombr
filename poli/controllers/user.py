@@ -50,7 +50,7 @@ class UserController(object):
         if User.query.count() == 1:
             role = user_datastore.find_or_create_role("admin",
                                                       description="Administrator")
-            if role != None:
+            if role is not None:
                 user_datastore.add_role_to_user(myuser, role)
             else:
                 app.logger.error("Cannot find and affect admin role to user")

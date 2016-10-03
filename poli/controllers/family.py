@@ -199,18 +199,14 @@ class FamilyController(object):
         db.session.commit()
         return True
 
-    """
-
-        EXPORTS
-
-    """
-
     @staticmethod
     def generate_samples_zip_file(family, tlp_level):
         """
-            Generates a sample ZIP file. We actually store it in the storage under a
-            unique filename : family-tlp_level-sha256(samples sha256). By doing this
-            we may avoid losing time generating already generated files.
+            Generates a sample ZIP file.
+            We actually store it in the storage under a
+            unique filename : family-tlp_level-sha256(samples sha256).
+            By doing this we may avoid losing time generating already
+            generated files.
 
             TODO: move to temp folder to avoid disk storage overload.
         """
@@ -348,12 +344,6 @@ class FamilyController(object):
         generated_output += '</ioc>'
         return generated_output
 
-    """
-
-        ATTACHMENTS MANAGEMENT
-
-    """
-
     @staticmethod
     def add_file(filedata, filename, description, tlp_level, family):
         """
@@ -392,12 +382,6 @@ class FamilyController(object):
             Gets an attached file.
         """
         return FamilyDataFile.query.get(file_id)
-
-    """
-
-        DETECTION ITEMS MANAGEMENT
-
-    """
 
     @staticmethod
     def get_detection_item_by_id(item_id):

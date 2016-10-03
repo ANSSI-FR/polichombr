@@ -16,9 +16,6 @@ python:
   - 2.7
 
 install:
-  - wget https://github.com/jjyg/metasm/archive/master.zip
-  - unzip master.zip
-  - mv metasm-master metasm
   - pip install -r requirements.txt
 
 before_script:

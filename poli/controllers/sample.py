@@ -577,7 +577,6 @@ class SampleController(object):
                         src_addresses_identified.append(i.address)
                         dst_addresses_identified.append(j.address)
                         break
-        cc = 0
         # n-grams hits
         for i in src_ngrams_hashes:
             if src_hashes.count(i[ngram_mid]) == 1 and dst_hashes.count(
@@ -586,8 +585,6 @@ class SampleController(object):
             if i in dst_ngrams_hashes:
                 if src_ngrams_hashes.count(
                         i) == 1 and dst_ngrams_hashes.count(i) == 1:
-                    src_ngram_found = []
-                    dst_ngram_found = []
                     src_function = None
                     dst_function = None
                     tmp1 = []
@@ -653,7 +650,7 @@ class SampleController(object):
             try:
                 metadata_value = str(metadata_value)
             except Exception as e:
-                app.logger.error("Invalid metadata supplied")
+                app.logger.exception(e)
                 return False
         for s_metadata in sample.s_metadata:
             if s_metadata.type_id == metadata_type and s_metadata.value == metadata_value:
@@ -792,7 +789,7 @@ class SampleController(object):
     @staticmethod
     def get_sample_function_by_address(sample, address):
         if isinstance(address, str):
-            adress = int(address, 16)
+            address = int(address, 16)
         for functioninfo in sample.functions:
             # TODO : there is a bug in here.
             if int(functioninfo.address) == address:

@@ -14,7 +14,7 @@ from poli import app, db
 from poli.models.idaactions import IDANameAction, IDACommentAction
 from poli.models.idaactions import IDAAction, IDAActionSchema
 from poli.models.idaactions import IDAStruct, IDAStructSchema
-from poli.models.idaactions import IDAStructMember, IDAStructSchema
+from poli.models.idaactions import IDAStructMember
 from poli.models.sample import Sample
 
 
@@ -37,7 +37,7 @@ class IDAActionsController(object):
         return comment.id
 
     @staticmethod
-    def filter_actions(action_type,sid, addr=None, timestamp=None):
+    def filter_actions(action_type, sid, addr=None, timestamp=None):
         query = IDAAction.query.filter_by(type=action_type)
 
         if addr is not None:
@@ -111,7 +111,7 @@ class IDAActionsController(object):
         return schema.dump(data).data
 
     @staticmethod
-    def get_one_struct(sid, struct_id):
+    def get_one_struct(struct_id):
         """
             Get only one structure
         """
@@ -120,7 +120,6 @@ class IDAActionsController(object):
 
         schema = IDAStructSchema()
         return schema.dump(data).data
-
 
     @staticmethod
     def create_struct_member(name=None, size=None, offset=None):
@@ -135,7 +134,7 @@ class IDAActionsController(object):
         return member.id
 
     @staticmethod
-    def add_member_to_struct(struct_id=None, mid=None, offset=None):
+    def add_member_to_struct(struct_id=None, mid=None):
         """
 
         """

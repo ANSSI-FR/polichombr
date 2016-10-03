@@ -10,10 +10,7 @@
 """
 
 from poli import db, ma
-from flask_security import Security, SQLAlchemyUserDatastore
 from flask_security import UserMixin, RoleMixin
-from werkzeug.security import generate_password_hash, check_password_hash
-
 
 usersample = db.Table('usersample',
                       db.Column('user_id', db.Integer,
@@ -30,8 +27,12 @@ userfamily = db.Table('userfamily',
                       )
 
 roles_users = db.Table('roles_users',
-        db.Column('user_id', db.Integer(), db.ForeignKey('user.id')),
-        db.Column('role_id', db.Integer(), db.ForeignKey('auth_role.id')))
+                       db.Column('user_id',
+                                 db.Integer(),
+                                 db.ForeignKey('user.id')),
+                       db.Column('role_id',
+                                 db.Integer(),
+                                 db.ForeignKey('auth_role.id')))
 
 
 class Role(db.Model, RoleMixin):
@@ -48,7 +49,7 @@ class Role(db.Model, RoleMixin):
         self.description = description
 
     def toString(self):
-        return {"name" : self.name, "description" : self.description}
+        return {"name": self.name, "description": self.description}
 
     def __repr__(self):
         return '<Role %r>' % self.name
@@ -81,8 +82,6 @@ class User(db.Model, UserMixin):
     roles = db.relationship('Role',
                             secondary=roles_users,
                             backref=db.backref('users', lazy='dynamic'))
-
-
 
     last_login_at = db.Column(db.DateTime())
     current_login_at = db.Column(db.DateTime())

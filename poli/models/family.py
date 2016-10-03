@@ -48,7 +48,7 @@ class DetectionType:
 
     @classmethod
     def fromstring(cls, val):
-        return getattr(cls, s, None)
+        return getattr(cls, val, None)
 
 
 class FamilyDataFile(db.Model):
@@ -83,20 +83,16 @@ class FamilyStatus:
 
     @classmethod
     def fromstring(cls, val):
-        return getattr(cls, s, None)
+        return getattr(cls, val, None)
 
-"""
-    Yara signatures relationship (auto-classification).
-"""
+# Yara signatures relationship (auto-classification).
 familytoyara = db.Table('familytoyara',
                         db.Column('yara_id', db.Integer,
                                   db.ForeignKey('yararule.id')),
                         db.Column('family_id', db.Integer,
                                   db.ForeignKey('family.id'))
                         )
-"""
-    Samples relationship.
-"""
+# Samples relationship.
 familytosample = db.Table('familytosample',
                           db.Column('sample_id', db.Integer,
                                     db.ForeignKey('sample.id')),
@@ -163,7 +159,6 @@ class FamilySchema(ma.ModelSchema):
                   'parent_id',
                   'subfamilies',  # TODO make the families jsonable
                   'samples',
-                  #'parents',
                   'abstract',
                   'status',
                   'TLP_sensibility'
