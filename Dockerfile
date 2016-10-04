@@ -30,17 +30,17 @@ ADD https://github.com/anssi-fr/polichombr/tarball/master poli.tar.gz
 RUN mv poli.tar.gz /opt/ && cd /opt/ && \
 	tar xzf poli.tar.gz && mv ANSSI-FR-polichombr-* polichombr && \
 	cd polichombr && \
-	./install.sh 
+	./install.sh
 WORKDIR /opt/polichombr
 
-RUN sed -i '/SQLALCHEMY_DATABASE_URI/c\SQLALCHEMY_DATABASE_URI = "sqlite:///opt/data/app.db"' config.py
+RUN sed -i '/SQLALCHEMY_DATABASE_URI/c\SQLALCHEMY_DATABASE_URI = "sqlite:////opt/data/app.db"' config.py
+RUN sed -i '/STORAGE_PATH/c\STORAGE_PATH = "/opt/data/storage"' config.py
 
 ADD https://github.com/jjyg/metasm/tarball/master metasm.tar.gz
-RUN tar xzf metasm.tar.gz && mv jjyg-metasm-* metasm && rm metasm.tar.gz
+RUN tar xzf metasm.tar.gz && mv jjyg-metasm-*/* metasm && rm metasm.tar.gz
 
 VOLUME "/opt/data/"
-#RUN mv utils/db_create.py db_create.py
-#RUN flask/bin/python db_create.py
+RUN mv utils/db_create.py db_create.py
 
 EXPOSE 5000
-CMD flask/bin/python run.py
+CMD flask/bin/python db_create.py && flask/bin/python run.py
