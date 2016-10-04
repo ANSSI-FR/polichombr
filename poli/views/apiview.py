@@ -23,16 +23,9 @@ def plain_text(data):
     response.headers['Content-Type'] = 'text/plain'
     return response
 
-
-@apiview.route("/<path:invalid_path>")
-def handle_unmatchable(*args, **kwargs):
-    abort(404)
-
-
 @apiview.errorhandler(404)
 def api_404_handler(error):
-    return jsonify({'error': 404}), 404
-
+    return jsonify(dict(error=404, error_description="Resource not found")), 404
 
 @apiview.errorhandler(500)
 def api_500_handler(error):
@@ -47,10 +40,20 @@ def api_400_handler(error):
                     'error_description': error.description,
                     'error_message': error.message}), 400
 
+@apiview.route("/<path:invalid_path>", methods=['GET', 'POST', 'PATCH'])
+def handle_unmatchable(*args, **kwargs):
+    """
+        Return a 404 when not finding an endpoint
+    """
+    abort(404)
 
 @apiview.route('/api/')
 @apiview.route('/')
 def api_help():
+    """
+        Try to document the api.
+        see docs/API.md for more informations
+    """
     text = """
     /
     /samples/
@@ -155,7 +158,7 @@ def api_post_families():
     """
     data = request.json
     if data is None:
-        abort(400, "Missing arguments")
+        abort(400, "Missing JSON arguments")
     fname = data['name']
     tlp_level = TLPLevel.TLPAMBER
     try:
