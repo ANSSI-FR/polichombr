@@ -4,6 +4,7 @@
 
 To use polichombr as a docker container, we provide a *DockerFile*
 in the root directory.
+
 	mkdir -p PATH_TO_YOUR_DATA
 	mkdir -p PATH_TO_YOUR_DATA/storage
 	docker build -t polichombr .
