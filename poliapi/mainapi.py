@@ -55,9 +55,27 @@ class MainModule(object):
                                data=data)
         if answer.status_code != 200:
             self.logger.error("Error during post request for endpoint %s", endpoint)
-            self.logger.error("Status code was %d", answer.status_code)
-            self.logger.error("error message was %s", answer.json())
+            self.logger.error("Status code was: %d", answer.status_code)
+            self.logger.error("error message was: %s", answer.json())
             raise IOError
+        return answer.json()
+
+    def get(self, endpoint, args=None):
+        """
+            Wrapper for requests.get
+            @arg args is a dict wich is converted to URL parameters
+        """
+        answer = requests.get(endpoint)
+        if answer.status_code != 200:
+            if answer.status_code == 404:
+                self.logger.error("endpoint %s or resource not found", endpoint)
+                self.logger.error("error description was: %s", answer.json()["error_description"])
+                return None
+            else:
+                self.logger.error("Error during get request for endpoint %s", endpoint)
+                self.logger.error("Status code was %d", answer.status_code)
+                self.logger.error("error message was: %s", answer.json())
+                raise requests.HTTPError
         return answer.json()
 
     def prepare_endpoint(self, **kwargs):
@@ -99,3 +117,13 @@ class FamilyModule(MainModule):
         json_data = dict(name=name, tlp_level=tlp_level)
         data = self.post(endp, json=json_data)
         return data["family"]
+
+    def get_family(self, name):
+        """
+            Get the informations for a given family
+        """
+        self.logger.info("Getting family %s", name)
+        endpoint = self.prepare_endpoint(root='family')
+        endpoint += name
+        answer = self.get(endpoint)
+        return answer
