@@ -18,8 +18,12 @@ python:
 install:
   - pip install -r requirements.txt
   - pip install coverage
+  - pip install codeclimate-test-reporter
 
 before_script:
   - python utils/db_create.py
+
+after_success:
+  - codeclimate-test-reporter
 
 script: coverage run -m unittest discover tests/
