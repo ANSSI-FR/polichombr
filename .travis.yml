@@ -26,4 +26,4 @@ before_script:
 after_success:
   - codeclimate-test-reporter
 
-script: coverage run -m unittest discover tests/
+script: coverage run --omit flask/* -m unittest discover tests/
