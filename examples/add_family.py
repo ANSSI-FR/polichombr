@@ -1,7 +1,12 @@
 #!/usr/bin/env python
 """
     Simple script to add families by using the API
+
+    This file is part of Polichombr
+
+        (c) ANSSI-FR 2016
 """
+
 import argparse
 from poliapi.mainapi import FamilyModule
 

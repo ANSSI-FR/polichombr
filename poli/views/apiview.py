@@ -353,11 +353,29 @@ def api_set_sample_abstract(sid):
 
 @apiview.route('/samples/<int:sid>/abstract/', methods=['GET'])
 def api_get_sample_abstract(sid):
+    """
+        Returns the raw markdown sample abstract
+    """
     sample = api.samplecontrol.get_by_id(sid)
     if sample is None:
         abort(404)
     result = sample.abstract
     return jsonify({'abstract': result})
+
+
+def get_filter_arguments(mrequest):
+    """
+        Get timestamp and address from request
+    """
+    data = mrequest.args
+    current_timestamp, addr = None, None
+    if data is not None:
+        if 'timestamp' in data.keys():
+            current_timestamp = data['timestamp']
+        if 'addr' in data.keys():
+            addr = int(data['addr'], 16)
+    return current_timestamp, addr
+
 
 
 @apiview.route('/samples/<int:sid>/comments/', methods=['GET'])
@@ -370,13 +388,7 @@ def api_get_sample_comments(sid):
                 (ie, how old you want the comments)
                 default = 0, no limit
     """
-    data = request.args
-    current_timestamp, addr = None, None
-    if data is not None:
-        if 'timestamp' in data.keys():
-            current_timestamp = data['timestamp']
-        if 'addr' in data.keys():
-            addr = int(data['addr'], 16)
+    current_timestamp, addr = get_filter_arguments(request)
     data = api.idacontrol.get_comments(sid, addr, current_timestamp)
     return jsonify({'comments': data})
 
@@ -398,6 +410,7 @@ def api_post_sample_comments(sid):
     return jsonify({'result': result})
 
 
+
 @apiview.route('/samples/<int:sid>/names/', methods=['GET'])
 def api_get_sample_names(sid):
     """
@@ -407,13 +420,7 @@ def api_get_sample_names(sid):
         @arg : timestamp Limit the timeframe for names
                 default = 0, no limit
     """
-    data = request.args
-    current_timestamp, addr = None, None
-    if data is not None:
-        if 'timestamp' in data.keys():
-            current_timestamp = data['timestamp']
-        if 'addr' in data.keys():
-            addr = int(data['addr'], 16)
+    current_timestamp, addr = get_filter_arguments(request)
     data = api.idacontrol.get_names(sid, addr, current_timestamp)
     return jsonify({'names': data})
 
@@ -425,6 +432,7 @@ def api_post_sample_names(sid):
         @arg addr the corresponding address
         @arg name the name
     """
+
     data = request.json
     addr = data['address']
     name = data['name']

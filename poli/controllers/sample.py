@@ -412,7 +412,18 @@ class SampleController(object):
         return False
 
     @staticmethod
-    def match_by_importhash(sample):
+    def add_sample_match(sample_1, sample_2, match_type):
+        match = SampleMatch()
+        match.match_type = match_type
+        match.sid_2 = sample_2.id
+        sample_1.linked_samples.append(match)
+        sample_2.linked_samples_2.append(match)
+        db.session.add(match)
+        db.session.commit()
+
+
+    @classmethod
+    def match_by_importhash(cls, sample):
         """
             Match samples by import hash.
         """
@@ -423,26 +434,14 @@ class SampleController(object):
             if sample_2.id != sample.id:
                 if SampleMatch.query.filter(SampleMatch.sid_1.in_([sample.id, sample_2.id]), SampleMatch.sid_2.in_(
                         [sample.id, sample_2.id]), SampleMatch.match_type == "iat_hash").count() == 0:
-                    match = SampleMatch()
-                    match.match_type = "iat_hash"
-                    match.sid_2 = sample_2.id
-                    sample.linked_samples.append(match)
-                    sample_2.linked_samples_2.append(match)
-                    db.session.add(match)
-                    db.session.commit()
-
+                    cls.add_sample_match(sample, sample_2, "iat_hash")
                     # add the corresponding match to the other sample
-                    match = SampleMatch()
-                    match.match_type = "iat_hash"
-                    match.sid_2 = sample.id
-                    sample_2.linked_samples.append(match)
-                    db.session.add(match)
-                    db.session.commit()
-
+                    cls.add_sample_match(sample_2, sample, "iat_hash")
                 continue
         return True
 
-    def match_by_machoc80(self, sample):
+    @classmethod
+    def match_by_machoc80(cls, sample):
         """
             Match samples by machoc hash.
         """
@@ -454,21 +453,9 @@ class SampleController(object):
             if SampleMatch.query.filter(SampleMatch.sid_1.in_([sample.id, sample_2.id]), SampleMatch.sid_2.in_(
                     [sample.id, sample_2.id]), SampleMatch.match_type == "machoc80").count() != 0:
                 continue
-            if self.machoc_diff_samples(sample, sample_2) >= 0.8:
-                match = SampleMatch()
-                match.match_type = "machoc80"
-                match.sid_2 = sample_2.id
-                sample.linked_samples.append(match)
-                sample_2.linked_samples_2.append(match)
-                db.session.add(match)
-                db.session.commit()
-
-                match = SampleMatch()
-                match.match_type = "machoc80"
-                match.sid_2 = sample.id
-                sample_2.linked_samples.append(match)
-                db.session.add(match)
-                db.session.commit()
+            if cls.machoc_diff_samples(sample, sample_2) >= 0.8:
+                cls.add_sample_match(sample, sample_2, "machoc80")
+                cls.add_sample_match(sample_2, sample, "machoc80")
         return True
 
     @classmethod
@@ -583,15 +570,14 @@ class SampleController(object):
                     i[ngram_mid]) == 1:
                 continue
             if i in dst_ngrams_hashes:
-                if src_ngrams_hashes.count(
-                        i) == 1 and dst_ngrams_hashes.count(i) == 1:
+                if src_ngrams_hashes.count(i) == 1 and dst_ngrams_hashes.count(i) == 1:
                     src_function = None
                     dst_function = None
                     tmp1 = []
                     tmp2 = []
-                    for x in src_sorted_fcts:
-                        tmp1.append(x[2])
-                        tmp2.append(x[1])
+                    for funcs in src_sorted_fcts:
+                        tmp1.append(funcs[2])
+                        tmp2.append(funcs[1])
                         if tmp2 == i:
                             src_function = tmp1[ngram_mid]
                             break
@@ -600,9 +586,9 @@ class SampleController(object):
                             tmp2 = tmp2[1:]
                     tmp1 = []
                     tmp2 = []
-                    for x in dst_sorted_fcts:
-                        tmp1.append(x[2])
-                        tmp2.append(x[1])
+                    for funcs in dst_sorted_fcts:
+                        tmp1.append(funcs[2])
+                        tmp2.append(funcs[1])
                         if tmp2 == i:
                             dst_function = tmp1[ngram_mid]
                             break

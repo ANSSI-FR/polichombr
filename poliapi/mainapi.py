@@ -1,6 +1,6 @@
 """
     This file is part of Polichombr
-    (c) 2016 Tristan Pourcelot <tristan.pourcelot@ssi.gouv.fr>
+        (c) 2016 ANSSI-FR
     Published without any garantee under CeCill v2 license.
 
     This file contains the module to use the external polichombr REST API.
@@ -45,14 +45,17 @@ class MainModule(object):
         """
             Wrapper for requests.post
         """
-        json_data, data = None, None
+        json_data, data, files = None, None, None
         if 'json' in kwargs.keys():
             json_data = kwargs['json']
         if 'data' in kwargs.keys():
             data = kwargs['data']
+        if 'files' in kwargs.keys():
+            files = kwargs['files']
         answer = requests.post(endpoint,
                                json=json_data,
-                               data=data)
+                               data=data,
+                               files=files)
         if answer.status_code != 200:
             self.logger.error("Error during post request for endpoint %s", endpoint)
             self.logger.error("Status code was: %d", answer.status_code)
@@ -96,8 +99,49 @@ class SampleModule(MainModule):
     def __init__(self):
         super(SampleModule, self).__init__()
 
-    def send_sample(self, filename):
-        pass
+    def send_sample(self, filename, tlp):
+        """
+            Upload a sample to the polichombr service
+            @arg filename: the sample file to upload
+            @arg tlp: the TLP sensitivity of the sample
+                This can be from 1 to 5 (TLP WHITE to TLP BLACK)
+        """
+        try:
+            data = open(filename, 'rb').read()
+        except IOError:
+            self.logger.exception("File does not exists")
+            raise IOError
+
+        files = {'file': data}
+        payload = {'filename': filename}
+        if tlp is not None:
+            payload['tlp_level'] = tlp
+
+        endpoint = self.prepare_endpoint(root='samples')
+
+        answer = self.post(endpoint,
+                           files=files,
+                           data=payload)
+
+        return answer["sample"]["id"]
+
+
+    def assign_to_family(self, sid, fname):
+        """
+            Assign a sample to a specific family
+            @arg sid: the sample id
+            @arg fid: the desired family name
+        """
+        self.logger.info("Assigning sample %d to family %s", sid, fname)
+        endpoint = self.prepare_endpoint(root='samples')
+        endpoint += str(sid) + '/'
+        endpoint += 'families/'
+
+        fam = {'family_name': fname}
+        answer = self.post(endpoint, json=fam)
+        return answer
+
+
 
 
 class FamilyModule(MainModule):
