@@ -2,7 +2,9 @@
 
 Polichombr expose a HTTP api using the endpoint `/api/1.0/`
 
-Example scripts are located in the folder [tests](https://github.com/ANSSI-FR/polichombr/tree/master/tests)
+Example scripts are located in the folder [examples](https://github.com/ANSSI-FR/polichombr/tree/master/examples)
+
+We also provides utilities modules in the folder [poliapi](https://github.com/ANSSI-FR/polichombr/tree/master/poliapi)
 
 All arguments to POST requests should be passed in JSON form.
 
