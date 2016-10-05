@@ -38,7 +38,7 @@ if __name__ == "__main__":
     parser.add_argument('samples', help='the samples files', nargs='+')
     parser.add_argument('--family', help='associated family')
     parser.add_argument('--tlp', type=int,
-            help="The TLP level, can be from 1 to 5, 1=TLPWHITE / 5=TLPBLACK")
+                        help="The TLP level, can be from 1 to 5, 1=TLPWHITE / 5=TLPBLACK")
     args = parser.parse_args()
     for sample in args.samples:
         send_sample(sample, args.family, args.tlp)

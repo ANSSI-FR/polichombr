@@ -19,11 +19,11 @@ if __name__ == "__main__":
                         help="The new family name")
 
     #  parser.add_argument('--parent',
-                        # type=str,
-     #                    help='The parent family name')
+    # type=str,
+    #                    help='The parent family name')
 
     parser.add_argument('--tlp', type=int,
-            help="The TLP level, can be from 1 to 5, 1=TLPWHITE / 5=TLPBLACK")
+                        help="The TLP level, can be from 1 to 5, 1=TLPWHITE / 5=TLPBLACK")
 
     args = parser.parse_args()
 

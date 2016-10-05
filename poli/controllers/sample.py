@@ -421,7 +421,6 @@ class SampleController(object):
         db.session.add(match)
         db.session.commit()
 
-
     @classmethod
     def match_by_importhash(cls, sample):
         """
@@ -570,7 +569,8 @@ class SampleController(object):
                     i[ngram_mid]) == 1:
                 continue
             if i in dst_ngrams_hashes:
-                if src_ngrams_hashes.count(i) == 1 and dst_ngrams_hashes.count(i) == 1:
+                if src_ngrams_hashes.count(
+                        i) == 1 and dst_ngrams_hashes.count(i) == 1:
                     src_function = None
                     dst_function = None
                     tmp1 = []

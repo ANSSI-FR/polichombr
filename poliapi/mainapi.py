@@ -9,6 +9,7 @@
 import logging
 import requests
 
+
 class MainModule(object):
     """
         This module provides the main utils
@@ -21,7 +22,8 @@ class MainModule(object):
     auth_token = None
     logger = None
 
-    def __init__(self, server="127.0.0.1", server_port=5000, base_uri='/api/1.0/'):
+    def __init__(self, server="127.0.0.1", server_port=5000,
+                 base_uri='/api/1.0/'):
         self.server, self.server_port = server, server_port
         self.base_uri = base_uri
         self.logger = logging.getLogger(__name__)
@@ -29,7 +31,8 @@ class MainModule(object):
         handler = logging.StreamHandler()
         handler.setLevel(logging.DEBUG)
 
-        log_format = logging.Formatter('%(asctime)s - %(name)s - %(levelname)s - %(message)s')
+        log_format = logging.Formatter(
+            '%(asctime)s - %(name)s - %(levelname)s - %(message)s')
         handler.setFormatter(log_format)
         self.logger.addHandler(handler)
 
@@ -57,7 +60,8 @@ class MainModule(object):
                                data=data,
                                files=files)
         if answer.status_code != 200:
-            self.logger.error("Error during post request for endpoint %s", endpoint)
+            self.logger.error(
+                "Error during post request for endpoint %s", endpoint)
             self.logger.error("Status code was: %d", answer.status_code)
             self.logger.error("error message was: %s", answer.json())
             raise IOError
@@ -71,11 +75,15 @@ class MainModule(object):
         answer = requests.get(endpoint)
         if answer.status_code != 200:
             if answer.status_code == 404:
-                self.logger.error("endpoint %s or resource not found", endpoint)
-                self.logger.error("error description was: %s", answer.json()["error_description"])
+                self.logger.error(
+                    "endpoint %s or resource not found", endpoint)
+                self.logger.error(
+                    "error description was: %s",
+                    answer.json()["error_description"])
                 return None
             else:
-                self.logger.error("Error during get request for endpoint %s", endpoint)
+                self.logger.error(
+                    "Error during get request for endpoint %s", endpoint)
                 self.logger.error("Status code was %d", answer.status_code)
                 self.logger.error("error message was: %s", answer.json())
                 raise requests.HTTPError
@@ -90,6 +98,7 @@ class MainModule(object):
         if 'root' in kwargs.keys():
             endp += kwargs['root'] + '/'
         return endp
+
 
 class SampleModule(MainModule):
     """
@@ -125,7 +134,6 @@ class SampleModule(MainModule):
 
         return answer["sample"]["id"]
 
-
     def assign_to_family(self, sid, fname):
         """
             Assign a sample to a specific family
@@ -140,8 +148,6 @@ class SampleModule(MainModule):
         fam = {'family_name': fname}
         answer = self.post(endpoint, json=fam)
         return answer
-
-
 
 
 class FamilyModule(MainModule):

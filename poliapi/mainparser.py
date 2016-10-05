@@ -9,6 +9,7 @@
 import argparse
 from poliapi.mainapi import FamilyModule
 
+
 class MainParser(object):
     parser = None
     action_parser = None
@@ -17,7 +18,6 @@ class MainParser(object):
     server_port = None
     check_certificate = None
     base_uri = None
-
 
     def __init__(self):
         self.parser = argparse.ArgumentParser()
@@ -28,10 +28,11 @@ class MainParser(object):
         self.parser.add_argument('--port', default=5000,
                                  help="The server's port")
         # self.parser.add_argument('--check-certificate', default=True,
-                                 # dest=self.check_certificate,
-                                 # help="Option to check SSL certificate status")
+        # dest=self.check_certificate,
+        # help="Option to check SSL certificate status")
 
-        self.action_parser = self.parser.add_subparsers(help='Available subcommands')
+        self.action_parser = self.parser.add_subparsers(
+            help='Available subcommands')
 
 
 class FamilyParser(MainParser):
@@ -41,13 +42,14 @@ class FamilyParser(MainParser):
 
     def __init__(self):
         super(FamilyModule, self).__init__()
-        create_parser = self.action_parser.add_parser('create', help="Create a new family")
+        create_parser = self.action_parser.add_parser(
+            'create', help="Create a new family")
         create_parser.add_argument("name", help="The family name")
         create_parser.add_argument("--parent", help="The parent family")
 
-        delete_parser = self.action_parser.add_parser('delete', help="Delete a family")
+        delete_parser = self.action_parser.add_parser(
+            'delete', help="Delete a family")
         delete_parser.add_argument("name", help="The family name")
-
 
         args = self.parser.parse_args()
         print args
