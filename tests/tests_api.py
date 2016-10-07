@@ -128,6 +128,21 @@ class ApiTestCase(unittest.TestCase):
                               '/names/')
         return retval
 
+    def create_family(self, name, tlp_level=None, parent=None):
+        data = dict(name=name, tlp_level=tlp_level)
+        if parent is not None:
+            data["parent"] = parent
+        retval = self.app.post('/api/1.0/family/',
+                data=json.dumps(data),
+                content_type="application/json")
+        return retval
+
+    def create_yara(self, name, rule, tlp_level=None):
+        retval = self.app.post('/api/1.0/yaras/',
+                data=json.dumps(dict(name=name, rule=rule, tlp_level=tlp_level)),
+                content_type="application/json")
+        return retval
+
     def test_get_sample_info(self):
         """
             Just check if we can access the sample id
@@ -226,10 +241,7 @@ class ApiTestCase(unittest.TestCase):
         """
             This will test the families creation and access
         """
-        retval = self.app.post('/api/1.0/family/',
-                data=json.dumps(dict(name='TESTFAMILY1')),
-                content_type="application/json")
-
+        retval = self.create_family("TESTFAMILY1")
         self.assertEqual(retval.status_code, 200)
         data = json.loads(retval.data)
         self.assertEqual(data['family'], 1)
@@ -241,15 +253,18 @@ class ApiTestCase(unittest.TestCase):
         family = data['families'][0]
         self.assertIn(family['name'], 'TESTFAMILY1')
 
+        retval = self.app.get('/api/1.0/family/TESTFAMILY1/')
+        self.assertEqual(retval.status_code, 200)
+        family = json.loads(retval.data)['family']
+        self.assertIn(family['name'], "TESTFAMILY1")
+        self.assertEqual(family['id'], 1)
 
     def test_family_tlp(self):
         """
             Test the TLP level affectation for a family
         """
-        retval = self.app.post('/api/1.0/family/',
-                data=json.dumps(dict(name='TESTFAMILY1', tlp_level=5)),
-                content_type="application/json")
 
+        retval = self.create_family("TESTFAMILY2", tlp_level=5)
         self.assertEqual(retval.status_code, 200)
 
         retval = self.app.get('/api/1.0/family/1/')
@@ -258,9 +273,40 @@ class ApiTestCase(unittest.TestCase):
         family = data['family']
         self.assertEqual(family["TLP_sensibility"], 5)
 
+    def test_family_abstract(self):
+        """
+            Try to update the family abstract
+        """
+        self.create_family("TESTFAMILY1")
+        data = json.dumps(dict(abstract="Test abstract"))
+        retval = self.app.post("/api/1.0/family/1/abstract/", data=data,
+                               content_type="application/json")
+        self.assertEqual(retval.status_code, 200)
+        self.assertTrue(json.loads(retval.data)["result"])
 
+        retval = self.app.get("/api/1.0/family/1/")
+        data = json.loads(retval.data)["family"]
+        self.assertIn(data["abstract"], "Test abstract")
+
+    def test_subfamilies(self):
+        self.create_family("MOTHER FAMILY")
+        self.create_family("CHILD FAMILY", parent="MOTHER FAMILY")
+
+
+        retval = self.app.get('/api/1.0/family/1/')
+        data = json.loads(retval.data)["family"]
+
+        self.assertEqual(len(data['subfamilies']), 1)
+        self.assertIn(data['subfamilies'][0]["name"], "CHILD FAMILY")
+
+        retval = self.app.get('/api/1.0/family/2/')
+        data = json.loads(retval.data)["family"]
+        self.assertEqual(data["parent_id"], 1)
 
     def test_push_comments(self):
+        """
+            Can we push comments for a sample?
+        """
         retval = self.push_comment(address=0xDEADBEEF, comment="TESTCOMMENT1")
         self.assertEqual(retval.status_code, 200)
         data = json.loads(retval.data)
@@ -590,7 +636,26 @@ class ApiTestCase(unittest.TestCase):
         result = json.loads(retval.data)
         self.assertIn(result['abstract'], 'This is a test for abstract')
 
+    def test_yara_creation(self):
+        rule_text = """rule toto{
+            strings:
+                $1 = {4D 5A}
+            condition:
+                $1 at 0
+        }"""
+        retval = self.create_yara("TESTYARA", rule_text)
+        self.assertEqual(retval.status_code, 200)
+        data = json.loads(retval.data)
+        self.assertEqual(data["id"], 1)
 
+        retval= self.app.get("/api/1.0/yaras/")
+        self.assertEqual(retval.status_code, 200)
+        data = json.loads(retval.data)
+        self.assertEqual(len(data['yara_rules']), 1)
+        rule = data['yara_rules'][0]
+        self.assertIn(rule['name'], "TESTYARA")
+        self.assertEqual(rule['TLP_sensibility'], 3)
+        self.assertIn(rule['raw_rule'], rule_text)
 
 if __name__ == '__main__':
     unittest.main()
