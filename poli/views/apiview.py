@@ -314,7 +314,7 @@ def api_get_unique_sample(sid):
 
 @apiview.route('/samples/<int:sid>/', methods=['POST'])
 def api_post_unique_sample(sid):
-    abort(404)
+    abort(405)
 
 
 @apiview.route('/samples/<int:sid>/analysis/', methods=['GET'])
