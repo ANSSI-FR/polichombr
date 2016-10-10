@@ -13,6 +13,7 @@ import os
 from poli import api, apiview, app
 from poli.models.family import FamilySchema
 from poli.models.sample import Sample, SampleSchema
+from poli.models.yara_rule import YaraSchema
 from poli.models.models import TLPLevel
 
 from flask import jsonify, request, send_file, abort, make_response
@@ -167,7 +168,6 @@ def api_post_families():
         app.logger.warning("No TLP for family, default to AMBER")
 
     pfam = None
-
     try:
         if data['parent']:
             pfam = api.familycontrol.get_by_name(data['parent'])
@@ -183,8 +183,11 @@ def api_post_families():
     return jsonify({'family': fid})
 
 
-@apiview.route('/family/<fname>', methods=['GET'])
+@apiview.route('/family/<fname>/', methods=['GET'])
 def api_get_family(fname):
+    """
+        Get family data using it's name
+    """
     fam = api.familycontrol.get_by_name(fname)
     if fam is None:
         return jsonify({"family": None})
@@ -193,7 +196,7 @@ def api_get_family(fname):
     return jsonify({"family": data})
 
 
-@apiview.route('/family/<fid>/', methods=['GET'])
+@apiview.route('/family/<int:fid>/', methods=['GET'])
 def api_get_family_by_id(fid):
     fam = api.familycontrol.get_by_id(fid)
     if fam is None:
@@ -203,6 +206,22 @@ def api_get_family_by_id(fid):
         result = schema.dump(fam).data
     return jsonify({"family": result})
 
+@apiview.route('/family/<int:fid>/abstract/', methods=['POST'])
+def api_set_family_abstract(fid):
+    """
+        @arg abstract: The family abstract
+    """
+    if request.json is None:
+        abort(400, "Missing JSON data")
+
+    try:
+        family = api.familycontrol.get_by_id(fid)
+        abstract = request.json["abstract"]
+        result = api.familycontrol.set_abstract(family, abstract)
+        return jsonify({"result": result})
+
+    except KeyError:
+        abort(400, "Missing abstract data")
 
 @apiview.route('/family/<fam_name>', methods=['POST'])
 def api_post_family(fam_name):
@@ -295,7 +314,7 @@ def api_get_unique_sample(sid):
 
 @apiview.route('/samples/<int:sid>/', methods=['POST'])
 def api_post_unique_sample(sid):
-    abort(404)
+    abort(405)
 
 
 @apiview.route('/samples/<int:sid>/analysis/', methods=['GET'])
@@ -566,8 +585,41 @@ def api_get_iat_matches(sid):
 @apiview.route('/samples/<int:sid>/matches/yara', methods=['GET'])
 def api_get_yara_matches(sid):
     """
-        TODO : Get yara hashes
+        TODO : Get yara matches
     """
     samp = api.samplecontrol.get_by_id(sid)
     result = None
     return jsonify({'result': result})
+
+
+@apiview.route('/yaras/', methods=['GET'])
+def api_get_all_yaras():
+    """
+        Dump all the yaras
+    """
+    yaras = api.yaracontrol.get_all()
+    schema = YaraSchema(many=True)
+    return jsonify({'yara_rules': schema.dump(yaras).data})
+
+@apiview.route('/yaras/', methods=['POST'])
+def api_create_yara():
+    """
+        Add a new yara
+        @arg name: the yara name
+        @arg rule: the full text of the rule
+        @arg tlp_level: Optional, the sensibility of the rule. Default = TLP AMBER
+    """
+    tlp_level = None
+    data = request.json
+    name = data["name"]
+    rule = data["rule"]
+    if 'tlp_level' in data.keys():
+        tlp_level = data["tlp_level"]
+
+    if tlp_level is None:
+        tlp_level = TLPLevel.TLPAMBER
+
+    result = api.yaracontrol.create(name, rule, tlp_level)
+    if result is None or not result:
+        abort(500, "Cannot create yara rule")
+    return jsonify({"id": result.id})

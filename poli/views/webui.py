@@ -14,7 +14,7 @@ import os
 import io
 
 from flask import render_template, g, redirect, url_for, flash
-from flask import abort, make_response, request
+from flask import abort, make_response, request, jsonify
 from flask_security import login_user, logout_user, current_user
 from flask_security import login_required, roles_required
 from werkzeug import secure_filename
@@ -700,9 +700,7 @@ def machexport():
                                             fname=fnamexp,
                                             sabstract=sabstract,
                                             aabstracts=aabstract)
-        response = make_response(json.dumps(retv))
-        response.headers["Content-Type"] = "text/plain"
-        return response
+        return jsonify(retv)
 
 
 @app.route('/machocdiff/<int:sample_id>/<int:sample2_id>/',

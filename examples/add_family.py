@@ -18,9 +18,7 @@ if __name__ == "__main__":
                         nargs='+',
                         help="The new family name")
 
-    #  parser.add_argument('--parent',
-    # type=str,
-    #                    help='The parent family name')
+    parser.add_argument('--parent', type=str, help='The parent family name')
 
     parser.add_argument('--tlp', type=int,
                         help="The TLP level, can be from 1 to 5, 1=TLPWHITE / 5=TLPBLACK")
@@ -30,5 +28,8 @@ if __name__ == "__main__":
     fapi = FamilyModule()
 
     for fname in args.names:
-        fid = fapi.create_family(fname, args.tlp)
+        if args.parent:
+            fid = fapi.create_family(fname, args.parent, args.tlp)
+        else:
+            fid = fapi.create_family(fname, args.tlp)
         print "Successfully created family with ID %d" % (fid)

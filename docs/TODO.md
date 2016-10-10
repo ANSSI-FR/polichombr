@@ -18,7 +18,7 @@ with some current bugs too
 	[ ] Change the JS UI to pop the window for comments/name on the right place
 	[ ] Retrieve function names by machoc hash
 	[ ] Return a correct error if failing to add sample with the API
-	[ ] Implement an API class that could be used by scripts (à la PyMISP)
+	[x] Implement an API class that could be used by scripts (à la PyMISP)
 
 ## Views
 	[ ] Problems (unassociated yaras, alone machoc, false positives, ...)
@@ -31,7 +31,7 @@ with some current bugs too
 	[ ] Manage timestamp
 	[ ] Function identification by machoc hash
 	[ ] Highlight cryptoblocks
-	[ ] Fix upload of sample if it is new
+	[x] Fix upload of sample if it is new
 	[ ] Fix note pad destruction when calling exit_skelenox
 	[x] Proper logging
 	[ ] Local names (prefix) are not pushed.
@@ -50,7 +50,7 @@ with some current bugs too
 # Known bugs
 	[ ] If we kill an analysis (when restarting service for example), we cannot reschedule it
 	[ ] The disassembly view does not check if the disassembly svg is empty
-	[ ] Date file is buggy (not displaying the hour?)
+	[x] Date file is buggy (not displaying the hour?)
 	[ ] Even when the user have uncategorized sample, the view doesn't hilight it
 	[ ] IDA Actions are not attributed to a user
-	[ ] When reopening a sample in IDA, skelenox does not take that in account
+	[x] When reopening a sample in IDA, skelenox does not take that in account

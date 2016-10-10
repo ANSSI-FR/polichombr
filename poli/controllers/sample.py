@@ -209,15 +209,6 @@ class SampleController(object):
         return sample_schema.dump(sample).data
 
     @staticmethod
-    def get_all_samples():
-        """
-            Schema export.
-        """
-        sample_schema = SampleSchema()
-        data = Sample.query.all()
-        return sample_schema.dump(data).data
-
-    @staticmethod
     def set_abstract(sample, abstract):
         """
             Abstract update.

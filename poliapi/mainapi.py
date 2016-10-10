@@ -72,7 +72,7 @@ class MainModule(object):
             Wrapper for requests.get
             @arg args is a dict wich is converted to URL parameters
         """
-        answer = requests.get(endpoint)
+        answer = requests.get(endpoint, params=args)
         if answer.status_code != 200:
             if answer.status_code == 404:
                 self.logger.error(
@@ -149,6 +149,16 @@ class SampleModule(MainModule):
         answer = self.post(endpoint, json=fam)
         return answer
 
+    def set_abstract(self, sid, abstract):
+        """
+            Updates a sample's abstract
+        """
+        endpoint = self.prepare_endpoint(root='samples')
+        endpoint += str(sid) + '/abstract/'
+
+        json_data = dict(abstract=abstract)
+        return self.post(endpoint, json=json_data)["result"]
+
 
 class FamilyModule(MainModule):
     """
@@ -158,13 +168,15 @@ class FamilyModule(MainModule):
     def __init__(self):
         super(FamilyModule, self).__init__()
 
-    def create_family(self, name, tlp_level=3):
+    def create_family(self, name, parent=None, tlp_level=3):
         """
             Create a family, and return it's id
         """
         self.logger.info("Creating family %s", name)
         endp = self.prepare_endpoint(root='family')
         json_data = dict(name=name, tlp_level=tlp_level)
+        if parent is not None:
+            json_data["parent"] = parent
         data = self.post(endp, json=json_data)
         return data["family"]
 
@@ -177,3 +189,14 @@ class FamilyModule(MainModule):
         endpoint += name
         answer = self.get(endpoint)
         return answer
+
+    def set_family_abstract(self, fid, abstract):
+        """
+            Set a new abstract for a family
+        """
+        self.logger.info("Setting family abstract")
+        endpoint = self.prepare_endpoint(root='family')
+        endpoint += str(fid) + '/abstract/'
+
+        json_data = dict(abstract=abstract)
+        return self.post(endpoint, json=json_data)["result"]

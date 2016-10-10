@@ -10,7 +10,7 @@
 
 from datetime import datetime
 
-from poli import db
+from poli import db, ma
 
 
 class YaraRule(db.Model):
@@ -28,9 +28,18 @@ class YaraRule(db.Model):
     # TLP sensibility
     TLP_sensibility = db.Column(db.Integer(), nullable=False)
 
-    def __init__(self, name, raw_rule, TLP_sensibility):
+    def __init__(self, name, raw_rule, tlp_level):
         self.creation_date = datetime.now()
         self.modif_date = datetime.now()
         self.raw_rule = raw_rule
         self.name = name
-        self.TLP_sensibility = TLP_sensibility
+        self.TLP_sensibility = tlp_level
+
+
+class YaraSchema(ma.ModelSchema):
+    class Meta(object):
+        fields = ('id',
+                  'name',
+                  'raw_rule',
+                  'creation_date',
+                  'TLP_sensibility')

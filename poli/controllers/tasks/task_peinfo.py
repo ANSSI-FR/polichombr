@@ -46,7 +46,7 @@ class task_peinfo(Task):
         self.tstart = int(time.time())
         app.logger.debug(self.tmessage + "EXECUTE")
         pe = pefile.PE(self.fpath)
-        self.compile_timestamp = datetime.date.fromtimestamp(
+        self.compile_timestamp = datetime.datetime.fromtimestamp(
             pe.FILE_HEADER.TimeDateStamp)
         self.import_hash = pe.get_imphash()
         self.metadata_extracted.append((
