@@ -64,3 +64,7 @@ with the knowledge base, and with other users database
 
 # Installation
 Please see the corresponding file in the [docs](https://github.com/ANSSI-FR/polichombr/tree/master/docs) directory
+
+# Contributing
+Contributions are welcome, so please read [CONTRIBUTING.md](https://github.com/ANSSI-FR/polichombr/blob/master/CONTRIBUTING.md)
+to have a quick start on how to get help or add features in Polichombr
