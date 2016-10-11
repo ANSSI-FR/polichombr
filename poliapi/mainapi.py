@@ -200,3 +200,34 @@ class FamilyModule(MainModule):
 
         json_data = dict(abstract=abstract)
         return self.post(endpoint, json=json_data)["result"]
+
+    def add_yara(self, fid, rule_name):
+        """
+            Add a yara rule to a family
+        """
+        endpoint = self.prepare_endpoint(root='family')
+        endpoint += str(fid) + '/yaras/'
+        json_data = dict(rule_name=rule_name)
+        return self.post(endpoint, json=json_data)["result"]
+
+
+class YaraModule(MainModule):
+    """
+        Manage yara rules
+    """
+
+    def __init__(self):
+        super(YaraModule, self).__init__()
+
+
+    def create_yara(self, name, rule, tlp_level=2):
+        """
+            Create a new yara rule
+            @arg name: The rule name
+            @arg rule: The rule complete text
+            @arg tlp_level: The TLP
+        """
+        endpoint = self.prepare_endpoint(root='yaras')
+        json_data = dict(name=name, rule=rule, tlp_level=tlp_level)
+        answer = self.post(endpoint, json=json_data)
+        return answer["id"]
