@@ -11,7 +11,8 @@ All arguments to POST requests should be passed in JSON form.
 ## `/samples/`
 
 * [POST] Create a new sample
-Arguments (in multipart/form-data):
+
+  Arguments (in multipart/form-data):
 	* `file` the sample file data (must be a file object, as used in `requests`)
 	* `filename` the original filename
 	* `tlp_level` [OPTIONAL] The sensibility level of the sample (see models/models.py for the enumeration)
@@ -35,8 +36,7 @@ Return the sample's binary file
 
 
 #### `/samples/<int:sid>/names/`
-Example:
-getting all the renamed functions:
+Example: getting all the renamed functions for the first sample
 ```
 	curl -XGET http://127.0.0.1/api/1.0/samples/1/names/
 ```
@@ -60,6 +60,7 @@ Result:
 ```
 
 You can also filter by address or get all the names defined after a certain timestamp
+
 Example:
 ```
 	curl -XGET http://127.0.0.1/api/1.0/samples/1/names/?timestamp=2016-09-19T17:28:12.504460+00:00
@@ -82,8 +83,7 @@ Idem as the names, get the defined comments,
 eventually filtered out by address or timestamp
 
 #### `/samples/<int:sid>/structs/`
-Get the defined structures.
-
+Example: get the defined structures for the first sample
 ```
 	curl -XGET http://127.0.0.1/api/1.0/samples/1/names/
 ```
@@ -111,8 +111,9 @@ Result:
 
 
 ## `/families/`
-	List all the families
-Example
+This endpoint list all the families in the database
+
+Example:
 ```
 	curl -X GET http://127.0.0.1:5000/api/1.0/families/
 ```
@@ -162,13 +163,15 @@ The data returned is in the format:
 ```
 
 ## `/family/`
-        [POST] : create a new family
-	Arguments:
-		`name` : The new family name
-		`parent` : If it's a subfamily, the parent's name (optional)
-		`tlp_level`: The sensibility (optional)
-	Returns:
-		The created family id
+ * [POST] : create a new family
+
+ Arguments:
+    * `name` : The new family name
+    * `parent` : If it's a subfamily, the parent's name (optional)
+    * `tlp_level`: The sensibility (optional)
+
+  Returns:
+    * The created family id
 
 Example:
 ```
@@ -187,11 +190,12 @@ To add a subfamily of `TEST`:
 ```
 Which returns another id.
 
-        [GET]  : nothing
+ * [GET]  : nothing
 
 ## `/yaras/`
-	Manage the yara rules
-	[GET]  : Get all the defined yara rules
+ Manage the yara rules
+ 
+ * [GET]  : Get all the defined yara rules
 ```
 	curl -XGET http://127.0.0.1/api/1.0/yaras/
 ```
@@ -219,14 +223,15 @@ Result:
 }
 ```
 
-	[POST] : create a new yara rule
-		Arguments:
-		`name` : the rule name (should not be used)
-		`rule` : the yara rule text
-		`tlp_level` : the sensibility level
+ * [POST] : create a new yara rule
+ 
+ Arguments:
+  * `name` : the rule name (should not be used)
+  * `rule` : the yara rule text
+  * `tlp_level` : the sensibility level
 
-		Returns:
-			the created rule ID, or an error if somethings failed
+ Returns:
+  * the created rule ID, or an error if somethings failed
 Example:
 ```
 	curl -i -X POST -H "Content-Type: application/json" -d '{"name":"TESTRULE", "rule":"rule TESTRULE{\n strings:\n $teststring=\"TEST\"\n}"}' condition:\n 1 of them\n }", "tlp_level":1}' http://localhost:5000/api/1.0/yaras/'
