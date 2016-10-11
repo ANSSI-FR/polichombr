@@ -28,6 +28,8 @@ class YaraRule(db.Model):
     # TLP sensibility
     TLP_sensibility = db.Column(db.Integer(), nullable=False)
 
+    version = db.Column(db.Integer())
+
     def __init__(self, name, raw_rule, tlp_level):
         self.creation_date = datetime.now()
         self.modif_date = datetime.now()
@@ -40,6 +42,7 @@ class YaraSchema(ma.ModelSchema):
     class Meta(object):
         fields = ('id',
                   'name',
+                  'version',
                   'raw_rule',
                   'creation_date',
                   'TLP_sensibility')

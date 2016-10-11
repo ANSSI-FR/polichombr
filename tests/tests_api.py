@@ -143,6 +143,12 @@ class ApiTestCase(unittest.TestCase):
                 content_type="application/json")
         return retval
 
+    def update_yara(self, name, rule, tlp_level=None):
+        retval = self.app.patch('/api/1.0/yaras/',
+                data=json.dumps(dict(name=name, rule=rule, tlp_level=tlp_level)),
+                content_type="application/json")
+        return retval
+
     def test_get_sample_info(self):
         """
             Just check if we can access the sample id
@@ -656,6 +662,65 @@ class ApiTestCase(unittest.TestCase):
         self.assertIn(rule['name'], "TESTYARA")
         self.assertEqual(rule['TLP_sensibility'], 3)
         self.assertIn(rule['raw_rule'], rule_text)
+
+    def test_yara_tlp(self):
+        rule_text = """rule toto{
+            strings:
+                $1 = {4D 5A}
+            condition:
+                $1 at 0
+        }"""
+        retval = self.create_yara("TESTYARA", rule_text, tlp_level=4)
+        retval= self.app.get("/api/1.0/yaras/")
+        data = json.loads(retval.data)
+        rule = data['yara_rules'][0]
+        self.assertEqual(rule['TLP_sensibility'], 4)
+
+    def test_yara_family(self):
+        """
+            Test for correct affectation of a yara to a family
+        """
+        rule_text = """rule toto{
+            strings:
+                $1 = {4D 5A}
+            condition:
+                $1 at 0
+        }"""
+        retval = self.create_yara("TESTYARA", rule_text)
+        self.create_family("TESTFAMILY")
+        retval = self.app.post('/api/1.0/family/1/yaras/',
+                               data=json.dumps(dict(rule_name="TESTYARA")),
+                               content_type="application/json")
+        self.assertEqual(retval.status_code, 200)
+        data = json.loads(retval.data)
+        self.assertTrue(data["result"])
+
+        retval = self.app.get('/api/1.0/family/1/export/1/detection/yara')
+        self.assertEqual(retval.status_code, 200)
+        self.assertIn("TESTYARA", retval.data)
+        self.assertIn("4D 5A", retval.data)
+
+
+#     def test_yara_update(self):
+        # rule_text = """rule toto{
+            # strings:
+                # $1 = {4D 5A}
+            # condition:
+                # $1 at 0
+        # }"""
+        # retval = self.create_yara("TESTYARA", rule_text, tlp_level=4)
+
+        # # Try to update the yara
+        # retval = self.update_yara("TESTYARA", rule_text.replace('$1', '$MZ'))
+        # self.assertEqual(retval.status_code, 200)
+        # data = json.loads(retval.data)
+        # self.assertTrue(data["result"])
+
+        # # Next check for the changes in the resulting data
+        # retval= self.app.get("/api/1.0/yaras/")
+        # data = json.loads(retval.data)
+        # rule = data['yara_rules'][0]
+        # self.assertIn(rule["raw_rule"], rule_text.replace('$1', '$MZ'))
 
 if __name__ == '__main__':
     unittest.main()

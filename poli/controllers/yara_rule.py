@@ -149,6 +149,7 @@ class YaraController(object):
             app.logger.exception(e)
             return None
         yar = YaraRule(name, raw_data, tlp_level)
+        yar.version = 1
         db.session.add(yar)
         db.session.commit()
         for s in Sample.query.all():
@@ -211,7 +212,7 @@ class YaraController(object):
             if fam not in sample.families:
                 FamilyController().add_sample(sample, fam)
         db.session.commit()
-        return
+        return True
 
     @staticmethod
     def delete(yar):
@@ -228,6 +229,17 @@ class YaraController(object):
         Change yara name.
         """
         yar.name = new_name
+        db.session.commit()
+        return True
+
+    @staticmethod
+    def update(rule, new_rule):
+        """
+            Update a rule with a new text.
+            Also increments the version number
+        """
+        rule.raw_rule = new_rule
+        rule.version += 1
         db.session.commit()
         return True
 

@@ -77,6 +77,9 @@ def api_help():
     '/family/<family_id>/export/<tlp_level>/detection/yara',
     methods=['GET'])
 def api_family_export_detection_yara(family_id, tlp_level):
+    """
+        This endpoint is ugly, should replace with tlp in argument
+    """
     my_family = api.familycontrol.get_by_id(family_id)
     if my_family is None:
         abort(404)
@@ -206,6 +209,7 @@ def api_get_family_by_id(fid):
         result = schema.dump(fam).data
     return jsonify({"family": result})
 
+
 @apiview.route('/family/<int:fid>/abstract/', methods=['POST'])
 def api_set_family_abstract(fid):
     """
@@ -223,6 +227,23 @@ def api_set_family_abstract(fid):
     except KeyError:
         abort(400, "Missing abstract data")
 
+
+@apiview.route('/family/<int:fid>/yaras/', methods=['POST'])
+def api_add_yara_to_family(fid):
+    """
+        Add a yara rule to a family
+    """
+    family = api.familycontrol.get_by_id(fid)
+    try:
+        rule_name = request.json["rule_name"]
+        rule = api.yaracontrol.get_by_name(rule_name)
+        family = api.familycontrol.get_by_id(fid)
+        result = api.yaracontrol.add_to_family(family, rule)
+    except KeyError:
+        abort(400, "Unknown yara")
+    return jsonify({"result": result})
+
+
 @apiview.route('/family/<fam_name>', methods=['POST'])
 def api_post_family(fam_name):
     """
@@ -233,32 +254,42 @@ def api_post_family(fam_name):
 
 @apiview.route('/samples/<shash>/')
 def api_get_sample_id_from_hash(shash):
+    """
+        Useful for initialization of scripts, get the remote
+        sample ID when you known only the sample hash
+    """
     if len(shash) == 32:
-        s = Sample.query.filter_by(md5=shash).first()
+        sample = Sample.query.filter_by(md5=shash).first()
     elif len(shash) == 40:
-        s = Sample.query.filter_by(sha1=shash).first()
+        sample = Sample.query.filter_by(sha1=shash).first()
     elif len(shash) == 64:
-        s = Sample.query.filter_by(sha256=shash).first()
+        sample = Sample.query.filter_by(sha256=shash).first()
     else:
         abort(400, "Invalid hash length")
-    if s is not None:
-        return jsonify({'sample_id': s.id})
+    if sample is not None:
+        return jsonify({'sample_id': sample.id})
     return jsonify({'sample_id': None})
 
 
 @apiview.route('/samples/<int:sid>/download/')
 def api_get_sample_file(sid):
-    s = api.samplecontrol.get_by_id(sid)
-    if s is None:
+    """
+        Return the sample binary
+    """
+    sample = api.samplecontrol.get_by_id(sid)
+    if sample is None:
         abort(404)
-    fp = s.storage_file
-    return send_file('../' + fp,
+    data_file = sample.storage_file
+    return send_file('../' + data_file,
                      as_attachment=True,
-                     attachment_filename=os.path.basename(fp))
+                     attachment_filename=os.path.basename(data_file))
 
 
 @apiview.route('/samples/', methods=['GET'])
 def api_get_samples():
+    """
+        Returns all the samples
+    """
     result = api.samplecontrol.schema_export_all()
     data = jsonify({'samples': result})
     return data
@@ -466,6 +497,10 @@ def api_post_sample_names(sid):
 
 @apiview.route('/samples/<int:sid>/structs/', methods=['POST'])
 def api_create_struct(sid):
+    """
+        Create a new IDA Struct for a given sample
+        @arg name: the structure name
+    """
     data = request.json
     if data is None:
         abort(400, "Missing JSON data")
@@ -480,6 +515,10 @@ def api_create_struct(sid):
 
 @apiview.route('/samples/<int:sid>/structs/', methods=['GET'])
 def api_get_sample_structs(sid):
+    """
+        Returns the structures associated with a sample
+        @arg timestamp: get structs after this timestamp (optional)
+    """
     timestamp = None
     if request.args is not None and 'timestamp' in request.args.keys():
         timestamp = request.args['timestamp']
@@ -490,13 +529,15 @@ def api_get_sample_structs(sid):
 @apiview.route('/samples/<int:sid>/structs/<int:struct_id>/', methods=['GET'])
 def api_get_one_structs(sid, struct_id):
     structs = api.idacontrol.get_one_struct(struct_id)
-
     return jsonify({'structs': structs})
 
 
 @apiview.route('/samples/<int:sid>/structs/<int:struct_id>/members/',
                methods=['POST'])
 def api_create_struct_member(sid, struct_id):
+    """
+        Add a new member to a structure
+    """
     result = False
     data = request.json
     if data is None:
