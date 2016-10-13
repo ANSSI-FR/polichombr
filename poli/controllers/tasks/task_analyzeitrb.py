@@ -105,7 +105,7 @@ class task_analyzeitrb(Task):
                     try:
                         functions[addr]['name'] = name
                     except KeyError:
-                        app.logger.debug("No function found for %x"%(addr))
+                        app.logger.debug("No function found for %x" % (addr))
                     act = idac.add_name(addr, name)
                 elif line.startswith('idc.MakeRptCmt'):
                     addr, cmt = self.get_addr_data(line)

@@ -11,6 +11,7 @@
 import time
 from poli import app
 
+
 class Task(object):
     """
         Abstract class to define a task to execute.
@@ -22,7 +23,6 @@ class Task(object):
 
     is_interrested = True   # setting this value to False will make the
     # scheduler not call your task's methods.
-
 
     tstart = None
     tmessage = None
@@ -42,7 +42,6 @@ class Task(object):
             app.logger.debug("%s took %d seconds" % (func.__name__, time_delta))
             return ret
         return wrapper
-
 
     def __init__(self, sample=None):
         """
