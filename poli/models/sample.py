@@ -147,7 +147,7 @@ class FunctionInfo(db.Model):
     """
     __tablename__ = 'functioninfo'
     id = db.Column(db.Integer, primary_key=True)
-    address = db.Column(db.String())
+    address = db.Column(db.Integer())
     name = db.Column(db.String())
     machoc_hash = db.Column(db.Integer(), index=True)
     sample_id = db.Column(db.Integer(), db.ForeignKey("sample.id"))
