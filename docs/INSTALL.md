@@ -25,3 +25,14 @@ Now access it at the defined address for nginx
 We use virtualenv, so don't forget to activate the environment
 
         source flask/bin/activate
+
+## Alternative: postgresql
+The polichombr backends also supports
+PostgreSQL
+
+```
+	sudo apt-get install libpq-dev postgresql-server-dev-all
+	pip install psycopg2
+```
+
+Replace the DB url in the `config.py` file by the one corresponding to you DB configuration.
