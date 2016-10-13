@@ -712,14 +712,16 @@ class SampleController(object):
 
     def add_multiple_functions(self, sample, funcs, overwrite=False):
         """
-            Add multiple.
+            Add multiple functions to the sample
+            Each func is a dict with the address as key,
+            and is a dict (machoc_hash, name)
         """
-        for address, machoc_hash, name in funcs:
+        for addr in funcs.keys():
             self.add_function(
                 sample,
-                address,
-                machoc_hash,
-                name,
+                addr,
+                funcs[addr]["machoc"],
+                funcs[addr]["name"],
                 overwrite,
                 do_commit=False)
         db.session.commit()

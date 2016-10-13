@@ -55,6 +55,7 @@ class IDACommentAction(IDAAction):
 
 
 class IDANameAction(IDAAction):
+    # Represent names in IDA
     __tablename__ = 'idanames'
     id = db.Column(db.Integer(),
                    db.ForeignKey('idaactions.id'),
@@ -64,6 +65,7 @@ class IDANameAction(IDAAction):
 
 
 class IDAApplyStructs(IDAAction):
+    # This is the action of applying a structure to an address
     __tablename__ = 'idaapplystructs'
     id = db.Column(db.Integer(),
                    db.ForeignKey('idaactions.id'),
@@ -89,7 +91,6 @@ class IDAStruct(IDAAction):
     members = db.relationship("IDAStructMember",
             backref=db.backref("struct"),
             remote_side=[id])
-
 
     __mapper_args__ = {
         "polymorphic_identity": "idastructs"}
@@ -117,7 +118,7 @@ class IDAActionSchema(ma.ModelSchema):
 
 class IDAStructMemberSchema(ma.ModelSchema):
     class Meta:
-        fields=(
+        fields = (
             "id",
             "name",
             "offset",
@@ -125,10 +126,12 @@ class IDAStructMemberSchema(ma.ModelSchema):
             "mtype"
         )
 
+
 class IDAStructSchema(ma.ModelSchema):
     members = fields.Nested('IDAStructMemberSchema',
                             only=['id', 'name', 'offset', 'size', 'mtype'],
                             many=True)
+
     class Meta:
         fields = (
                 "id",

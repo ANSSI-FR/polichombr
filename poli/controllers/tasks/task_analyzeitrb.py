@@ -10,7 +10,6 @@
 
 import os
 import re
-import time
 
 from subprocess import Popen
 
@@ -33,20 +32,53 @@ class task_analyzeitrb(Task):
     def __init__(self, sample=None):
         super(task_analyzeitrb, self).__init__()
         self.sid = sample.id
+        self.tmessage = "ANALYZEITRB TASK %d :: " % (self.sid)
         self.txt_report = ""
         self.storage_file = sample.storage_file
         if "application/x-dosexec" not in sample.mime_type:
             self.is_interrested = False
 
+    @Task._timer
     def execute(self):
-        self.tstart = int(time.time())
-        self.tmessage = "ANALYZEITRB TASK %d :: " % (self.sid)
-        app.logger.debug(self.tmessage + "EXECUTE")
         self.analyze_it()
         return True
 
+    @staticmethod
+    def get_addr_data(line):
+        """
+            Parse a line of idacmd results from analyzeit
+        """
+        items = line.split('::')
+        addr, data = None, None
+        if len(items) == 3:
+            addr = int(items[1], 16)
+            data = items[2]
+        return addr, data
+
+    def parse_machoc_signatures(self):
+        """
+            Returns a dict containing the functions and the hashes
+        """
+        # MACHOC report: we load the functions, hashes, etc.
+        app.logger.info("Parsing functions")
+        fname = self.storage_file + '.sign'
+        functions = {}
+        if not os.path.exists(fname):
+            return functions
+        with open(fname) as infile:
+            fdata = infile.read()
+            items = fdata.split(";")
+            for i in items:
+                if ":" in i:
+                    subitems = i.split(":")
+                    machoc_h = int(subitems[0].strip(), 16)
+                    address = int(subitems[1].strip(), 16)
+                    functions[address] = dict(machoc=machoc_h, name="")
+        return functions
+
+    @Task._timer
     def apply_result(self):
-        sc = SampleController()
+        samplecontrol = SampleController()
         idac = IDAActionsController()
         sample = SampleController.get_by_id(self.sid)
         if sample is None:
@@ -55,68 +87,41 @@ class task_analyzeitrb(Task):
         app.logger.debug(self.tmessage + "APPLY_RESULT")
 
         # TXT report
-        app.logger.info("Starting analysis creation")
+        app.logger.info("Creating new analyzeit report")
         SampleController.create_analysis(
             sample, self.txt_report, "analyzeit", True)
 
-        # MACHOC report: we load the functions, hashes, etc.
-        app.logger.info("Starting functions")
-        fname = self.storage_file + '.sign'
-        functions = []
-        if os.path.exists(fname):
-            fdata = open(fname, 'rb').read()
-            items = fdata.split(";")
-            for i in items:
-                if ":" in i:
-                    subitems = i.split(":")
-                    machoc_h = subitems[0].strip()
-                    address = subitems[1].strip()
-                    functions.append([address, machoc_h, ""])
+        functions = self.parse_machoc_signatures()
 
         # IDA COMMANDS report:
         # update functions list with idc.MakeName() information
-        # TODO: also store comments
-        app.logger.info("Starting idacommands")
+        app.logger.info("Parsing idacommands")
         fname = self.storage_file + '.idacmd'
-        if os.path.exists(fname):
-            fdata = open(fname, 'rb').read()
-            for line in fdata.split("\n"):
-                if line.startswith("idc.MakeName::"):
-                    items = line.split("::")
-                    if len(items) == 3:
-                        addr = items[1]
-                        name = items[2]
-                        if addr.startswith("0x"):
-                            addr = addr[2:]
-                        for i in functions:
-                            if i[0] == addr:
-                                i[2] = name
-                        name_action = idac.add_name(int(addr, 16), name)
-                        SampleController.add_idaaction(sample.id, name_action)
-                elif line.startswith("idc.MakeRptCmt::"):
-                    items = line.split("::")
-                    if len(items) == 3:
-                        addr = items[1]
-                        value = items[2]
-                        if addr.startswith("0x"):
-                            addr = addr[2:]
-                        try:
-                            addr = int(addr, 16)
-                        except Exception:
-                            continue
-                        act = idac.add_comment(addr, value)
-                        SampleController.add_idaaction(sample.id, act)
+        act = None
+        with open(fname) as fdata:
+            for line in fdata:
+                if line.startswith('idc.MakeName'):
+                    addr, name = self.get_addr_data(line)
+                    try:
+                        functions[addr]['name'] = name
+                    except KeyError:
+                        app.logger.debug("No function found for %x" % (addr))
+                    act = idac.add_name(addr, name)
+                elif line.startswith('idc.MakeRptCmt'):
+                    addr, cmt = self.get_addr_data(line)
+                    act = idac.add_comment(addr, cmt)
+                else:
+                    app.logger.debug("Unknown IDA command %s" % (line))
+                    continue
+                samplecontrol.add_idaaction(sample.id, act)
+
         # Functions: just push the list
         app.logger.info("Storing actions")
-        if len(functions) > 0:
-            sc.add_multiple_functions(sample, functions)
+        samplecontrol.add_multiple_functions(sample, functions)
 
         # global machoc match
-        app.logger.info("Matching actions")
-        sc.match_by_machoc80(sample)
-        app.logger.debug(self.tmessage + "END - TIME %i" %
-                         (int(time.time()) - self.tstart))
-
+        app.logger.info("Calculating machoc80 matches")
+        samplecontrol.match_by_machoc80(sample)
         return True
 
     def analyze_it(self):
