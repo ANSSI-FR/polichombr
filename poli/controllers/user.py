@@ -139,7 +139,6 @@ class UserController(object):
         """
         return User.query.get(int(user_id))
 
-
     @staticmethod
     def deactivate(user_id):
         u = user_datastore.get_user(int(user_id))

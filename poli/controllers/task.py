@@ -8,6 +8,9 @@
         Simple task skeleton
 """
 
+import time
+from poli import app
+
 
 class Task(object):
     """
@@ -20,6 +23,25 @@ class Task(object):
 
     is_interrested = True   # setting this value to False will make the
     # scheduler not call your task's methods.
+
+    tstart = None
+    tmessage = None
+
+    @staticmethod
+    def _timer(func):
+        """
+            Timing decorator
+        """
+        def wrapper(*args, **kwargs):
+            """
+                Wrap timing and message printing
+            """
+            tstart = int(time.time())
+            ret = func(*args, **kwargs)
+            time_delta = int(time.time()) - tstart
+            app.logger.debug("%s took %d seconds" % (func.__name__, time_delta))
+            return ret
+        return wrapper
 
     def __init__(self, sample=None):
         """
@@ -37,7 +59,7 @@ class Task(object):
             Finally, you can also set your execution_level here, if it must
             be elevated.
         """
-        pass
+        self.tmessage = "Generic task, should be inherited"
 
     def execute(self):
         """

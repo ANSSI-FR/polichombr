@@ -66,7 +66,7 @@ class FamilyDataFile(db.Model):
 
 class FamilyStatus:
     """
-    Family analysis status by users.
+        Is the family analysis complete or not?
     """
     (
         FINISHED,
@@ -157,7 +157,7 @@ class FamilySchema(ma.ModelSchema):
         fields = ('id',
                   'name',
                   'parent_id',
-                  'subfamilies',  # TODO make the families jsonable
+                  'subfamilies',
                   'samples',
                   'abstract',
                   'status',
