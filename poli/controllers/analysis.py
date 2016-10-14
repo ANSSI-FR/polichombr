@@ -22,11 +22,11 @@ class AnalysisFactory(object):
     """
         Dynamically loads tasks from directory
     """
-    tasks_classes_container = None
+    tasks_classes_container = []
+    is_loaded = False
 
     def __init__(self):
-        self.tasks_classes_container = []
-        self.load_tasks()
+        pass
 
     def load_tasks(self):
         """
@@ -57,12 +57,15 @@ class AnalysisFactory(object):
                         "Could not load %s : %s" %
                         (task_filename, e))
                     continue
+        self.is_loaded = True
         return True
 
     def create_analysis(self, sample):
         """
         Creates a simple analysis from a sample.
         """
+        if not self.is_loaded:
+            self.load_tasks()
         analysis = Analysis(sample)
         if analysis is None:
             app.logger.error("The factory couldn't generate an analysis...")

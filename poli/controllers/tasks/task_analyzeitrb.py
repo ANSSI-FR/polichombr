@@ -76,10 +76,40 @@ class task_analyzeitrb(Task):
                     functions[address] = dict(machoc=machoc_h, name="")
         return functions
 
+    def parse_ida_cmds(self, sid, functions):
+        """
+            Parse and add IDA commands dumped by AnalyzeIt,
+            and updates the functions names if needed
+        """
+        idac = IDAActionsController()
+        funcs = dict.copy(functions)
+        fname = self.storage_file + '.idacmd'
+        act = None
+        if not os.path.exists(fname):
+            return funcs
+        with open(fname) as fdata:
+            for line in fdata:
+                if line.startswith('idc.MakeName'):
+                    addr, name = self.get_addr_data(line)
+                    try:
+                        # update functions list with idc.MakeName() information
+                        funcs[addr]['name'] = name
+                    except KeyError:
+                        app.logger.debug("No function found for %x" % (addr))
+                    act = idac.add_name(addr, name)
+                elif line.startswith('idc.MakeRptCmt'):
+                    addr, cmt = self.get_addr_data(line)
+                    act = idac.add_comment(addr, cmt)
+                else:
+                    app.logger.debug("Unknown IDA command %s" % (line))
+                    continue
+                SampleController.add_idaaction(sid, act)
+        return funcs
+
+
     @Task._timer
     def apply_result(self):
         samplecontrol = SampleController()
-        idac = IDAActionsController()
         sample = SampleController.get_by_id(self.sid)
         if sample is None:
             app.logger.error(self.tmessage + "Sample has disappeared...")
@@ -94,29 +124,11 @@ class task_analyzeitrb(Task):
         functions = self.parse_machoc_signatures()
 
         # IDA COMMANDS report:
-        # update functions list with idc.MakeName() information
         app.logger.info("Parsing idacommands")
-        fname = self.storage_file + '.idacmd'
-        act = None
-        with open(fname) as fdata:
-            for line in fdata:
-                if line.startswith('idc.MakeName'):
-                    addr, name = self.get_addr_data(line)
-                    try:
-                        functions[addr]['name'] = name
-                    except KeyError:
-                        app.logger.debug("No function found for %x" % (addr))
-                    act = idac.add_name(addr, name)
-                elif line.startswith('idc.MakeRptCmt'):
-                    addr, cmt = self.get_addr_data(line)
-                    act = idac.add_comment(addr, cmt)
-                else:
-                    app.logger.debug("Unknown IDA command %s" % (line))
-                    continue
-                samplecontrol.add_idaaction(sample.id, act)
+        functions = self.parse_ida_cmds(sample.id, functions)
 
         # Functions: just push the list
-        app.logger.info("Storing actions")
+        app.logger.info("Storing functions")
         samplecontrol.add_multiple_functions(sample, functions)
 
         # global machoc match

@@ -25,7 +25,7 @@ class IDAAction(db.Model):
     data = db.Column(db.String())
 
     # The address where the action occured
-    address = db.Column(db.Integer(), index=True)
+    address = db.Column(db.BigInteger(), index=True)
 
     # We must keep timestamp to reorder actions
     timestamp = db.Column(db.DateTime())
