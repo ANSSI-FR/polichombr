@@ -18,8 +18,8 @@ We provide an engine to automate the analysis tasks,
 and identify hotpoints in the binary, and collaboratively reverse binaries.
 
 ### Example scripts
-	Scripts under the folder [examples](https://github.com/ANSSI-FR/polichombr/tree/master/examples)
-	permits some basic actions for a Polichombr instance.
+Scripts under the folder [examples](https://github.com/ANSSI-FR/polichombr/tree/master/examples)
+permits some basic actions for a Polichombr instance.
 
 ### Generic sample informations 
 ![screenshot](docs/screenshots/screen_sample_view.png)
