@@ -77,10 +77,16 @@ class task_analyzeitrb(Task):
         return functions
 
     def parse_ida_cmds(self, sid, functions):
+        """
+            Parse and add IDA commands dumped by AnalyzeIt,
+            and updates the functions names if needed
+        """
         idac = IDAActionsController()
-        funcs = functions
+        funcs = dict.copy(functions)
         fname = self.storage_file + '.idacmd'
         act = None
+        if not os.path.exists(fname):
+            return funcs
         with open(fname) as fdata:
             for line in fdata:
                 if line.startswith('idc.MakeName'):
