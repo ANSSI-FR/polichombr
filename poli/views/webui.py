@@ -13,17 +13,18 @@ import json
 import os
 import io
 
+from zipfile import ZipFile
+
 from flask import render_template, g, redirect, url_for, flash
 from flask import abort, make_response, request, jsonify
 from flask_security import login_user, logout_user, current_user
 from flask_security import login_required, roles_required
 from werkzeug import secure_filename
-from zipfile import ZipFile
 
 from poli import app, api
 
+from poli.models.user import User
 from poli.models.family import Family
-from poli.models.user   import User
 from poli.models.sample import Sample, SampleMetadataType
 from poli.models.yara_rule import YaraRule
 
@@ -99,7 +100,6 @@ def index():
 
 
 @app.route('/login/', methods=['GET', 'POST'])
-#@app.route('/login', methods=['GET', 'POST'])
 def login():
     """
     Flask-Login.
@@ -132,9 +132,8 @@ def register_user():
     registration_form = UserRegistrationForm()
     if registration_form.validate_on_submit():
         ret = api.usercontrol.create(registration_form.username.data,
-                               registration_form.password.data,
-                               registration_form.completename.data,
-                               )
+                                     registration_form.password.data,
+                                     registration_form.completename.data)
         if ret:
             return redirect(url_for('login'))
         else:
@@ -203,6 +202,7 @@ def admin_page():
     users = User.query.all()
     return render_template("admin.html", users=users)
 
+
 @app.route('/settings/', methods=['GET', 'POST'])
 @login_required
 def ui_settings():
@@ -263,10 +263,14 @@ def view_user(user_id):
                            chnameform=chnameform,
                            user=myuser)
 
+
 @app.route('/user/<int:user_id>/activate', methods=['GET', 'POST'])
 @login_required
 @roles_required("admin")
 def activate_user(user_id):
+    """
+        User activation for flask-security
+    """
     ret = api.usercontrol.activate(user_id)
     if not ret:
         flash("Cannot activate user", "error")
@@ -274,10 +278,14 @@ def activate_user(user_id):
         flash("activated user", "success")
     return redirect(url_for("admin_page"))
 
+
 @app.route('/user/<int:user_id>/deactivate', methods=['GET', 'POST'])
 @login_required
 @roles_required("admin")
 def deactivate_user(user_id):
+    """
+        Flask security user deactivation
+    """
     ret = api.usercontrol.deactivate(user_id)
     if not ret:
         flash("Cannot deactivate user", "error")
@@ -422,28 +430,6 @@ def view_family(family_id):
                            changetlpform=change_tlp_form,
                            famusers=family_users,
                            yaraform=add_yara_form)
-
-
-@app.route('/family/<int:family_id>/downloadfile/<int:file_id>/')
-@login_required
-def download_family_file(family_id, file_id):
-    """
-    Family attachment download endpoint. Not in API for now, but may be
-    migrated soon.
-    TODO: serve file instead of reading and sending raw headers.
-    """
-    family = api.familycontrol.get_by_id(family_id)
-    attachment = api.familycontrol.get_file_by_id(file_id)
-    if family is None or attachment is None:
-        abort(404)
-    if not os.path.exists(attachment.filepath):
-        abort(404)
-    file_data = open(attachment.filepath, "rb").read()
-    response = make_response(file_data)
-    response.headers["Content-type"] = "application/octet-stream"
-    response.headers[
-        "Content-Disposition"] = "attachment; filename=" + attachment.filename
-    return response
 
 
 @app.route("/family/<int:family_id>/addreme/")
@@ -811,30 +797,15 @@ def download_sample(sample_id):
     return redirect(url_for('apiview.api_get_sample_file', sid=sample_id))
 
 
-"""
-
-    SEARCH VIEW
-
-"""
-
-
 @app.route('/search/', methods=['GET', 'POST'])
 @login_required
 def ui_search():
     """
-    Search and handle forms.
+    Handle search forms
     """
     hform = HashSearchForm()
     tform = FullTextSearchForm()
     mhform = MachocHashSearchForm()
-    cfields = []
-    i = 1
-    while True:
-        x = SampleMetadataType.tostring(i)
-        if x == "":
-            break
-        cfields.append(x)
-        i = i + 1
 
     hash_compare_results = None
     samples_results = None
@@ -861,7 +832,6 @@ def ui_search():
                            hform=hform,
                            tform=tform,
                            mhform=mhform,
-                           cfields=cfields,
                            mresults=functions_results,
                            hresults=hash_compare_results,
                            results=samples_results)

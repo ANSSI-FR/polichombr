@@ -9,7 +9,7 @@
 """
 
 
-class TLPLevel:
+class TLPLevel(object):
     """
     TLP sensibility level. https://www.us-cert.gov/tlp
     BLACK level: "Keep the information private", should not be exported.
@@ -24,11 +24,18 @@ class TLPLevel:
 
     @classmethod
     def tostring(cls, val):
-        for k, v in vars(cls).iteritems():
-            if v == val:
-                return k
+        for key, value in vars(cls).iteritems():
+            if value == val:
+                return key
         return ""
 
     @classmethod
     def fromstring(cls, val):
         return getattr(cls, val, None)
+
+TLPLevelChoices = [
+    (TLPLevel.TLPWHITE, 'TLP White'),
+    (TLPLevel.TLPGREEN, 'TLP Green'),
+    (TLPLevel.TLPAMBER, 'TLP Amber'),
+    (TLPLevel.TLPRED, 'TLP Red'),
+    (TLPLevel.TLPBLACK, 'TLP Black')]
