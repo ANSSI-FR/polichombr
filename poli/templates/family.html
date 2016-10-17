@@ -118,7 +118,7 @@
         <li role="presentation"> <a href='#export' data-toggle="tab">Export</a></li>
     </ul>
 
-    
+
     <div class="tab-content">
         <br />
         <div class="tab-pane" id="export">
@@ -128,7 +128,7 @@
                 </div>
                 <div class="panel-body">
                 {{wtf.quick_form(expform)}}
-                </div>  
+                </div>
             </div>
         </div>
 
@@ -211,7 +211,7 @@
             </div>
         </div>
         </div>
-    
+
         <div class="tab-pane" id="samples">
         <div class="panel panel-primary">
             <div class="panel-heading">
@@ -312,7 +312,7 @@
                     <div class="row">
                         <div class="col-xs-8">
                             <h3>
-                                <a href="/family/{{family.id}}/downloadfile/{{i.id}}" class="glyphicon glyphicon-download-alt"></a>&nbsp;
+                                <a href="/api/1.0/family/{{family.id}}/downloadfile/{{i.id}}" class="glyphicon glyphicon-download-alt"></a>&nbsp;
                                 <a href="/family/{{family.id}}/deletefile/{{i.id}}" class="btn btn-danger btn-xs" onclick="javascript: return confirm('Confirm file deletion?');">delete</a>
                             </h3>
                         </div>
@@ -323,7 +323,7 @@
                                 {% elif i.TLP_sensibility == 2 %}
                                 <p class=text-success>TLP GREEN
                                 {% elif i.TLP_sensibility == 3 %}
-                                <p class=text-warning>TLP AMBER 
+                                <p class=text-warning>TLP AMBER
                                 {% elif i.TLP_sensibility == 4 %}
                                 <p class=text-danger>TLP RED
                                 {% elif i.TLP_sensibility == 5 %}
@@ -336,7 +336,7 @@
                     <div class="well">
                         {{i.description}}
                     </div>
-                </div>  
+                </div>
             </div>
             {% endfor %}
         </div>
