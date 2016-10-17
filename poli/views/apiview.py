@@ -16,6 +16,8 @@ from poli.models.sample import Sample, SampleSchema
 from poli.models.yara_rule import YaraSchema
 from poli.models.models import TLPLevel
 
+from flask_security import login_required
+
 from flask import jsonify, request, send_file, abort, make_response
 
 
@@ -24,9 +26,11 @@ def plain_text(data):
     response.headers['Content-Type'] = 'text/plain'
     return response
 
+
 @apiview.errorhandler(404)
 def api_404_handler(error):
     return jsonify(dict(error=404, error_description="Resource not found")), 404
+
 
 @apiview.errorhandler(500)
 def api_500_handler(error):
@@ -41,12 +45,14 @@ def api_400_handler(error):
                     'error_description': error.description,
                     'error_message': error.message}), 400
 
+
 @apiview.route("/<path:invalid_path>", methods=['GET', 'POST', 'PATCH'])
 def handle_unmatchable(*args, **kwargs):
     """
         Return a 404 when not finding an endpoint
     """
     abort(404)
+
 
 @apiview.route('/api/')
 @apiview.route('/')
@@ -251,6 +257,23 @@ def api_post_family(fam_name):
     """
     abort(404)
 
+@apiview.route('/family/<int:family_id>/attachment/<int:file_id>/')
+@login_required
+def download_family_file(family_id, file_id):
+    """
+    Family attachment download endpoint.
+    """
+    family = api.familycontrol.get_by_id(family_id)
+    attachment = api.familycontrol.get_file_by_id(file_id)
+    if family is None or attachment is None:
+        abort(404)
+    data_file = attachment.filepath
+    if not os.path.exists(data_file):
+        abort(404)
+    return send_file('../' + data_file,
+                     as_attachment=True,
+                     attachment_filename=os.path.basename(data_file))
+
 
 @apiview.route('/samples/<shash>/')
 def api_get_sample_id_from_hash(shash):
@@ -427,7 +450,6 @@ def get_filter_arguments(mrequest):
     return current_timestamp, addr
 
 
-
 @apiview.route('/samples/<int:sid>/comments/', methods=['GET'])
 def api_get_sample_comments(sid):
     """
@@ -458,7 +480,6 @@ def api_post_sample_comments(sid):
     action_id = api.idacontrol.add_comment(address, comment)
     result = api.samplecontrol.add_idaaction(sid, action_id)
     return jsonify({'result': result})
-
 
 
 @apiview.route('/samples/<int:sid>/names/', methods=['GET'])
@@ -642,13 +663,15 @@ def api_get_all_yaras():
     schema = YaraSchema(many=True)
     return jsonify({'yara_rules': schema.dump(yaras).data})
 
+
 @apiview.route('/yaras/', methods=['POST'])
 def api_create_yara():
     """
         Add a new yara
         @arg name: the yara name
         @arg rule: the full text of the rule
-        @arg tlp_level: Optional, the sensibility of the rule. Default = TLP AMBER
+        @arg tlp_level: Optional, the sensibility of the rule.
+            Default = TLP AMBER
     """
     tlp_level = None
     data = request.json
