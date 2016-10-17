@@ -163,7 +163,11 @@ def logout():
 @app.route('/skelenox/', methods=['GET', 'POST'])
 @login_required
 def dl_skelenox():
-    ipaddr, port = request.host.split(":")
+    try:
+        ipaddr, port = request.host.split(":")
+    except ValueError:
+        ipaddr = request.host
+        port = 80
     zipout = io.BytesIO()
     with ZipFile(zipout, "w") as myzip:
         myzip.write("skelenox.py")
@@ -199,6 +203,9 @@ def dl_skelenox():
 @login_required
 @roles_required('admin')
 def admin_page():
+    """
+        Render the user admin page
+    """
     users = User.query.all()
     return render_template("admin.html", users=users)
 
