@@ -374,5 +374,6 @@ class HashSearchForm(FlaskForm):
     """
     Hash search.
     """
-    hneedle = StringField("Search", validators=[DataRequired(), Length(min=32, max=64)])
+    hneedle = StringField("Search", validators=[DataRequired(),
+                                                Length(min=32, max=64)])
     search = SubmitField(u'Submit')
