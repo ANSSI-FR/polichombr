@@ -9,6 +9,7 @@
 """
 
 import os
+import datetime
 
 from poli import api, apiview, app
 from poli.models.family import FamilySchema
@@ -445,6 +446,11 @@ def get_filter_arguments(mrequest):
     if data is not None:
         if 'timestamp' in data.keys():
             current_timestamp = data['timestamp']
+            form = "%Y-%m-%dT%H:%M:%S.%f"
+            try:
+                current_timestamp = datetime.datetime.strptime(current_timestamp, form)
+            except ValueError:
+                abort(500, "Wrong timestamp format")
         if 'addr' in data.keys():
             addr = int(data['addr'], 16)
     return current_timestamp, addr
