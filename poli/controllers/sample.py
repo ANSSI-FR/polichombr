@@ -404,6 +404,11 @@ class SampleController(object):
 
     @staticmethod
     def add_sample_match(sample_1, sample_2, match_type):
+        """
+            Create and commit a sample match between two samples,
+            with the associated type.
+            Used types are "iat_hash" or "machoc80"
+        """
         match = SampleMatch()
         match.match_type = match_type
         match.sid_2 = sample_2.id
