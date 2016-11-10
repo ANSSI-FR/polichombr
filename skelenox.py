@@ -11,7 +11,6 @@ import httplib
 import gzip
 import atexit
 import json
-import threading
 import logging
 
 from StringIO import StringIO
@@ -31,25 +30,6 @@ format_str = '[%(asctime)s] [%(levelname)s] [%(threadName)s]: %(message)s'
 formatter = logging.Formatter(format_str, datefmt='%d/%m/%Y %I:%M')
 handler.setFormatter(formatter)
 g_logger.addHandler(handler)
-
-try:
-    import ssl
-except:
-    g_logger.exception("Cannot load ssl lib, please install libopenssl-0.9.8:i386")
-
-
-settings_filename = "skelsettings.json"
-skel_settings = None
-skel_db = None
-skel_conn = None
-skel_hooks = None
-
-last_timestamp = 0
-poli_id = 0
-sample_id = 0
-crit_backup_file = None
-last_saved = 0
-backup_file = None
 
 
 class SkelConfig(object):
@@ -133,18 +113,33 @@ class SkelConnection(object):
     """
         HTTP(S) API management
     """
+    sample_id = None
+    remote_path = None
+    http_debug = None
+    api_key = None
+    poli_server = None
+    poli_port = None
 
-    def __init__(self, poli_server="", poli_port=5000,
-                 remote_path="", poli_apikey="", http_debug=False):
-        self.http_debug = http_debug
-        self.remote_path = remote_path
-        self.api_key = poli_apikey
-        self.poli_server = poli_server
-        self.poli_port = poli_port
+
+    h_conn = None
+    is_online = False
+
+    def __init__(self, skel_config=None):
+        """
+            Here skel_config should be a SkelConfig object
+        """
+        print skel_config
+        if skel_config is None:
+            raise ValueError
+        self.http_debug = skel_config.debug_http
+        self.remote_path = skel_config.poli_remote_path
+        self.api_key = skel_config.poli_apikey
+        self.poli_server = skel_config.poli_server
+        self.poli_port = skel_config.poli_port
 
         self.h_conn = None
         self.is_online = False
-        self.ctx = None
+        self.sample_id = None
 
     def get_online(self):
         """
@@ -169,6 +164,7 @@ class SkelConnection(object):
         self.h_conn = httplib.HTTPConnection(self.poli_server, self.poli_port)
         self.h_conn.connect()
         self.is_online = True
+        self.init_sample_id()
 
     def get_offline(self):
         """
@@ -184,6 +180,7 @@ class SkelConnection(object):
         if self.h_conn is not None:
             self.h_conn.close()
         self.is_online = False
+        self.sample_id = None
 
     def poli_request(self, endpoint, data, method="POST"):
         """
@@ -206,9 +203,9 @@ class SkelConnection(object):
         res = self.h_conn.getresponse()
 
         if res.status != 200:
-            g_logger.error("The %s request didn't go as expected"%(method))
-        contentType = res.getheader("Content-Encoding")
-        if contentType == "gzip":
+            g_logger.error("The %s request didn't go as expected", method)
+        content_type = res.getheader("Content-Encoding")
+        if content_type == "gzip":
             buf = StringIO(res.read())
             res = gzip.GzipFile(fileobj=buf)
         data = res.read()
@@ -234,7 +231,14 @@ class SkelConnection(object):
         result = self.poli_request(endpoint, data, method='DELETE')
         return result
 
+    def poli_patch(self, endpoint='/', data=None):
+        result = self.poli_request(endpoint, data, method='PATCH')
+        return result
+
     def push_comment(self, address=0, comment=None):
+        """
+            Push a standard comment
+        """
         if comment is None:
             return False
         data = {"address": address,
@@ -242,16 +246,19 @@ class SkelConnection(object):
         endpoint = self.prepare_endpoint('comments')
         res = self.poli_post(endpoint, data)
         if res["result"]:
-            g_logger.debug(("Comment %s sent for address 0x%x" % (comment, address)))
+            g_logger.debug("Comment %s sent for address 0x%x", comment, address)
         else:
-            g_logger.error("Cannot send comment %s ( 0x%x )" % (comment, address))
+            g_logger.error("Cannot send comment %s ( 0x%x )", comment, address)
         return res["result"]
 
     def send_sample(self, filedata):
+        """
+            Ugly wrapper for uploading a file in multipart/form-data
+        """
         endpoint = "/api/1.0/samples/"
         headers = {"Accept-encoding": "gzip, deflate",
-                   "X-API-Key": self.api_key
-                   }
+                   "X-API-Key": self.api_key}
+
         method = "POST"
         boundary = "70f6e331562f4b8f98e5f9590e0ffb8e"
         headers["Content-type"] = "multipart/form-data; boundary="+boundary
@@ -277,6 +284,7 @@ class SkelConnection(object):
             result = json.loads(data)
         except:
             g_logger.exception("Cannot load json data from server")
+        return result
 
     def get_sample_id(self):
         """
@@ -291,6 +299,19 @@ class SkelConnection(object):
         else:
             return False
 
+    def init_sample_id(self):
+        """
+            test if the remote sample exists,
+            if not, we upload it
+        """
+        if self.sample_id is None:
+            self.sample_id = self.get_sample_id()
+            if not self.sample_id:
+                g_logger.warning("Sample not found on server, uploading it")
+                self.send_sample(open(idc.GetInputFile(), 'rb'))
+                self.sample_id = self.get_sample_id()
+                g_logger.info("Sample ID: %d", self.sample_id)
+
     def get_comments(self):
         endpoint = self.prepare_endpoint('comments')
         res = self.poli_get(endpoint)
@@ -302,6 +323,9 @@ class SkelConnection(object):
         return res["names"]
 
     def push_name(self, address=0, name=None):
+        """
+            Send a define name, be it func or area
+        """
         if name is None:
             return False
         data = {"address": address,
@@ -309,9 +333,9 @@ class SkelConnection(object):
         endpoint = self.prepare_endpoint('names')
         res = self.poli_post(endpoint, data)
         if res["result"]:
-            g_logger.debug("sent name %s at 0x%x" % (name, address))
+            g_logger.debug("sent name %s at 0x%x", name, address)
         else:
-            g_logger.error("failed to send name %s" % (name))
+            g_logger.error("failed to send name %s", name)
         return True
 
     def create_struct(self, struct_name):
@@ -327,259 +351,25 @@ class SkelConnection(object):
         res = self.poli_post(endpoint, data)
         if not res["result"]:
             return False
-        id = res["structs"][0]["id"]
-        return id
+        sid = res["structs"][0]["id"]
+        return sid
 
-    def create_struc_member(struct_id, start_offset):
+    def create_struc_member(self, struct_id, start_offset):
         """
         XXX :
             [ ] Get struct id from name
-            [ ] 
         """
         endpoint = self.prepare_endpoint('structs')
+        print endpoint
         return False
 
+    def prepare_endpoint(self, submodule):
+        """
+            Prepare a standard API endpoint
+        """
+        endpoint = self.remote_path + str(self.sample_id) + "/" + submodule + "/"
+        return endpoint
 
-    @staticmethod
-    def prepare_endpoint(action):
-        global sample_id
-        return "/api/1.0/samples/" + str(sample_id) + "/" + action + "/"
-
-
-class SkelUpdateAgent(threading.Thread):
-    """
-        This thread agent wait for messages on a queue.
-        On each message, it polls the server for getting
-        new updates. If new updates are detected, they are passed
-        to the execution agent wich will handle them
-    """
-    last_timestamp = 0
-
-    def __init__(self, args=(), kwargs=None):
-        threading.Thread.__init__(self, name="SkelUpdateAgent",
-                                  target=self.worker,
-                                  args=args, kwargs=kwargs)
-
-    def worker(self):
-        try:
-            sync_queue = kwargs["hUpdateSyncQueue"]
-
-        except Exception as e:
-            g_logger.error("Could'nt get the sync queues")
-            g_logger.exception(e)
-        while True:
-            ret = sync_queue.get(timeout=0.5) # block 0.5 secs if nothing available
-            if 'quit' in ret:
-                break
-            #names = SkelConn.get_names(XXX)
-            #comments = SkelConn.get_comments()
-            #structs = SkelConn.get_structs()
-            #schedule_names_updates(names)
-
-def push_change(cmd, param1, param2):
-    """
-        XXX : todo
-    """
-    global sample_id
-    g_logger.warning("Push change is unimplemented...")
-    #g_logger.debug("[+] " + cmd + " => " + param1 + " :: " + param2 + " -- SENT")
-    return True
-
-
-def push_functions_names():
-    """
-        We push all the function names from the current IDB
-        Also push the functions comments
-    """
-    global skel_conn
-
-    for addr in idautils.Functions(idc.MinEA(), idc.MaxEA()):
-        fname = GetFunctionName(addr)
-        if fname != "" and not SkelUtils.hasSubNoppedPrefix(fname):
-            if not skel_conn.push_name(addr, fname):
-                return False
-
-        for rpt_flag in [0, 1]:
-            func_cmt = GetFunctionCmt(addr, rpt_flag)
-            if func_cmt != "":
-                skel_conn.push_comment(addr, func_cmt)
-    return True
-
-def push_comms():
-    """
-        Push already defined comments
-    """
-    global skel_conn
-    black_list = [
-        "size_t", "int", "LPSTR", "char", "char *", "lpString",
-        "unsigned int", "void *", "indirect table for switch statement",
-        "this", "jump table for switch statement", "switch jump"]
-    for i in range(idc.MinEA(), idc.MaxEA()):
-        cmt = Comment(i)
-        if cmt is not None and cmt not in black_list:
-            if not skel_conn.push_comment(i, cmt):
-                return False
-        cmt = RptCmt(i)
-        if cmt is not None and cmt not in black_list:
-            if not skel_conn.push_comment(i, cmt):
-                return False
-        # if idc.GetFunctionCmt(function_ea,0) != "":
-        #    push_change("idc.SetFunctionCmt",shex(function_ea),idc.GetFunctionCmt(i,0))
-        # elif idc.GetFunctionCmt(function_ea,1) != "":
-        #    push_change("idc.SetFunctionCmt",shex(function_ea),idc.GetFunctionCmt(function_ea,1))
-    return True
-
-
-def startup():
-    """
-        Push the defined names,
-        and pull the remote ones
-    """
-    push_functions_names()
-    push_comms()
-    return sync_names()
-
-
-def execute_comment(comment):
-    """
-        XXX : switch on the comment type
-    """
-    idc.MakeRptCmt(
-        comment["address"],
-        comment["data"].encode(
-            'ascii',
-            'replace'))
-    g_logger.debug("[x] Added comment %s @ 0x%x " % (comment["data"], comment["address"]))
-
-
-def execute_rename(name):
-    """
-        Wrapper for renaming only default names
-    """
-    if "sub_" in idc.GetTrueName(name["address"])[:4]:
-        g_logger.debug("[x] renaming %s @ 0x%x as %s" % (idc.GetTrueName(name["address"]), name["address"], name["data"]))
-        idc.MakeName(name["address"], name["data"].encode('ascii', 'ignore'))
-
-
-def sync_names():
-    """
-        Get the remote comments and names
-    """
-    global skel_conn
-
-    if not skel_conn.is_online:
-        g_logger.error("[!] Error, cannot sync while offline")
-        return False
-
-    comments = skel_conn.get_comments()
-    for comment in comments:
-        execute_comment(comment)
-
-    names = skel_conn.get_names()
-    for name in names:
-        execute_rename(name)
-
-    g_logger.info("[+] IDB synchronized")
-    return True
-
-
-def get_online(*args):
-    global backup_file, sample_id, skel_conn
-
-    if skel_conn.is_online:
-        return False
-
-    skel_conn.get_online()
-
-    SaveBase(backup_file, idaapi.DBFL_TEMP)
-
-    # test if the remote sample exists
-    if sample_id == 0:
-        sample_id = skel_conn.get_sample_id()
-        if not sample_id:
-            g_logger.warning("Sample not found on server, uploading it")
-            skel_conn.send_sample(open(idc.GetInputFile(), 'rb'))
-            sample_id = skel_conn.get_sample_id()
-            g_logger.info("Sample ID: %d" % sample_id)
-            return True
-    g_logger.info("[+] First synchronization finished")
-    return True
-
-
-def end_skelenox():
-    """
-        cleanup
-    """
-    global sample_id, skel_conn, skel_hooks
-    skel_conn.close_connection()
-    skel_hooks.cleanup_hooks()
-    g_logger.info("Skelenox terminated")
-    sample_id = 0
-    return
-
-def end_notify_callback(nw_arg):
-    g_logger.debug("Being notified of exiting DB")
-    end_skelenox()
-
-idaapi.notify_when(idaapi.NW_CLOSEIDB|idaapi.NW_TERMIDA,
-                   end_notify_callback)
-
-
-def init_skelenox():
-    global crit_backup_file, backup_file, last_saved
-    global last_timestamp
-    global sample_id
-    global is_updating
-    global skel_conn
-    global skel_settings, settings_filename
-    global skel_hooks
-
-    is_updating = 0
-
-    last_timestamp = -1
-    sample_id = 0
-    last_saved = 0
-
-    SkelUtils.header()
-
-    g_logger.info("[+] Init Skelenox")
-
-    # Load settings
-    skel_settings = SkelConfig(settings_filename)
-
-    skel_conn = SkelConnection(skel_settings.poli_server,
-                               skel_settings.poli_port,
-                               skel_settings.poli_remote_path,
-                               skel_settings.poli_apikey,
-                               skel_settings.debug_http)
-
-    # If having 3 idbs in your current path bother you, change this
-    crit_backup_file = GetIdbPath()[:-4] + "_backup_preskel_.idb"
-    backup_file = GetIdbPath()[:-4] + "_backup_.idb"
-
-    atexit.register(end_skelenox)
-    g_logger.info("Backuping IDB before any intervention (_backup_preskel_)")
-    SaveBase(crit_backup_file, idaapi.DBFL_TEMP)
-    g_logger.info("Creating regular backup file IDB (_backup_)")
-    SaveBase(backup_file, idaapi.DBFL_TEMP)
-    last_saved = time.time()
-
-    skel_settings.online_at_startup = True
-
-    if not get_online():
-        g_logger.error("Cannot get online =(")
-        return False
-
-    # Synchronize the sample
-    if not startup():
-        return
-
-    # setup hooks
-    skel_hooks = SkelHooks()
-    skel_hooks.hook()
-
-    g_logger.info("Skelenox init finished")
-    return
 
 class SkelHooks(object):
     """
@@ -638,36 +428,6 @@ class SkelHooks(object):
                     if idc.GetFunctionCmt(self.addr, 1) != "":
                         skel_conn.push_comment(self.addr,
                                 idc.GetFunctionCmt(self.addr, 1))
-#                 elif "MakeName" in self.cmdname:
-                    # if (idc.GetFunctionAttr(self.addr, 0) == self.addr):
-                        # fname = GetFunctionName(self.addr)
-                        # if fname != "":
-                            # if not CheckDefaultValue(fname):
-                                # skel_conn.push_name(self.addr, fname)
-                    # else:
-                        # fname = idc.GetTrueName(self.addr)
-                        # if fname != "" and not CheckDefaultValue(fname):
-                            # skel_conn.push_name(self.addr, fname)
-                        # else:
-                            # # ok, on regarde ce qui est pointe
-                            # if GetOpType(self.addr, 0) in [o_near, o_imm, o_mem]:
-                                # if GetOpType(self.addr, 1) in [
-                                        # o_near, o_imm, o_mem]:
-                                    # g_logger.warning("You must be on the top of function or at the global address to set the name in log file")
-                                # else:
-                                    # add = idc.GetOperandValue(self.addr, 0)
-                                    # fname = idc.GetTrueName(add)
-                                    # if fname != "" and not CheckDefaultValue(fname):
-                                        # skel_conn.push_name(add, fname)
-                                    # else:
-                                        # print "[P] You must be on the top of function or at the global address to set the name in log file"
-                            # elif GetOpType(self.addr, 1) in [o_near, o_imm, o_mem]:
-                                # add = idc.GetOperandValue(self.addr, 1)
-                                # fname = idc.GetTrueName(add)
-                                # if fname != "" and not CheckDefaultValue(fname):
-                                    # skel_conn.push_name(add, fname)
-                                # else:
-                                    # print "[P] You must be on the top of function or at the global address to set the name in log file"
 
                 elif self.cmdname == "MakeFunction":
                     if idc.GetFunctionAttr(self.addr, 0) is not None:
@@ -682,7 +442,8 @@ class SkelHooks(object):
                         newtype = ""
                     else:
                         newtype = SkelUtils.prepare_parse_type(newtype, self.addr)
-                    push_change("idc.SetType", SkelUtils.shex(self.addr), newtype)
+                    # push_change("idc.SetType", int(self.addr), newtype)
+                    # XXX IMPLEMENT
                 elif self.cmdname == "OpStructOffset":
                     print "Fixme, used when typing a struct member/stack var/data pointer to a struct offset "
             except KeyError:
@@ -705,8 +466,8 @@ class SkelHooks(object):
                 cmt = RptCmt(addr)
             else:
                 cmt = Comment(addr)
-            # TODO : blacklist
-            skel_conn.push_comment(addr, cmt)
+            if not SkelUtils.filter_coms_blacklist(cmt):
+                skel_conn.push_comment(addr, cmt)
             return idaapi.IDB_Hooks.cmt_changed(self, *args)
 
         def struc_created(self, *args):
@@ -716,7 +477,7 @@ class SkelHooks(object):
             struct_name = idaapi.get_struc_name(args[0])
             skel_conn.create_struct(struct_name)
 
-            g_logger.debug("New structure %s created" % struct_name)
+            g_logger.debug("New structure %s created", struct_name)
 
             return idaapi.IDB_Hooks.struc_created(self, *args)
 
@@ -724,7 +485,6 @@ class SkelHooks(object):
             """
                 struc_member_created(self, sptr, mptr) -> int
             """
-            global sptr, mptr
             sptr, mptr = args
             print dir(sptr)
             print dir(mptr)
@@ -792,6 +552,7 @@ class SkelHooks(object):
             print ti.tid
             return idaapi.IDB_Hooks.changing_struc_member(self, *args)
 
+
     class SkelIDPHook(idaapi.IDP_Hooks):
         """
             Hook IDP that saves the database regularly
@@ -799,16 +560,6 @@ class SkelHooks(object):
         def __init__(self):
             idaapi.IDP_Hooks.__init__(self)
 
-        def custom_out(self):
-            global last_saved, backup_file, skel_settings
-            if last_saved < (time.time() - skel_settings.save_timeout):
-                print "[+] Saving IDB"
-                SaveBase(backup_file, idaapi.DBFL_TEMP)
-                last_saved = time.time()
-            return idaapi.IDP_Hooks.custom_out(self)
-
-        def rename(self, *args):
-            return idaapi.IDP_Hooks.rename(self, *args)
 
         def renamed(self, *args):
             g_logger.debug("[IDB Hook] Something is renamed")
@@ -818,8 +569,8 @@ class SkelHooks(object):
                     # XXX push_new_local_name(ea, new_name)
                     pass
                 else:
-                    skel_conn.push_name(ea, new_name)
-                    pass
+                    if not SkelUtils.name_blacklist(new_name):
+                        skel_conn.push_name(ea, new_name)
             else:
                 print "ea outside program..."
 
@@ -858,44 +609,48 @@ class SkelUtils(object):
     """
         Utils functions
     """
-    @staticmethod
-    def shex(a):
-        """
-            custom, pour supprimer les L finaux, au cas ou
-        """
-        return hex(a).rstrip("L")
 
     @staticmethod
-    def CheckDefaultValue(name):
+    def name_blacklist(name):
+        """
+            Standard name blacklist
+            return True if blacklisted
+        """
         default_values = ['sub_', "dword_", "unk_", "byte_", "word_", "loc_"]
         for value in default_values:
-            if value in name[:6]:
+            if value in name[:len(value)+1]:
                 return True
         return False
 
     @staticmethod
-    def hasSubNoppedPrefix(name):
+    def func_name_blacklist(name):
+        """
+            Blacklist for common function names
+            Includes:
+                sub_*,
+                ?*,
+                nullsub*,
+                unknown*,
+                SEH*
+        """
         if name is not None:
-            # IDA prefix
-            default_values = ['sub_', '?', 'nullsub', 'unknown', 'SEH_']
+            default_values = ['sub_', 'nullsub', 'unknown', 'SEH_']
             for val in default_values:
-                if val in name[:7]:
+                if val in name[:len(val)+1]:
                     return True
-            if name[0] != "_" and name[0] != "@":
-                    return False
-        return True
-
-
+            if name[0] == "@" or name[0] == "?":
+                return True
+        return False
 
     @staticmethod
-    def prepare_parse_type(typestr, ea):
+    def prepare_parse_type(typestr, addr):
         """
             idc.ParseType doesnt accept types without func / local name
             as exported by default GetType
             this is an ugly hack to fix it
             FIXME : parsing usercall (@<XXX>)
         """
-        lname = idc.GetTrueName(ea)
+        lname = idc.GetTrueName(addr)
         if lname is None:
             lname = "Default"
 
@@ -947,245 +702,233 @@ class SkelUtils(object):
         print "\tfile %IDB%_backup_ contains periodic IDB backups"
         return
 
-def checkupdates():
-    global skel_conn
-    if skel_conn.is_online is False:
+    @staticmethod
+    def filter_coms_blacklist(cmt):
+        """
+            These are standards coms, we don't want them in the DB
+        """
+        black_list = [
+            "size_t", "int", "LPSTR", "char", "char *", "lpString",
+            "dw", "lp", "Str", "Dest", "Src", "cch", "Dst", "jumptable", "switch ",
+            "unsigned int", "void *", "indirect table for switch statement", "Size"
+            "this", "jump table for", "switch jump", "nSize", "hInternet", "hObject",
+            "SEH", "Exception handler", "Source", "Size", "Val", "Time",
+            "struct", "unsigned __int"]
+        for elem in black_list:
+            if elem in cmt[:len(elem)+1]:
+                g_logger.debug("Comment %s has been blacklisted", cmt)
+                return True
         return False
-    if sync_names() is False:
-        return False
-    return 0
+
+    @staticmethod
+    def execute_comment(comment):
+        """
+            XXX : switch on the comment type
+        """
+        idc.MakeRptCmt(
+            comment["address"],
+            comment["data"].encode(
+                'ascii',
+                'replace'))
+        g_logger.debug("[x] Added comment %s @ 0x%x ", comment["data"], comment["address"])
+
+    @staticmethod
+    def execute_rename(name):
+        """
+            Wrapper for renaming only default names
+        """
+        if "sub_" in idc.GetTrueName(name["address"])[:4]:
+            g_logger.debug("[x] renaming %s @ 0x%x as %s",
+                           idc.GetTrueName(name["address"]),
+                           name["address"],
+                           name["data"])
+            idc.MakeName(name["address"], name["data"].encode('ascii', 'ignore'))
 
 
-           #schedule_names_updates(names)
-
-def push_change(cmd, param1, param2):
+class SkelCore(object):
     """
-        XXX : todo
+        This is the main class for skelenox.
+        It handles startup, manage agents, connections and so on.
     """
-    g_logger.warning("Push change is unimplemented...")
-    #g_logger.debug("[+] " + cmd + " => " + param1 + " :: " + param2 + " -- SENT")
-    return True
+    crit_backup_file = None
+    backup_file = None
+    last_saved = None
+    skel_conn = None
+    skel_settings = None
+    settings_filename = ""
+    skel_hooks = None
+
+    def __init__(self, settings_filename):
+        """
+            Prepare for execution
+        """
+        SkelUtils.header()
+
+        g_logger.info("[+] Init Skelenox")
+
+        # Load settings
+        self.skel_settings = SkelConfig(settings_filename)
+
+        self.skel_conn = SkelConnection(self.skel_settings)
+
+        # If having 3 idbs in your current path bother you, change this
+        self.crit_backup_file = GetIdbPath()[:-4] + "_backup_preskel_.idb"
+        self.backup_file = GetIdbPath()[:-4] + "_backup_.idb"
+
+        atexit.register(self.end_skelenox)
+
+        g_logger.info("Backuping IDB before any intervention (_backup_preskel_)")
+        SaveBase(self.crit_backup_file, idaapi.DBFL_TEMP)
+        g_logger.info("Creating regular backup file IDB (_backup_)")
+        SaveBase(self.backup_file, idaapi.DBFL_TEMP)
+        self.last_saved = time.time()
+
+        self.skel_settings.online_at_startup = True
+        if self.skel_hooks is not None:
+            self.skel_hooks.cleanup_hooks()
+
+        if not self.skel_conn.get_online():
+            g_logger.error("Cannot get online =(")
+
+        # Synchronize the sample
+        self.initiate_sync()
+
+        # setup hooks
+        self.skel_hooks = SkelHooks()
+        g_logger.info("Skelenox init finished")
 
 
-def push_functions_names():
-    """
-        We push all the function names from the current IDB
-        Also push the functions comments
-    """
-    for addr in idautils.Functions(idc.MinEA(), idc.MaxEA()):
-        fname = GetFunctionName(addr)
-        if fname != "" and not SkelUtils.hasSubNoppedPrefix(fname):
-            if not skel_conn.push_name(addr, fname):
-                return False
+    def run(self):
+        """
+            Launch the hooks!
+        """
+        self.skel_hooks.hook()
 
-        for rpt_flag in [0, 1]:
-            func_cmt = GetFunctionCmt(addr, rpt_flag)
-            if func_cmt != "" and  filter_coms_black_list(func_cmt):
-                skel_conn.push_comment(addr, func_cmt)
-    return True
 
-def filter_coms_black_list(cmt):
-    black_list = [
-        "size_t", "int", "LPSTR", "char", "char *", "lpString",
-        "dw", "lp", "Str", "Dest", "Src", "cch", "Dst", "jumptable", "switch ",
-        "unsigned int", "void *", "indirect table for switch statement", "Size"
-        "this", "jump table for", "switch jump", "nSize", "hInternet", "hObject",
-        "SEH", "Exception handler", "Source", "Size", "Val", "Time",
-        "struct", "unsigned __int"]
-    for elem in black_list:
-        if elem in cmt[:len(elem)+1]:
+    def end_skelenox(self):
+        """
+            cleanup
+        """
+        self.skel_conn.close_connection()
+        if self.skel_hooks is not None:
+            self.skel_hooks.cleanup_hooks()
+        g_logger.info("Skelenox terminated")
+
+
+    def checkupdates(self):
+        """
+        Safe wrapper for pulling updates
+        """
+        if self.skel_conn.is_online is False:
             return False
-    return True
+        if self.sync_names() is False:
+            return False
+        return 0
 
-def push_comms():
+
+    def initiate_sync(self):
+        """
+            Push the defined names,
+            and pull the remote ones
+        """
+        self.push_functions_names()
+        self.push_comms()
+        return self.sync_names()
+
+
+    def sync_names(self):
+        """
+            Get the remote comments and names
+        """
+        if not self.skel_conn.is_online:
+            g_logger.error("[!] Error, cannot sync while offline")
+            return False
+
+        comments = self.skel_conn.get_comments()
+        for comment in comments:
+            SkelUtils.execute_comment(comment)
+
+        names = self.skel_conn.get_names()
+        for name in names:
+            SkelUtils.execute_rename(name)
+
+        g_logger.info("[+] IDB synchronized")
+        return True
+
+
+    def push_comms(self):
+        """
+            Push already defined comments
+        """
+        addr = idc.MinEA()
+        # while addr != idc.BADADDR:
+            # cmt = Comment(addr)
+            # if cmt is not None and SkelUtils.filter_coms_black_list(cmt):
+                # if not skel_conn.push_comment(addr, cmt):
+                    # return False
+            # cmt = RptCmt(addr)
+            # if cmt is not None and SkelUtils.filter_coms_black_list(cmt):
+                # if not skel_conn.push_comment(addr, cmt):
+                    # return False
+        #     addr = NextHead(addr)
+            # if idc.GetFunctionCmt(function_ea,0) != "":
+            #    push_change("idc.SetFunctionCmt",shex(function_ea),idc.GetFunctionCmt(i,0))
+            # elif idc.GetFunctionCmt(function_ea,1) != "":
+            #    push_change("idc.SetFunctionCmt",shex(function_ea),idc.GetFunctionCmt(function_ea,1))
+        return True
+
+    def push_functions_names(self):
+        """
+            We push all the function names from the current IDB
+            Also push the functions comments
+        """
+        for addr in idautils.Functions(idc.MinEA(), idc.MaxEA()):
+            fname = GetFunctionName(addr)
+            if fname != "" and not SkelUtils.func_name_blacklist(fname):
+                print "BL status :", SkelUtils.func_name_blacklist(fname)
+                if not self.skel_conn.push_name(addr, fname):
+                    return False
+
+            for rpt_flag in [0, 1]:
+                func_cmt = GetFunctionCmt(addr, rpt_flag)
+                if func_cmt != "" and not SkelUtils.filter_coms_blacklist(func_cmt):
+                    self.skel_conn.push_comment(addr, func_cmt)
+        return True
+
+
+def end_notify_callback(nw_arg):
     """
-        Push already defined comments
+        Killing when exiting database
     """
-    global skel_conn
-    addr = idc.MinEA()
-    # while addr != idc.BADADDR:
-        # cmt = Comment(addr)
-        # if cmt is not None and filter_coms_black_list(cmt):
-            # if not skel_conn.push_comment(addr, cmt):
-                # return False
-        # cmt = RptCmt(addr)
-        # if cmt is not None and filter_coms_black_list(cmt):
-            # if not skel_conn.push_comment(addr, cmt):
-                # return False
-    #     addr = NextHead(addr)
-        # if idc.GetFunctionCmt(function_ea,0) != "":
-        #    push_change("idc.SetFunctionCmt",shex(function_ea),idc.GetFunctionCmt(i,0))
-        # elif idc.GetFunctionCmt(function_ea,1) != "":
-        #    push_change("idc.SetFunctionCmt",shex(function_ea),idc.GetFunctionCmt(function_ea,1))
-    return True
-
-
-def startup():
-    """
-        Push the defined names,
-        and pull the remote ones
-    """
-    push_functions_names()
-    push_comms()
-    return sync_names()
-
-
-def execute_comment(comment):
-    """
-        XXX : switch on the comment type
-    """
-    idc.MakeRptCmt(
-        comment["address"],
-        comment["data"].encode(
-            'ascii',
-            'replace'))
-    g_logger.debug("[x] Added comment %s @ 0x%x " % (comment["data"], comment["address"]))
-
-
-def execute_rename(name):
-    """
-        Wrapper for renaming only default names
-    """
-    if "sub_" in idc.GetTrueName(name["address"])[:4]:
-        g_logger.debug("[x] renaming %s @ 0x%x as %s" % (idc.GetTrueName(name["address"]), name["address"], name["data"]))
-        idc.MakeName(name["address"], name["data"].encode('ascii', 'ignore'))
-
-
-def sync_names():
-    """
-        Get the remote comments and names
-    """
-    global skel_conn
-
-    if not skel_conn.is_online:
-        g_logger.error("[!] Error, cannot sync while offline")
-        return False
-
-    comments = skel_conn.get_comments()
-    for comment in comments:
-        execute_comment(comment)
-
-    names = skel_conn.get_names()
-    for name in names:
-        execute_rename(name)
-
-    g_logger.info("[+] IDB synchronized")
-    return True
-
-
-def get_online(*args):
-    global backup_file, sample_id, skel_conn
-
-    if skel_conn.is_online:
-        return False
-
-    skel_conn.get_online()
-
-    SaveBase(backup_file, idaapi.DBFL_TEMP)
-
-    # test if the remote sample exists
-    if sample_id == 0:
-        sample_id = skel_conn.get_sample_id()
-        if not sample_id:
-            g_logger.warning("Sample not found on server, uploading it")
-            skel_conn.send_sample(open(idc.GetInputFile(), 'rb'))
-            sample_id = skel_conn.get_sample_id()
-            g_logger.info("Sample ID: %d" % sample_id)
-            return True
-    g_logger.info("[+] First synchronization finished")
-    return True
+    g_logger.debug("Being notified of exiting DB")
+    end_skelenox()
 
 
 def end_skelenox():
     """
-        cleanup
+        Gets the instance and kill it
     """
-    global sample_id, skel_conn, skel_hooks
-    skel_conn.close_connection()
-    if skel_hooks is not None:
-        skel_hooks.cleanup_hooks()
-    g_logger.info("Skelenox terminated")
-    sample_id = 0
-    return
-
-def end_notify_callback(nw_arg):
-    g_logger.debug("Being notified of exiting DB")
-    end_skelenox()
-
-idaapi.notify_when(idaapi.NW_CLOSEIDB|idaapi.NW_TERMIDA,
-                   end_notify_callback)
-
-
-def init_skelenox():
-    global crit_backup_file, backup_file, last_saved
-    global last_timestamp
-    global sample_id
-    global is_updating
-    global skel_conn
-    global skel_settings, settings_filename
-    global skel_hooks
-
-    is_updating = 0
-
-    last_timestamp = -1
-    sample_id = 0
-    last_saved = 0
-
-    SkelUtils.header()
-
-    g_logger.info("[+] Init Skelenox")
-
-    # Load settings
-    skel_settings = SkelConfig(settings_filename)
-
-    skel_conn = SkelConnection(skel_settings.poli_server,
-                               skel_settings.poli_port,
-                               skel_settings.poli_remote_path,
-                               skel_settings.poli_apikey,
-                               skel_settings.debug_http)
-
-    # If having 3 idbs in your current path bother you, change this
-    crit_backup_file = GetIdbPath()[:-4] + "_backup_preskel_.idb"
-    backup_file = GetIdbPath()[:-4] + "_backup_.idb"
-
-    atexit.register(end_skelenox)
-    g_logger.info("Backuping IDB before any intervention (_backup_preskel_)")
-    SaveBase(crit_backup_file, idaapi.DBFL_TEMP)
-    g_logger.info("Creating regular backup file IDB (_backup_)")
-    SaveBase(backup_file, idaapi.DBFL_TEMP)
-    last_saved = time.time()
-
-    skel_settings.online_at_startup = True
-    if skel_hooks is not None:
-        skel_hooks.cleanup_hooks()
-
-    if not get_online():
-        g_logger.error("Cannot get online =(")
-        return False
-
-    # Synchronize the sample
-    if not startup():
-        return
-
-    # setup hooks
-    skel_hooks = SkelHooks()
-    skel_hooks.hook()
-
-    g_logger.info("Skelenox init finished")
-    return
-
-class SkelCore(object):
     pass
 
 
+def launch_skelenox():
+    """
+        Create the instance and launch it
+    """
+    skelenox = SkelCore("skelsettings.json")
+    skelenox.run()
+    idaapi.notify_when(idaapi.NW_CLOSEIDB|idaapi.NW_TERMIDA,
+                       end_notify_callback)
+    return skelenox
 
 
 def PLUGIN_ENTRY():
     return SkelenoxPlugin()
 
+
 class SkelenoxPlugin(idaapi.plugin_t):
     """
-
+        Classic IDAPython plugin
     """
     flags = idaapi.PLUGIN_UNL
     comment = "Skelenox"
@@ -1196,7 +939,7 @@ class SkelenoxPlugin(idaapi.plugin_t):
     def init(self):
         # Some initialization
         self.icon_id = 0
-        init_skelenox()
+        launch_skelenox()
         return idaapi.PLUGIN_OK
 
     def run(self, arg=0):
@@ -1207,4 +950,4 @@ class SkelenoxPlugin(idaapi.plugin_t):
 
 if __name__ == '__main__':
     # RUN !
-    init_skelenox()
+    launch_skelenox()
