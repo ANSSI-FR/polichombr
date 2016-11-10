@@ -353,14 +353,30 @@ class ApiTestCase(unittest.TestCase):
         self.assertIn(data['comments'][1]["data"], "TESTCOMMENT2")
         self.assertEqual(data['comments'][1]["address"], 0xBADF00D)
 
+    @staticmethod
+    def format_timedelta():
+        """
+        wrapper for strftime and 1 day offset
+        """
+        offset = datetime.datetime.now() + datetime.timedelta(days=1)
+        offset = datetime.datetime.strftime(offset, '%Y-%m-%dT%H:%M:%S.%f')
+        return offset
 
     def test_action_timestamp(self):
+        """
+            Test getting different results with different timestamps
+        """
         self.push_comment(address=0xDEADBEEF, comment="TESTCOMMENT1")
-        offset = str(datetime.datetime.now() + datetime.timedelta(days=1))
+        offset = self.format_timedelta()
         retval = self.app.get('/api/1.0/samples/1/comments/?timestamp='+offset)
         self.assertEqual(retval.status_code, 200)
         data = json.loads(retval.data)
         self.assertEqual(len(data["comments"]), 0)
+
+        # now test with invalid timestamp
+        offset += "12345Z"
+        retval = self.app.get('/api/1.0/samples/1/comments/?timestamp='+offset)
+        self.assertEqual(retval.status_code, 500)
 
         retval = self.app.get('/api/1.0/samples/1/comments/')
         self.assertEqual(retval.status_code, 200)
@@ -368,7 +384,7 @@ class ApiTestCase(unittest.TestCase):
         self.assertEqual(len(data["comments"]), 1)
 
         self.push_name(address=0xDEADBEEF, name="TESTNAME")
-        offset = str(datetime.datetime.now() + datetime.timedelta(days=1))
+        offset = self.format_timedelta()
         retval = self.app.get('/api/1.0/samples/1/names/?timestamp='+offset)
         self.assertEqual(retval.status_code, 200)
         data = json.loads(retval.data)
@@ -380,7 +396,7 @@ class ApiTestCase(unittest.TestCase):
         self.assertEqual(len(data["names"]), 1)
 
         self.create_struct(name="TESTSTRUCTURE")
-        offset = str(datetime.datetime.now() + datetime.timedelta(days=1))
+        offset = self.format_timedelta()
         retval = self.app.get('/api/1.0/samples/1/structs/?timestamp='+offset)
         self.assertEqual(retval.status_code, 200)
         data = json.loads(retval.data)
