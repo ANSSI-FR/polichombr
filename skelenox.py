@@ -251,6 +251,21 @@ class SkelConnection(object):
             g_logger.error("Cannot send comment %s ( 0x%x )", comment, address)
         return res["result"]
 
+    def push_type(self, address, mtype=None):
+        """
+            Push defined types, parsed with prepare_parse_type
+        """
+        data = {"address": address,
+                "type": mtype}
+        endpoint = self.prepare_endpoint('types')
+        res = self.poli_post(endpoint, data)
+        if res["result"]:
+            g_logger.debug("New type %s sent for address 0x%x", mtype, address)
+        else:
+            g_logger.error("Cannot send type %s ( 0x%x )", mtype, address)
+        return res["result"]
+
+
     def send_sample(self, filedata):
         """
             Ugly wrapper for uploading a file in multipart/form-data
@@ -398,9 +413,11 @@ class SkelHooks(object):
         """
         cmdname = ""
         addr = 0
+        skel_conn = None
 
-        def __init__(self):
+        def __init__(self, skel_conn):
             idaapi.UI_Hooks.__init__(self)
+            self.skel_conn = skel_conn
 
         def preprocess(self, name):
             #checkupdates()  # XXX : enable it after correct timestamp management
@@ -412,21 +429,20 @@ class SkelHooks(object):
             end_skelenox()
 
         def postprocess(self):
-            global skel_conn
             try:
                 if "MakeComment" in self.cmdname:
                     if idc.Comment(self.addr) is not None:
-                        skel_conn.push_comment(
+                        self.skel_conn.push_comment(
                             self.addr, idc.Comment(self.addr))
                     if idc.GetFunctionCmt(self.addr, 0) != "":
-                        skel_conn.push_comment(
+                        self.skel_conn.push_comment(
                             self.addr, idc.GetFunctionCmt(
                                 (self.addr), 0))
                 elif "MakeRptCmt" in self.cmdname:
                     if idc.GetCommentEx(self.addr, 1) != "":
-                        skel_conn.push_comment(self.addr, idc.GetCommentEx(self.addr, 1))
+                        self.skel_conn.push_comment(self.addr, idc.GetCommentEx(self.addr, 1))
                     if idc.GetFunctionCmt(self.addr, 1) != "":
-                        skel_conn.push_comment(self.addr,
+                        self.skel_conn.push_comment(self.addr,
                                 idc.GetFunctionCmt(self.addr, 1))
 
                 elif self.cmdname == "MakeFunction":
@@ -442,7 +458,7 @@ class SkelHooks(object):
                         newtype = ""
                     else:
                         newtype = SkelUtils.prepare_parse_type(newtype, self.addr)
-                    # push_change("idc.SetType", int(self.addr), newtype)
+                        self.skel_conn.push_type(int(self.addr), newtype)
                     # XXX IMPLEMENT
                 elif self.cmdname == "OpStructOffset":
                     print "Fixme, used when typing a struct member/stack var/data pointer to a struct offset "
@@ -454,8 +470,10 @@ class SkelHooks(object):
         """
             IDB hooks, subclassed from ida_idp.py
         """
-        def __init__(self):
+        skel_conn = None
+        def __init__(self, skel_conn):
             idaapi.IDB_Hooks.__init__(self)
+            self.skel_conn = skel_conn
 
         def cmt_changed(self, *args):
             """
@@ -467,7 +485,7 @@ class SkelHooks(object):
             else:
                 cmt = Comment(addr)
             if not SkelUtils.filter_coms_blacklist(cmt):
-                skel_conn.push_comment(addr, cmt)
+                self.skel_conn.push_comment(addr, cmt)
             return idaapi.IDB_Hooks.cmt_changed(self, *args)
 
         def struc_created(self, *args):
@@ -475,7 +493,7 @@ class SkelHooks(object):
                 args -> id
             """
             struct_name = idaapi.get_struc_name(args[0])
-            skel_conn.create_struct(struct_name)
+            self.skel_conn.create_struct(struct_name)
 
             g_logger.debug("New structure %s created", struct_name)
 
@@ -486,8 +504,8 @@ class SkelHooks(object):
                 struc_member_created(self, sptr, mptr) -> int
             """
             sptr, mptr = args
-            print dir(sptr)
-            print dir(mptr)
+            #print dir(sptr)
+            #print dir(mptr)
             m_start_offset = mptr.soff
             m_end_offset = mptr.eoff
 
@@ -531,34 +549,40 @@ class SkelHooks(object):
             renaming_struc_member(self, sptr, mptr, newname) -> int
             """
             print "RENAMING STRUCT MEMBER"
-            print args
+            #print args
             mystruct, mymember, newname = args
-            print mymember
-            print dir(mymember)
+            #print mymember
+            #print dir(mymember)
             return idaapi.IDB_Hooks.renaming_struc_member(self, *args)
 
         def changing_struc_member(self, *args):
             """
             changing_struc_member(self, sptr, mptr, flag, ti, nbytes) -> int
             """
-            print "CHANGING STRUCT MEMBER"
-            print args
+            #print "CHANGING STRUCT MEMBER"
+            #print args
             mystruct, mymember, flag, ti, nbytes = args
-            print ti
-            print dir(ti)
-            print ti.cd
-            print ti.ec
-            print ti.ri
-            print ti.tid
+            #print ti
+            #print dir(ti)
+            #print ti.cd
+            #print ti.ec
+            #print ti.ri
+            #print ti.tid
             return idaapi.IDB_Hooks.changing_struc_member(self, *args)
+
+        def op_type_changed(self, *args):
+            print args
+            return idaapi.IDB_Hooks.op_type_changed(self, *args)
 
 
     class SkelIDPHook(idaapi.IDP_Hooks):
         """
             Hook IDP that saves the database regularly
         """
-        def __init__(self):
+        skel_conn = None
+        def __init__(self, skel_conn):
             idaapi.IDP_Hooks.__init__(self)
+            self.skel_conn = skel_conn
 
 
         def renamed(self, *args):
@@ -570,17 +594,17 @@ class SkelHooks(object):
                     pass
                 else:
                     if not SkelUtils.name_blacklist(new_name):
-                        skel_conn.push_name(ea, new_name)
+                        self.skel_conn.push_name(ea, new_name)
             else:
                 print "ea outside program..."
 
             return idaapi.IDP_Hooks.renamed(self, *args)
 
 
-    def __init__(self):
-        self.ui_hook = SkelHooks.SkelUIHook()
-        self.idb_hook = SkelHooks.SkelIDBHook()
-        self.idp_hook = SkelHooks.SkelIDPHook()
+    def __init__(self, skel_conn):
+        self.ui_hook = SkelHooks.SkelUIHook(skel_conn)
+        self.idb_hook = SkelHooks.SkelIDBHook(skel_conn)
+        self.idp_hook = SkelHooks.SkelIDPHook(skel_conn)
 
 
     def hook(self):
@@ -670,6 +694,7 @@ class SkelUtils(object):
                         "__thiscall"]
 
         flag = False
+        mtype = None
         for conv in fpconventions:
             if conv in typestr:
                 mtype = typestr.replace(conv, conv + lname)
@@ -794,7 +819,7 @@ class SkelCore(object):
         self.initiate_sync()
 
         # setup hooks
-        self.skel_hooks = SkelHooks()
+        self.skel_hooks = SkelHooks(self.skel_conn)
         g_logger.info("Skelenox init finished")
 
 
@@ -803,7 +828,6 @@ class SkelCore(object):
             Launch the hooks!
         """
         self.skel_hooks.hook()
-
 
     def end_skelenox(self):
         """
@@ -895,6 +919,13 @@ class SkelCore(object):
                     self.skel_conn.push_comment(addr, func_cmt)
         return True
 
+def launch_skelenox():
+    """
+        Create the instance and launch it
+    """
+    skelenox = SkelCore("skelsettings.json")
+    skelenox.run()
+    return skelenox
 
 def end_notify_callback(nw_arg):
     """
@@ -904,25 +935,10 @@ def end_notify_callback(nw_arg):
     end_skelenox()
 
 
-def end_skelenox():
-    """
-        Gets the instance and kill it
-    """
-    pass
-
-
-def launch_skelenox():
-    """
-        Create the instance and launch it
-    """
-    skelenox = SkelCore("skelsettings.json")
-    skelenox.run()
-    idaapi.notify_when(idaapi.NW_CLOSEIDB|idaapi.NW_TERMIDA,
-                       end_notify_callback)
-    return skelenox
-
-
 def PLUGIN_ENTRY():
+    """
+        IDAPython plugin wrapper
+    """
     return SkelenoxPlugin()
 
 
@@ -935,11 +951,17 @@ class SkelenoxPlugin(idaapi.plugin_t):
     help = "Polichombr synchronization agent"
     wanted_name = "Skelenox"
     wanted_hotkey = "Ctrl-F4"
+    skel_object = None
 
     def init(self):
-        # Some initialization
+        """
+        IDA plugin init
+        """
         self.icon_id = 0
-        launch_skelenox()
+        self.skel_object = launch_skelenox()
+
+        idaapi.notify_when(idaapi.NW_CLOSEIDB|idaapi.NW_TERMIDA,
+                           end_notify_callback)
         return idaapi.PLUGIN_OK
 
     def run(self, arg=0):

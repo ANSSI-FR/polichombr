@@ -51,14 +51,18 @@ class IDAActionsController(object):
 
     @staticmethod
     def filter_actions(action_type, sid, addr=None, timestamp=None):
+        """
+            Generate a filtered query for IDAActions,
+            Filter by sample ID, address and timestamp
+        """
         query = IDAAction.query.filter_by(type=action_type)
+        query = query.filter(IDAAction.samples.any(Sample.id == sid))
 
         if addr is not None:
             query = query.filter_by(address=addr)
+
         if timestamp is not None:
             query = query.filter(IDAAction.timestamp > timestamp)
-
-        query = query.filter(IDAAction.samples.any(Sample.id == sid))
 
         return query.all()
 
