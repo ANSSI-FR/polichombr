@@ -12,6 +12,8 @@ import gzip
 import atexit
 import json
 import logging
+import threading
+import datetime
 
 from StringIO import StringIO
 from string import lower
@@ -119,8 +121,6 @@ class SkelConnection(object):
     api_key = None
     poli_server = None
     poli_port = None
-
-
     h_conn = None
     is_online = False
 
@@ -128,7 +128,6 @@ class SkelConnection(object):
         """
             Here skel_config should be a SkelConfig object
         """
-        print skel_config
         if skel_config is None:
             raise ValueError
         self.http_debug = skel_config.debug_http
@@ -327,13 +326,24 @@ class SkelConnection(object):
                 self.sample_id = self.get_sample_id()
                 g_logger.info("Sample ID: %d", self.sample_id)
 
-    def get_comments(self):
+    def get_comments(self, timestamp=None):
         endpoint = self.prepare_endpoint('comments')
+        format_ts = "%Y-%m-%dT%H:%M:%S.%f"
+        if timestamp is not None:
+            endpoint += "?timestamp="
+            endpoint += datetime.datetime.strftime(timestamp, format_ts)
         res = self.poli_get(endpoint)
         return res["comments"]
 
-    def get_names(self):
+    def get_names(self, timestamp=None):
+        """
+            Get all names defined in the database
+        """
         endpoint = self.prepare_endpoint('names')
+        format_ts = "%Y-%m-%dT%H:%M:%S.%f"
+        if timestamp is not None:
+            endpoint += "?timestamp="
+            endpoint += datetime.datetime.strftime(timestamp, format_ts)
         res = self.poli_get(endpoint)
         return res["names"]
 
@@ -466,6 +476,7 @@ class SkelHooks(object):
                 pass
             return 0
 
+
     class SkelIDBHook(idaapi.IDB_Hooks):
         """
             IDB hooks, subclassed from ida_idp.py
@@ -515,15 +526,15 @@ class SkelHooks(object):
             """
             deleting_struc(self, sptr) -> int
             """
-            print "DELETING STRUCT"
+            # print "DELETING STRUCT"
             return idaapi.IDB_Hooks.deleting_struc(self, *args)
 
         def renaming_struc(self, *args):
             """
             renaming_struc(self, id, oldname, newname) -> int
             """
-            print "RENAMING STRUCT"
-            print args
+            #print "RENAMING STRUCT"
+            #print args
             return idaapi.IDB_Hooks.renaming_struc(self, *args)
 
         def expanding_struc(self, *args):
@@ -548,7 +559,7 @@ class SkelHooks(object):
             """
             renaming_struc_member(self, sptr, mptr, newname) -> int
             """
-            print "RENAMING STRUCT MEMBER"
+            # print "RENAMING STRUCT MEMBER"
             #print args
             mystruct, mymember, newname = args
             #print mymember
@@ -571,7 +582,7 @@ class SkelHooks(object):
             return idaapi.IDB_Hooks.changing_struc_member(self, *args)
 
         def op_type_changed(self, *args):
-            print args
+            #print args
             return idaapi.IDB_Hooks.op_type_changed(self, *args)
 
 
@@ -583,7 +594,6 @@ class SkelHooks(object):
         def __init__(self, skel_conn):
             idaapi.IDP_Hooks.__init__(self)
             self.skel_conn = skel_conn
-
 
         def renamed(self, *args):
             g_logger.debug("[IDB Hook] Something is renamed")
@@ -628,6 +638,7 @@ class SkelHooks(object):
             self.idp_hook.unhook()
             self.idp_hook = None
         return
+
 
 class SkelUtils(object):
     """
@@ -750,24 +761,116 @@ class SkelUtils(object):
         """
             XXX : switch on the comment type
         """
-        idc.MakeRptCmt(
-            comment["address"],
-            comment["data"].encode(
-                'ascii',
-                'replace'))
-        g_logger.debug("[x] Added comment %s @ 0x%x ", comment["data"], comment["address"])
+        def make_rpt():
+            idc.MakeRptCmt(
+                comment["address"],
+                comment["data"].encode(
+                    'ascii',
+                    'replace'))
+        cmt = Comment(comment["address"])
+        if cmt != comment["data"] and RptCmt(comment["address"]) != comment["data"]:
+            g_logger.debug("[x] Adding comment %s @ 0x%x ", comment["data"], comment["address"])
+            return idaapi.execute_sync(make_rpt, idaapi.MFF_WRITE)
+        else:
+            pass
 
     @staticmethod
     def execute_rename(name):
         """
             Wrapper for renaming only default names
         """
-        if "sub_" in idc.GetTrueName(name["address"])[:4]:
+        def get_name():
+            return idc.GetTrueName(name["address"])
+
+        def make_name():
+            """
+                Thread safe renaming wrapper
+            """
+            return idaapi.execute_sync(
+                idc.MakeName(name["address"], name["data"].encode('ascii', 'ignore')),
+                idaapi.MFF_FAST)
+        if get_name().startswith("sub_") or get_name() != name["data"]:
             g_logger.debug("[x] renaming %s @ 0x%x as %s",
-                           idc.GetTrueName(name["address"]),
+                           get_name(),
                            name["address"],
                            name["data"])
-            idc.MakeName(name["address"], name["data"].encode('ascii', 'ignore'))
+            make_name()
+
+
+class SkelSyncAgent(threading.Thread):
+    """
+        Agent that pulls the server regularly for new infos
+    """
+    skel_conn = None
+    skel_settings = None
+    last_timestamp = None
+    update_event = None
+    logger = None
+
+    def __init__(self, *args, **kwargs):
+        threading.Thread.__init__(self, name="SkelUpdateAgent",
+                                  args=args, kwargs=kwargs)
+        self.update_event = threading.Event()
+        self.last_timestamp = datetime.datetime.fromtimestamp(0)
+        g_logger.debug("SyncAgent initialized")
+
+    def setup_config(self, settings_filename):
+        self.skel_settings = SkelConfig(settings_filename)
+        self.skel_conn = SkelConnection(self.skel_settings)
+        self.skel_conn.get_online()
+
+    def sync_names(self):
+        """
+            Get the remote comments and names
+        """
+        format_ts = "%Y-%m-%dT%H:%M:%S.%f+00:00"
+        if not self.skel_conn.is_online:
+            g_logger.error("[!] Error, cannot sync while offline")
+            return False
+
+        comments = self.skel_conn.get_comments(timestamp=self.last_timestamp)
+        names = self.skel_conn.get_names(timestamp=self.last_timestamp)
+        for comment in comments:
+            SkelUtils.execute_comment(comment)
+            timestamp = datetime.datetime.strptime(comment["timestamp"], format_ts)
+            self.last_timestamp = max(timestamp, self.last_timestamp)
+
+        for name in names:
+            SkelUtils.execute_rename(name)
+            timestamp = datetime.datetime.strptime(name["timestamp"], format_ts)
+            self.last_timestamp = max(timestamp, self.last_timestamp)
+        return True
+
+    def setup_main_timer(self):
+        def update():
+            """
+                Triggers the synchronization event
+            """
+            if not self.update_event.isSet():
+                self.update_event.set()
+                self.update_event.clear()
+            return 1
+
+        def setup_timer():
+            """
+                Thread safe wrapper for setting up
+                the sync callback
+            """
+            idaapi.register_timer(2000, update)
+
+        idaapi.execute_sync(setup_timer, idaapi.MFF_FAST)
+
+
+    def run(self):
+        while True:
+            try:
+                self.update_event.wait()
+                self.update_event.clear()
+                self.sync_names()
+                time.sleep(1)
+            except Exception as mye:
+                g_logger.exception(mye)
+                break
 
 
 class SkelCore(object):
@@ -782,6 +885,7 @@ class SkelCore(object):
     skel_settings = None
     settings_filename = ""
     skel_hooks = None
+    skel_sync_agent = None
 
     def __init__(self, settings_filename):
         """
@@ -816,10 +920,18 @@ class SkelCore(object):
             g_logger.error("Cannot get online =(")
 
         # Synchronize the sample
-        self.initiate_sync()
+        self.skel_sync_agent = SkelSyncAgent()
+        self.skel_sync_agent.setup_config(settings_filename)
+        self.skel_sync_agent.setup_main_timer()
+
+        self.skel_sync_agent.start()
 
         # setup hooks
         self.skel_hooks = SkelHooks(self.skel_conn)
+
+        # setup skelenox terminator
+        self.setup_terminator()
+
         g_logger.info("Skelenox init finished")
 
 
@@ -829,6 +941,21 @@ class SkelCore(object):
         """
         self.skel_hooks.hook()
 
+
+    def setup_terminator(self):
+        """
+            Register an exit callback
+        """
+        def end_notify_callback(nw_arg):
+            """
+                Callback that destroys the object when exiting
+            """
+            g_logger.debug("Being notified of exiting DB")
+            self.end_skelenox()
+        idaapi.notify_when(idaapi.NW_CLOSEIDB|idaapi.NW_TERMIDA,
+                           end_notify_callback)
+
+
     def end_skelenox(self):
         """
             cleanup
@@ -836,88 +963,9 @@ class SkelCore(object):
         self.skel_conn.close_connection()
         if self.skel_hooks is not None:
             self.skel_hooks.cleanup_hooks()
+        self.skel_sync_agent.join(timeout=1)
         g_logger.info("Skelenox terminated")
 
-
-    def checkupdates(self):
-        """
-        Safe wrapper for pulling updates
-        """
-        if self.skel_conn.is_online is False:
-            return False
-        if self.sync_names() is False:
-            return False
-        return 0
-
-
-    def initiate_sync(self):
-        """
-            Push the defined names,
-            and pull the remote ones
-        """
-        self.push_functions_names()
-        self.push_comms()
-        return self.sync_names()
-
-
-    def sync_names(self):
-        """
-            Get the remote comments and names
-        """
-        if not self.skel_conn.is_online:
-            g_logger.error("[!] Error, cannot sync while offline")
-            return False
-
-        comments = self.skel_conn.get_comments()
-        for comment in comments:
-            SkelUtils.execute_comment(comment)
-
-        names = self.skel_conn.get_names()
-        for name in names:
-            SkelUtils.execute_rename(name)
-
-        g_logger.info("[+] IDB synchronized")
-        return True
-
-
-    def push_comms(self):
-        """
-            Push already defined comments
-        """
-        addr = idc.MinEA()
-        # while addr != idc.BADADDR:
-            # cmt = Comment(addr)
-            # if cmt is not None and SkelUtils.filter_coms_black_list(cmt):
-                # if not skel_conn.push_comment(addr, cmt):
-                    # return False
-            # cmt = RptCmt(addr)
-            # if cmt is not None and SkelUtils.filter_coms_black_list(cmt):
-                # if not skel_conn.push_comment(addr, cmt):
-                    # return False
-        #     addr = NextHead(addr)
-            # if idc.GetFunctionCmt(function_ea,0) != "":
-            #    push_change("idc.SetFunctionCmt",shex(function_ea),idc.GetFunctionCmt(i,0))
-            # elif idc.GetFunctionCmt(function_ea,1) != "":
-            #    push_change("idc.SetFunctionCmt",shex(function_ea),idc.GetFunctionCmt(function_ea,1))
-        return True
-
-    def push_functions_names(self):
-        """
-            We push all the function names from the current IDB
-            Also push the functions comments
-        """
-        for addr in idautils.Functions(idc.MinEA(), idc.MaxEA()):
-            fname = GetFunctionName(addr)
-            if fname != "" and not SkelUtils.func_name_blacklist(fname):
-                print "BL status :", SkelUtils.func_name_blacklist(fname)
-                if not self.skel_conn.push_name(addr, fname):
-                    return False
-
-            for rpt_flag in [0, 1]:
-                func_cmt = GetFunctionCmt(addr, rpt_flag)
-                if func_cmt != "" and not SkelUtils.filter_coms_blacklist(func_cmt):
-                    self.skel_conn.push_comment(addr, func_cmt)
-        return True
 
 def launch_skelenox():
     """
@@ -926,13 +974,6 @@ def launch_skelenox():
     skelenox = SkelCore("skelsettings.json")
     skelenox.run()
     return skelenox
-
-def end_notify_callback(nw_arg):
-    """
-        Killing when exiting database
-    """
-    g_logger.debug("Being notified of exiting DB")
-    end_skelenox()
 
 
 def PLUGIN_ENTRY():
@@ -960,15 +1001,14 @@ class SkelenoxPlugin(idaapi.plugin_t):
         self.icon_id = 0
         self.skel_object = launch_skelenox()
 
-        idaapi.notify_when(idaapi.NW_CLOSEIDB|idaapi.NW_TERMIDA,
-                           end_notify_callback)
         return idaapi.PLUGIN_OK
 
     def run(self, arg=0):
         return
 
     def term(self):
-        end_skelenox()
+        self.skel_object.end_skelenox()
+
 
 if __name__ == '__main__':
     # RUN !

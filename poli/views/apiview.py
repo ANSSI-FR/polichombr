@@ -522,7 +522,6 @@ def api_post_sample_names(sid):
         @arg addr the corresponding address
         @arg name the name
     """
-
     data = request.json
     addr = data['address']
     name = data['name']
