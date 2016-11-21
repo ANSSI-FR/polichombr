@@ -456,6 +456,19 @@ def get_filter_arguments(mrequest):
     return current_timestamp, addr
 
 
+@apiview.route('/samples/<int:sid>/idaactions/', methods=['GET'])
+def api_get_idaactions_updates(sid):
+    """
+        Get all actions since a timestamp
+    """
+    timestamp = datetime.datetime.now()
+
+    actions = api.idacontrol.get_all(sid=sid, timestamp=timestamp)
+
+    return jsonify({'idaactions': actions,
+                    'timestamp': datetime.datetime.now()})
+
+
 @apiview.route('/samples/<int:sid>/comments/', methods=['GET'])
 def api_get_sample_comments(sid):
     """
@@ -509,7 +522,6 @@ def api_post_sample_names(sid):
         @arg addr the corresponding address
         @arg name the name
     """
-
     data = request.json
     addr = data['address']
     name = data['name']

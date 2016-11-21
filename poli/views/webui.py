@@ -65,7 +65,6 @@ def before_request():
         Affects global variables for each request
     """
     g.user = current_user
-    g.families = Family.query.all()
     g.samples = Sample.query.all()
 
 
