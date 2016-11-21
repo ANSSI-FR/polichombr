@@ -195,8 +195,7 @@ class SkelConnection(object):
                    "Accept": "*/*;q=0.8",
                    "Accept-Language": "en-US,en;q=0.5",
                    "Connection": "Keep-Alive",
-                   "X-API-Key": self.api_key
-                  }
+                   "X-API-Key": self.api_key}
         json_data = json.dumps(data)
         self.h_conn.request(method, endpoint, json_data, headers)
         res = self.h_conn.getresponse()
@@ -264,7 +263,6 @@ class SkelConnection(object):
             g_logger.error("Cannot send type %s ( 0x%x )", mtype, address)
         return res["result"]
 
-
     def send_sample(self, filedata):
         """
             Ugly wrapper for uploading a file in multipart/form-data
@@ -284,7 +282,8 @@ class SkelConnection(object):
         body += "\r\n\r\n"
         body += "--" + boundary + "\r\n"
 
-        body += "Content-Disposition: form-data; name=\"file\"; filename=\"file\"\r\n"
+        body += "Content-Disposition: form-data;"
+        body += "name=\"file\"; filename=\"file\"\r\n"
         body += "\r\n"
         body += filedata.read()
         body += "\r\n--"
@@ -392,7 +391,9 @@ class SkelConnection(object):
         """
             Prepare a standard API endpoint
         """
-        endpoint = self.remote_path + str(self.sample_id) + "/" + submodule + "/"
+        endpoint = self.remote_path
+        endpoint += str(self.sample_id)
+        endpoint += "/" + submodule + "/"
         return endpoint
 
 
@@ -450,7 +451,8 @@ class SkelHooks(object):
                                 (self.addr), 0))
                 elif "MakeRptCmt" in self.cmdname:
                     if idc.GetCommentEx(self.addr, 1) != "":
-                        self.skel_conn.push_comment(self.addr, idc.GetCommentEx(self.addr, 1))
+                        self.skel_conn.push_comment(self.addr,
+                                                    idc.GetCommentEx(self.addr, 1))
                     if idc.GetFunctionCmt(self.addr, 1) != "":
                         self.skel_conn.push_comment(self.addr,
                                 idc.GetFunctionCmt(self.addr, 1))
@@ -476,12 +478,12 @@ class SkelHooks(object):
                 pass
             return 0
 
-
     class SkelIDBHook(idaapi.IDB_Hooks):
         """
             IDB hooks, subclassed from ida_idp.py
         """
         skel_conn = None
+
         def __init__(self, skel_conn):
             idaapi.IDB_Hooks.__init__(self)
             self.skel_conn = skel_conn
@@ -585,12 +587,12 @@ class SkelHooks(object):
             #print args
             return idaapi.IDB_Hooks.op_type_changed(self, *args)
 
-
     class SkelIDPHook(idaapi.IDP_Hooks):
         """
             Hook IDP that saves the database regularly
         """
         skel_conn = None
+
         def __init__(self, skel_conn):
             idaapi.IDP_Hooks.__init__(self)
             self.skel_conn = skel_conn
@@ -610,12 +612,10 @@ class SkelHooks(object):
 
             return idaapi.IDP_Hooks.renamed(self, *args)
 
-
     def __init__(self, skel_conn):
         self.ui_hook = SkelHooks.SkelUIHook(skel_conn)
         self.idb_hook = SkelHooks.SkelIDBHook(skel_conn)
         self.idp_hook = SkelHooks.SkelIDPHook(skel_conn)
-
 
     def hook(self):
         self.ui_hook.hook()
@@ -719,21 +719,20 @@ class SkelUtils(object):
                     flag = True
         return mtype
 
-
     @staticmethod
     def header():
         """
             help!
         """
-        print "-------------------------------------------------------------------"
+        print "-*" * 40
         print "                 SKELENOX "
         print "        This plugin is part of Polichombr"
         print "             (c) ANSSI-FR 2016"
-        print "-------------------------------------------------------------------"
+        print "-" * 80
         print "\t Collaborative reverse engineering framework"
         print "Help:"
         print "see   https://www.github.com/anssi-fr/polichombr/docs/"
-        print "-------------------------------------------------------------------"
+        print "-*" * 40
         print "\tfile %IDB%_backup_preskel_ contains pre-critical ops IDB backup"
         print "\tfile %IDB%_backup_ contains periodic IDB backups"
         return
@@ -953,14 +952,12 @@ class SkelCore(object):
 
         g_logger.info("Skelenox init finished")
 
-
     def run(self):
         """
             Launch the hooks!
         """
         self.skel_sync_agent.start()
         self.skel_hooks.hook()
-
 
     def setup_terminator(self):
         """
@@ -975,7 +972,6 @@ class SkelCore(object):
         idaapi.notify_when(idaapi.NW_CLOSEIDB|idaapi.NW_TERMIDA,
                            end_notify_callback)
 
-
     def end_skelenox(self):
         """
             cleanup
@@ -987,7 +983,6 @@ class SkelCore(object):
         self.skel_sync_agent.kill()
         g_logger.info("Skelenox terminated")
 
-
 def launch_skelenox():
     """
         Create the instance and launch it
@@ -996,13 +991,11 @@ def launch_skelenox():
     skelenox.run()
     return skelenox
 
-
 def PLUGIN_ENTRY():
     """
         IDAPython plugin wrapper
     """
     return SkelenoxPlugin()
-
 
 class SkelenoxPlugin(idaapi.plugin_t):
     """

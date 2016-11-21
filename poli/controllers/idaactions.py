@@ -27,14 +27,12 @@ class IDAActionsController(object):
         if sid is None:
             return False
         query = IDAAction.query
-        query= query.filter(
+        query = query.filter(
             IDAAction.samples.any(Sample.id == sid))
         if timestamp is not None:
-            query = query.filter(timestamp>=timestamp)
+            query = query.filter(timestamp >= timestamp)
         schema = IDAActionSchema(many=True)
         return schema.dump(query.all()).data
-
-
 
     @staticmethod
     def add_comment(address, data):

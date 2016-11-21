@@ -235,10 +235,11 @@ sampletoyara = db.Table('sampletoyara',
 sampletoactions = db.Table('sampletoactions',
                            db.Column('sample_id',
                                      db.Integer,
-                                     db.ForeignKey('sample.id'),index=True),
+                                     db.ForeignKey('sample.id'), index=True),
                            db.Column('action_id',
                                      db.Integer,
-                                     db.ForeignKey('idaactions.id'), index=True))
+                                     db.ForeignKey('idaactions.id'),
+                                     index=True))
 
 
 class Sample(db.Model):
