@@ -28,13 +28,13 @@ class IDAAction(db.Model):
     address = db.Column(db.BigInteger(), index=True)
 
     # We must keep timestamp to reorder actions
-    timestamp = db.Column(db.DateTime())
+    timestamp = db.Column(db.DateTime(), index=True)
 
     # We also keep the last user
     user_id = db.Column(db.Integer, db.ForeignKey('user.id'))
 
     # The action type
-    type = db.Column(db.String())
+    type = db.Column(db.String(), index=True)
     __mapper_args__ = {
         'polymorphic_identity': 'idaactions',
         'polymorphic_on': type
@@ -86,7 +86,7 @@ class IDAStruct(IDAAction):
     id = db.Column(db.Integer(),
                    db.ForeignKey('idaactions.id'),
                    primary_key=True)
-    name = db.Column(db.String())
+    name = db.Column(db.String(), index=True)
     size = db.Column(db.Integer())
     members = db.relationship("IDAStructMember",
             backref=db.backref("struct"),
@@ -100,7 +100,7 @@ class IDAStructMember(db.Model):
     __tablename__ = "idastructmember"
     id = db.Column(db.Integer(), primary_key=True)
     struct_id = db.Column(db.Integer(), db.ForeignKey("idastructs.id"))
-    name = db.Column(db.String())
+    name = db.Column(db.String(), index=True)
     size = db.Column(db.Integer())
     mtype = db.Column(db.String())
     offset = db.Column(db.Integer())

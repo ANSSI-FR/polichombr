@@ -32,7 +32,7 @@ with some current bugs too
 	[ ] Function identification by machoc hash
 	[ ] Highlight cryptoblocks
 	[x] Fix upload of sample if it is new
-	[ ] Fix note pad destruction when calling exit_skelenox
+	[x] Fix note pad destruction when calling exit_skelenox
 	[x] Proper logging
 	[ ] Local names (prefix) are not pushed.
 	[ ] Make difference for comments

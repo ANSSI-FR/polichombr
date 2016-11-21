@@ -9,6 +9,7 @@
 """
 
 import os
+import datetime
 
 from poli import api, apiview, app
 from poli.models.family import FamilySchema
@@ -445,9 +446,27 @@ def get_filter_arguments(mrequest):
     if data is not None:
         if 'timestamp' in data.keys():
             current_timestamp = data['timestamp']
+            form = "%Y-%m-%dT%H:%M:%S.%f"
+            try:
+                current_timestamp = datetime.datetime.strptime(current_timestamp, form)
+            except ValueError:
+                abort(500, "Wrong timestamp format")
         if 'addr' in data.keys():
             addr = int(data['addr'], 16)
     return current_timestamp, addr
+
+
+@apiview.route('/samples/<int:sid>/idaactions/', methods=['GET'])
+def api_get_idaactions_updates(sid):
+    """
+        Get all actions since a timestamp
+    """
+    timestamp = datetime.datetime.now()
+
+    actions = api.idacontrol.get_all(sid=sid, timestamp=timestamp)
+
+    return jsonify({'idaactions': actions,
+                    'timestamp': datetime.datetime.now()})
 
 
 @apiview.route('/samples/<int:sid>/comments/', methods=['GET'])
@@ -503,7 +522,6 @@ def api_post_sample_names(sid):
         @arg addr the corresponding address
         @arg name the name
     """
-
     data = request.json
     addr = data['address']
     name = data['name']

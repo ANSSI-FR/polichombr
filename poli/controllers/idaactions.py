@@ -11,8 +11,8 @@
 import datetime
 
 from poli import app, db
-from poli.models.idaactions import IDANameAction, IDACommentAction
 from poli.models.idaactions import IDAAction, IDAActionSchema
+from poli.models.idaactions import IDANameAction, IDACommentAction
 from poli.models.idaactions import IDAStruct, IDAStructSchema
 from poli.models.idaactions import IDAStructMember
 from poli.models.sample import Sample
@@ -22,6 +22,17 @@ class IDAActionsController(object):
     """
         Manage the recorded actions for IDA Pro.
     """
+    @staticmethod
+    def get_all(sid=None, timestamp=None):
+        if sid is None:
+            return False
+        query = IDAAction.query
+        query = query.filter(
+            IDAAction.samples.any(Sample.id == sid))
+        if timestamp is not None:
+            query = query.filter(timestamp >= timestamp)
+        schema = IDAActionSchema(many=True)
+        return schema.dump(query.all()).data
 
     @staticmethod
     def add_comment(address, data):
@@ -38,14 +49,18 @@ class IDAActionsController(object):
 
     @staticmethod
     def filter_actions(action_type, sid, addr=None, timestamp=None):
+        """
+            Generate a filtered query for IDAActions,
+            Filter by sample ID, address and timestamp
+        """
         query = IDAAction.query.filter_by(type=action_type)
+        query = query.filter(IDAAction.samples.any(Sample.id == sid))
 
         if addr is not None:
             query = query.filter_by(address=addr)
+
         if timestamp is not None:
             query = query.filter(IDAAction.timestamp > timestamp)
-
-        query = query.filter(IDAAction.samples.any(Sample.id == sid))
 
         return query.all()
 
@@ -92,6 +107,7 @@ class IDAActionsController(object):
             return False
         mstruct = IDAStruct()
         mstruct.name = name
+        mstruct.data = name
         mstruct.timestamp = datetime.datetime.now()
         mstruct.size = 0
         db.session.add(mstruct)

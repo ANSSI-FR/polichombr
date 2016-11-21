@@ -60,10 +60,11 @@ Result:
 ```
 
 You can also filter by address or get all the names defined after a certain timestamp
+*warning* The timestamp should be formatted with the string `%Y-%m-%dT%H:%M:%S.%f`.
 
 Example:
 ```
-	curl -XGET http://127.0.0.1/api/1.0/samples/1/names/?timestamp=2016-09-19T17:28:12.504460+00:00
+	curl -XGET http://127.0.0.1/api/1.0/samples/1/names/?timestamp=2016-09-19T17:28:12.504460
 ```
 Result:
 ```
