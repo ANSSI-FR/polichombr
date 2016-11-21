@@ -805,16 +805,24 @@ class SkelSyncAgent(threading.Thread):
     skel_settings = None
     last_timestamp = None
     update_event = None
-    logger = None
+    kill_event = None
+    timer_setup_flag = None
+    delay = None
 
     def __init__(self, *args, **kwargs):
-        threading.Thread.__init__(self, name="SkelUpdateAgent",
+        threading.Thread.__init__(self, name=self.__class__.__name__,
                                   args=args, kwargs=kwargs)
         self.update_event = threading.Event()
+        self.kill_event = threading.Event()
         self.last_timestamp = datetime.datetime.fromtimestamp(0)
         g_logger.debug("SyncAgent initialized")
+        self.timer_setup_flag = False
+        self.delay = 1000
 
     def setup_config(self, settings_filename):
+        """
+            Initialize connection in the new thread
+        """
         self.skel_settings = SkelConfig(settings_filename)
         self.skel_conn = SkelConnection(self.skel_settings)
         self.skel_conn.get_online()
@@ -841,33 +849,46 @@ class SkelSyncAgent(threading.Thread):
             self.last_timestamp = max(timestamp, self.last_timestamp)
         return True
 
-    def setup_main_timer(self):
+    def setup_timer(self):
+        """
+            Setup an IDA timer to trigger regularly the
+            update of data from the server
+        """
         def update():
             """
                 Triggers the synchronization event
             """
             if not self.update_event.isSet():
                 self.update_event.set()
-                self.update_event.clear()
-            return 1
+            return self.delay
 
-        def setup_timer():
+        def ts_setup_timer():
             """
                 Thread safe wrapper for setting up
                 the sync callback
             """
-            idaapi.register_timer(2000, update)
+            idaapi.register_timer(self.delay, update)
 
-        idaapi.execute_sync(setup_timer, idaapi.MFF_FAST)
+        if not self.timer_setup_flag:
+            idaapi.execute_sync(ts_setup_timer, idaapi.MFF_FAST)
+            self.timer_setup_flag = True
 
+    def kill(self):
+        """
+            Instruct the thread to return
+        """
+        g_logger.debug("%s exiting", self.__class__.__name__)
+        self.kill_event.set()
 
     def run(self):
+        self.setup_timer()
         while True:
             try:
+                if self.kill_event.wait(timeout=0.01):
+                    break
                 self.update_event.wait()
                 self.update_event.clear()
                 self.sync_names()
-                time.sleep(1)
             except Exception as mye:
                 g_logger.exception(mye)
                 break
@@ -922,9 +943,7 @@ class SkelCore(object):
         # Synchronize the sample
         self.skel_sync_agent = SkelSyncAgent()
         self.skel_sync_agent.setup_config(settings_filename)
-        self.skel_sync_agent.setup_main_timer()
-
-        self.skel_sync_agent.start()
+        self.skel_sync_agent.setup_timer()
 
         # setup hooks
         self.skel_hooks = SkelHooks(self.skel_conn)
@@ -939,6 +958,7 @@ class SkelCore(object):
         """
             Launch the hooks!
         """
+        self.skel_sync_agent.start()
         self.skel_hooks.hook()
 
 
@@ -963,7 +983,8 @@ class SkelCore(object):
         self.skel_conn.close_connection()
         if self.skel_hooks is not None:
             self.skel_hooks.cleanup_hooks()
-        self.skel_sync_agent.join(timeout=1)
+
+        self.skel_sync_agent.kill()
         g_logger.info("Skelenox terminated")
 
 
