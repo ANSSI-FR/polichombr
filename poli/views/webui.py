@@ -65,7 +65,7 @@ def before_request():
         Affects global variables for each request
     """
     g.user = current_user
-    g.samples = Sample.query.all()
+    g.samples = Sample.query.order_by(Sample.id).limit(15).all()
 
 
 """
