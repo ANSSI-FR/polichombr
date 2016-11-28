@@ -2,8 +2,8 @@
 
 from time import sleep
 
-from app import app
-from app.controllers.api import APIControl
+from poli import app
+from poli.controllers.api import APIControl
 
 
 def launch():
