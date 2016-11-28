@@ -159,6 +159,19 @@ class SampleModule(MainModule):
         json_data = dict(abstract=abstract)
         return self.post(endpoint, json=json_data)["result"]
 
+    def get_abstract(self, sid):
+        endpoint = self.prepare_endpoint(root='samples')
+        endpoint += str(sid) + '/abstract/'
+
+        return self.get(endpoint)["abstract"]
+
+
+    def get_sid_from_MD5(self, md5):
+        endpoint = self.prepare_endpoint(root='samples')
+        endpoint += md5 + '/'
+
+        return self.get(endpoint)
+
 
 class FamilyModule(MainModule):
     """
