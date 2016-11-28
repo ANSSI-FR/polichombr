@@ -318,8 +318,9 @@ class SampleController(object):
         c = Sample.query.filter(Sample.md5.like(needleq)).all()
         results = list(set(a + b + c))
         function_results = None
-        if re.match("[0-9a-f]{8}", needle):
-            function_results = cls.search_machoc_single_hash(needle)
+	# XXX fix this
+        #if re.match("[0-9a-f]{8}", needle):
+            #function_results = cls.search_machoc_single_hash(needle)
         return results, function_results
 
     @classmethod
@@ -432,23 +433,28 @@ class SampleController(object):
                     cls.add_sample_match(sample, sample_2, "iat_hash")
                     # add the corresponding match to the other sample
                     cls.add_sample_match(sample_2, sample, "iat_hash")
-                continue
         return True
+
+    @staticmethod
+    def query_machoc_matches(sample,  sample_2):
+        query = SampleMatch.query.filter(SampleMatch.sid_1.in_([sample.id, sample_2.id]), SampleMatch.sid_2.in_(
+                [sample.id, sample_2.id]), SampleMatch.match_type == "machoc80")
+        if query.count() != 0:
+            return True
+        return False
 
     @classmethod
     def match_by_machoc80(cls, sample):
         """
             Match samples by machoc hash.
         """
-        if len(sample.functions) == 0:
+        if sample.functions.count() == 0:
             return True
         for sample_2 in Sample.query.all():
-            if len(sample_2.functions) == 0:
+            if cls.query_machoc_matches(sample, sample_2):
                 continue
-            if SampleMatch.query.filter(SampleMatch.sid_1.in_([sample.id, sample_2.id]), SampleMatch.sid_2.in_(
-                    [sample.id, sample_2.id]), SampleMatch.match_type == "machoc80").count() != 0:
-                continue
-            if cls.machoc_diff_samples(sample, sample_2) >= 0.8:
+            elif cls.machoc_diff_samples(sample, sample_2) >= 0.8:
+                app.logger.debug("Add machoc match %d %d", sample.id, sample_2.id)
                 cls.add_sample_match(sample, sample_2, "machoc80")
                 cls.add_sample_match(sample_2, sample, "machoc80")
         return True
@@ -458,11 +464,11 @@ class SampleController(object):
         """
             Diff a sample with all other samples. Class method.
         """
-        if len(sample.functions) == 0:
+        if sample.functions.count() == 0:
             return []
         hits = []
         for sample_2 in Sample.query.all():
-            if len(sample_2.functions) == 0 or sample_2 == sample:
+            if sample_2.functions.count() == 0 or sample_2.id == sample.id:
                 continue
             hit_rate = cls.machoc_diff_samples(sample, sample_2)
             if hit_rate >= level:
@@ -474,8 +480,6 @@ class SampleController(object):
         """
             Diff two samples using machoc.
         """
-        if sample1 == sample2:
-            return 0
         sample1_hashes = []
         sample2_hashes = []
         for f in sample1.functions:
@@ -484,7 +488,8 @@ class SampleController(object):
         for f in sample2.functions:
             if f.machoc_hash is not None and f.machoc_hash != -1:
                 sample2_hashes.append(f.machoc_hash)
-        return cls.machoc_diff_hashes(sample1_hashes, sample2_hashes)
+        rate = cls.machoc_diff_hashes(sample1_hashes, sample2_hashes)
+        return rate
 
     @staticmethod
     def machoc_diff_hashes(sample1_hashes, sample2_hashes):
@@ -496,7 +501,8 @@ class SampleController(object):
         maxlen = max(len(sample1_hashes), len(sample2_hashes))
         c1, c2 = map(Counter, (sample1_hashes, sample2_hashes))
         ch = set(sample1_hashes).intersection(set(sample2_hashes))
-        return float(sum(map(lambda h: max(c1[h], c2[h]), ch))) / maxlen
+        rate = float(sum(map(lambda h: max(c1[h], c2[h]), ch))) / maxlen
+        return rate
 
     def machoc_get_similar_functions(self, sample_dst, sample_src):
         """
@@ -686,7 +692,15 @@ class SampleController(object):
         return True
 
     @staticmethod
-    def add_function(sample, address, machoc_hash,
+    def query_function_info(sample, address):
+        obj = FunctionInfo.query.filter_by(sample_id=sample.id, address=address)
+        if obj.count() != 0:
+            return obj.first()
+        else:
+            return None
+
+    @classmethod
+    def add_function(cls, sample, address, machoc_hash,
                      name="", overwrite=False, do_commit=True):
         """
             Add a function. Updates if exists.
@@ -696,9 +710,8 @@ class SampleController(object):
         if name == "":
             name = "sub_" + hex(address)[2:]
         functions_exists = False
-        obj = FunctionInfo.query.filter_by(sample=sample, address=address)
-        if obj.count() != 0:
-            function_info = obj.first()
+        function_info = cls.query_function_info(sample, address)
+        if function_info is not None:
             functions_exists = True
             if not overwrite:
                 return True

@@ -88,16 +88,16 @@ class FamilyStatus:
 # Yara signatures relationship (auto-classification).
 familytoyara = db.Table('familytoyara',
                         db.Column('yara_id', db.Integer,
-                                  db.ForeignKey('yararule.id')),
+                                  db.ForeignKey('yararule.id'), index=True),
                         db.Column('family_id', db.Integer,
-                                  db.ForeignKey('family.id'))
+                                  db.ForeignKey('family.id'), index=True)
                         )
 # Samples relationship.
 familytosample = db.Table('familytosample',
                           db.Column('sample_id', db.Integer,
-                                    db.ForeignKey('sample.id')),
+                                    db.ForeignKey('sample.id'), index=True),
                           db.Column('family_id', db.Integer,
-                                    db.ForeignKey('family.id'))
+                                    db.ForeignKey('family.id'), index=True)
                           )
 
 
@@ -117,7 +117,7 @@ class Family(db.Model):
                             secondary=familytoyara,
                             backref=db.backref('families', lazy='dynamic'))
     # 1-N relationships
-    parent_id = db.Column(db.Integer, db.ForeignKey('family.id'))
+    parent_id = db.Column(db.Integer, db.ForeignKey('family.id'), index=True)
     subfamilies = db.relationship(
         'Family', backref=db.backref(
             'parents', remote_side=[id]))

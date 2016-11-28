@@ -52,7 +52,7 @@ class task_analyzeitrb(Task):
         addr, data = None, None
         if len(items) == 3:
             addr = int(items[1], 16)
-            data = items[2][:-1]
+            data = items[2].replace('\n','')
         return addr, data
 
     def parse_machoc_signatures(self):
