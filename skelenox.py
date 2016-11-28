@@ -192,6 +192,7 @@ class SkelConnection(object):
             raise IOError
         headers = {"Accept-encoding": "gzip, deflate",
                    "Content-type": "application/json",
+                   "Connection": "keep-alive",
                    "Accept": "*/*;q=0.8",
                    "Accept-Language": "en-US,en;q=0.5",
                    "Connection": "Keep-Alive",

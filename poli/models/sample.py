@@ -277,7 +277,7 @@ class Sample(db.Model):
             'sample', remote_side=[id]))
     functions = db.relationship(
         "FunctionInfo", backref=db.backref(
-            'sample', remote_side=[id]))
+            'sample', remote_side=[id]), lazy="dynamic")
     filenames = db.relationship(
         "FileName", backref=db.backref(
             'sample', remote_side=[id]))
