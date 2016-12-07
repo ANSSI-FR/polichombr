@@ -144,8 +144,6 @@ class AnalysisController(object):
         for sample in Sample.query.all():
             if force or sample.analysis_status == AnalysisStatus.TOSTART:
                 self.schedule_sample_analysis(sample.id, force)
-            elif sample.analysis_status == AnalysisStatus.RUNNING:
-                self.schedule_sample_analysis(sample.id, force)
 
 
 class Analysis(object):

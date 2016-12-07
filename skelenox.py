@@ -165,12 +165,6 @@ class SkelConnection(object):
         self.is_online = True
         self.init_sample_id()
 
-    def get_offline(self):
-        """
-            Wrapper to close connection
-        """
-        self.close_connection()
-
     def close_connection(self):
         """
             Cleanup the connection
@@ -859,6 +853,9 @@ class SkelSyncAgent(threading.Thread):
             """
             if not self.update_event.isSet():
                 self.update_event.set()
+            if self.kill_event.isSet():
+                # Unregister the timer if we are killed
+                return -1
             return self.delay
 
         def ts_setup_timer():
@@ -878,15 +875,19 @@ class SkelSyncAgent(threading.Thread):
         """
         g_logger.debug("%s exiting", self.__class__.__name__)
         self.kill_event.set()
+        # we don't want to wait until the timeout on the update thread,
+        # so unlock the update event too
+        self.update_event.set()
 
     def run(self):
         self.setup_timer()
         while True:
             try:
-                if self.kill_event.wait(timeout=0.01):
-                    break
                 self.update_event.wait()
                 self.update_event.clear()
+                if self.kill_event.wait(timeout=0.01):
+                    return 0
+                # if we are up, sync names
                 self.sync_names()
             except Exception as mye:
                 g_logger.exception(mye)
@@ -981,6 +982,8 @@ class SkelCore(object):
             self.skel_hooks.cleanup_hooks()
 
         self.skel_sync_agent.kill()
+        self.skel_sync_agent.skel_conn.close_connection()
+        self.skel_sync_agent.join()
         g_logger.info("Skelenox terminated")
 
 def launch_skelenox():
@@ -1026,4 +1029,4 @@ class SkelenoxPlugin(idaapi.plugin_t):
 
 if __name__ == '__main__':
     # RUN !
-    launch_skelenox()
+    skel = launch_skelenox()

@@ -292,7 +292,8 @@ def api_get_sample_id_from_hash(shash):
         abort(400, "Invalid hash length")
     if sample is not None:
         return jsonify({'sample_id': sample.id})
-    return jsonify({'sample_id': None})
+    else:
+        abort(404)
 
 
 @apiview.route('/samples/<int:sid>/download/')
@@ -532,6 +533,29 @@ def api_post_sample_names(sid):
         # we don't care if the function is renamed for a global name,
         # so if the name is created return True anyway
     return jsonify({'result': result})
+
+
+@apiview.route('/samples/<int:sid>/types/', methods=['POST'])
+def api_post_sample_types(sid):
+    """
+        Manage the creation of type definitions at specific addresses
+    """
+    data = request.json
+    addr = data['address']
+    typedef = data['typedef']
+
+    action_id = api.idacontrol.add_typedef(addr, typedef)
+    result = api.samplecontrol.add_idaaction(sid, action_id)
+    return jsonify(dict(result=result))
+
+@apiview.route('/samples/<int:sid>/types/', methods=['GET'])
+def api_get_sample_types(sid):
+    """
+        Get the IDA types stored in DB
+    """
+    current_timestamp, addr = get_filter_arguments(request)
+    data = api.idacontrol.get_typedefs(sid, addr, current_timestamp)
+    return jsonify({'typedefs': data})
 
 
 @apiview.route('/samples/<int:sid>/structs/', methods=['POST'])
