@@ -15,6 +15,7 @@ from poli.models.idaactions import IDAAction, IDAActionSchema
 from poli.models.idaactions import IDANameAction, IDACommentAction
 from poli.models.idaactions import IDAStruct, IDAStructSchema
 from poli.models.idaactions import IDAStructMember
+from poli.models.idaactions import IDATypeAction
 from poli.models.sample import Sample
 
 
@@ -207,3 +208,25 @@ class IDAActionsController(object):
         db.session.commit()
 
         return True
+
+    @staticmethod
+    def add_typedef(address, typedef):
+        """
+            Creates a new type definition
+        """
+        mtype = IDATypeAction()
+        mtype.address = address
+        mtype.data = typedef
+        mtype.timestamp = datetime.datetime.now()
+        db.session.add(mtype)
+        db.session.commit()
+        return mtype.id
+
+    @classmethod
+    def get_typedefs(cls, sid, addr=None, timestamp=None):
+        """
+            Return filtered IDA Pro type definitions
+        """
+        data = cls.filter_actions('idatypes', sid, addr, timestamp)
+        schema = IDAActionSchema(many=True)
+        return schema.dump(data).data

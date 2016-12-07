@@ -444,7 +444,7 @@ class ApiIDAActionsTests(ApiTestCase):
     def _get_name(self, sid=1, address=None):
         url = '/api/1.0/samples/' + str(sid) + '/names/'
         if address is not None:
-            url += '?address='
+            url += '?addr='
             url += hex(address)
         retval = self.app.get(url)
         return retval
@@ -460,7 +460,7 @@ class ApiIDAActionsTests(ApiTestCase):
         url = '/api/1.0/samples/' + str(sid)
         url += '/types/'
         if address is not None:
-            url += "?address="
+            url += "?addr="
             url += hex(address)
 
         return self.app.get(url)
@@ -732,31 +732,31 @@ class ApiIDAActionsTests(ApiTestCase):
         # test for getting this type in all types
         ret = self._get_type(sid=1)
         self.assertEqual(ret.status_code, 200)
-        types = json.loads(ret.data)['types']
+        types = json.loads(ret.data)['typedefs']
         self.assertEqual(len(types), 1)
-        self.assertIn(types[0], 'void *')
+        self.assertIn(types[0]["data"], 'void *')
 
         # test for getting type filtered by address
         ret = self._get_type(sid=1, address=0xDEADBEEF)
         self.assertEqual(ret.status_code, 200)
-        types = json.loads(ret.data)['types']
+        types = json.loads(ret.data)['typedefs']
         self.assertEqual(len(types), 1)
-        self.assertIn(types[0], 'void *')
+        self.assertIn(types[0]["data"], 'void *')
 
         # test if there is no comment at a specified address
-        ret = self._get_type(sid=1, address=0xDEADB00F)
+        ret = self._get_type(sid=1, address=0x1234)
         self.assertEqual(ret.status_code, 200)
-        types = json.loads(ret.data)['types']
+        types = json.loads(ret.data)['typedefs']
         self.assertEqual(len(types), 0)
 
         # test adding a new type at different address and getting it too
         self._create_type(sid=1, address=0xBADF00D, typedef='int testtype(int dwTest, char cType)')
         ret = self._get_type(sid=1)
         self.assertEqual(ret.status_code, 200)
-        types = json.loads(ret.data)['types']
+        types = json.loads(ret.data)['typedefs']
         self.assertEqual(len(types), 2)
-        self.assertIn(types[0], 'void *')
-        self.assertIn(types[1], 'int testtype(int dwTest, char cType)')
+        self.assertIn(types[0]["data"], 'void *')
+        self.assertIn(types[1]["data"], 'int testtype(int dwTest, char cType)')
 
 
     def test_struct_member_update(self):

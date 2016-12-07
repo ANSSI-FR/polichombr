@@ -55,13 +55,28 @@ class IDACommentAction(IDAAction):
 
 
 class IDANameAction(IDAAction):
-    # Represent names in IDA
+    """
+        This represents global names in IDA.
+    """
     __tablename__ = 'idanames'
     id = db.Column(db.Integer(),
                    db.ForeignKey('idaactions.id'),
                    primary_key=True)
     __mapper_args__ = {
         'polymorphic_identity': 'idanames'}
+
+
+class IDATypeAction(IDAAction):
+    """
+    This represents the types as applied by
+    the shortcut 'Y' in IDA Pro
+    """
+    __tablename__ = 'idatypes'
+    id = db.Column(db.Integer(),
+                   db.ForeignKey('idaactions.id'),
+                   primary_key=True)
+    __mapper_args__ = {
+        'polymorphic_identity': 'idatypes'}
 
 
 class IDAApplyStructs(IDAAction):
@@ -115,6 +130,7 @@ class IDAActionSchema(ma.ModelSchema):
             "data",
             "type",
         )
+
 
 class IDAStructMemberSchema(ma.ModelSchema):
     class Meta:
