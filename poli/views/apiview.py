@@ -292,8 +292,7 @@ def api_get_sample_id_from_hash(shash):
         abort(400, "Invalid hash length")
     if sample is not None:
         return jsonify({'sample_id': sample.id})
-    else:
-        abort(404)
+    return jsonify({'sample_id': None})
 
 
 @apiview.route('/samples/<int:sid>/download/')
