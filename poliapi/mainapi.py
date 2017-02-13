@@ -105,8 +105,9 @@ class SampleModule(MainModule):
         Uses the sample endpoint
     """
 
-    def __init__(self):
-        super(SampleModule, self).__init__()
+    def __init__(self, server="127.0.0.1", server_port=5000,
+                 base_uri='/api/1.0/'):
+        super(SampleModule, self).__init__(server, server_port, base_uri)
 
     def send_sample(self, filename, tlp):
         """
@@ -178,8 +179,9 @@ class FamilyModule(MainModule):
         Utilities to manage families
     """
 
-    def __init__(self):
-        super(FamilyModule, self).__init__()
+    def __init__(self, server="127.0.0.1", server_port=5000,
+                 base_uri='/api/1.0/'):
+        super(FamilyModule, self).__init__(server, server_port, base_uri)
 
     def create_family(self, name, parent=None, tlp_level=3):
         """
@@ -229,8 +231,9 @@ class YaraModule(MainModule):
         Manage yara rules
     """
 
-    def __init__(self):
-        super(YaraModule, self).__init__()
+    def __init__(self, server="127.0.0.1", server_port=5000,
+                 base_uri='/api/1.0/'):
+        super(YaraModule, self).__init__(server, server_port, base_uri)
 
     def create_yara(self, name, rule, tlp_level=2):
         """
