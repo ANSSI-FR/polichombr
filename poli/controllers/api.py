@@ -31,7 +31,7 @@ class APIControl(object):
         Object used as a global API.
         Data controllers are used for direct data manipulation.
         Methods are used for complex (cross-data) manipulation.
-            TODO: create a brand new analysis scehduler working on database
+            TODO: create a brand new analysis scheduler working on database
             samples status, and remove the analysis creation from this class.
     """
 
