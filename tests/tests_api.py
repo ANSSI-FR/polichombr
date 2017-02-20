@@ -48,11 +48,13 @@ class ApiTestCase(unittest.TestCase):
         with open("tests/example_pe.bin", "rb") as hfile:
             data = StringIO(hfile.read())
         self._login("john", "password")
-        retval = self.app.post("/samples/",
-                               content_type='multipart/form-data',
-                               data=dict({'file': (data, "toto")},
-                                         level=1, family=0),
+        retval = self.app.post("/api/1.0/samples/",
+                               #content_type='multipart/form-data',
+                               data=dict({'file': (data, u"toto"),
+                                          'filename':"toto"},
+                                          tlp_level=1, family=0),
                                follow_redirects=True)
+        self.assertEqual(retval.status_code, 200)
         sleep(1)
         return retval
 

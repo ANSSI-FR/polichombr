@@ -531,19 +531,26 @@ def ui_sample_upload():
     families_choices = [(0, "None")]
     families_choices += [(f.id, f.name) for f in Family.query.order_by('name')]
     upload_form.family.choices = families_choices
+
     if upload_form.validate_on_submit():
-        file_data = upload_form.file.data
         family_id = upload_form.family.data
         family = None
         if family_id != 0:
             family = api.familycontrol.get_by_id(family_id)
             if family is None:
+                flash("Could not find the family", "error")
                 abort(404)
-        file_name = secure_filename(upload_form.file.data.filename)
-        sample = api.create_sample_and_run_analysis(
-            file_data, file_name, g.user, upload_form.level.data, family)
-        if sample:
-            return redirect(url_for('view_sample', sample_id=sample.id))
+
+        for mfile in upload_form.files.raw_data:
+            file_data = mfile.stream
+            file_name = secure_filename(mfile.filename)
+
+            sample = api.create_sample_and_run_analysis(
+                file_data, file_name, g.user, upload_form.level.data, family)
+            if sample:
+                flash("Created sample "+ str(sample.id), "success")
+            else:
+                flash("Error during sample creation", "error")
     return redirect(url_for('index'))
 
 

@@ -338,7 +338,12 @@ def api_post_samples():
     except KeyError:
         app.logger.debug("Could not find the tlp_level key")
 
-    orig_filename = request.form['filename']
+    try:
+        orig_filename = request.form['filename']
+    except KeyError:
+        app.logger.debug("No filename provided")
+        orig_filename = ""
+
     msample = api.create_sample_and_run_analysis(mfile, orig_filename)
     if msample is None:
         abort(500, "Cannot create sample")
