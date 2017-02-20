@@ -1,0 +1,257 @@
+{
+  "abstract": null, 
+  "analyses": [
+    {
+      "data": "Static analyze of binary\n========================\n\n\nExecutable compiled the 1970-01-01T00:00:00+00:00\n\nPacked : __YES__\nSensitives functions called\n---------------------------\nCrypto\n------\nStrings\n-------\n\n", 
+      "title": "analyzeit"
+    }
+  ], 
+  "file_date": "1970-01-01 01:00:00", 
+  "file_metadata": [
+    {
+      "type": "PE_import_hash", 
+      "value": "a96d166ab17e011e8049d87211158ae5"
+    }, 
+    {
+      "type": "PE_DOS_HEADER_e_magic", 
+      "value": "0x5a4d"
+    }, 
+    {
+      "type": "PE_DOS_HEADER_e_cblp", 
+      "value": "0x0"
+    }, 
+    {
+      "type": "PE_DOS_HEADER_e_cp", 
+      "value": "0x0"
+    }, 
+    {
+      "type": "PE_DOS_HEADER_e_crlc", 
+      "value": "0x0"
+    }, 
+    {
+      "type": "PE_DOS_HEADER_e_cparhdr", 
+      "value": "0x0"
+    }, 
+    {
+      "type": "PE_DOS_HEADER_e_minalloc", 
+      "value": "0x0"
+    }, 
+    {
+      "type": "PE_DOS_HEADER_e_maxalloc", 
+      "value": "0x0"
+    }, 
+    {
+      "type": "PE_DOS_HEADER_e_ss", 
+      "value": "0x0"
+    }, 
+    {
+      "type": "PE_DOS_HEADER_e_sp", 
+      "value": "0x0"
+    }, 
+    {
+      "type": "PE_DOS_HEADER_e_csum", 
+      "value": "0x0"
+    }, 
+    {
+      "type": "PE_DOS_HEADER_e_ip", 
+      "value": "0x0"
+    }, 
+    {
+      "type": "PE_DOS_HEADER_e_cs", 
+      "value": "0x0"
+    }, 
+    {
+      "type": "PE_DOS_HEADER_e_lfarlc", 
+      "value": "0x0"
+    }, 
+    {
+      "type": "PE_DOS_HEADER_e_ovno", 
+      "value": "0x0"
+    }, 
+    {
+      "type": "PE_DOS_HEADER_e_res", 
+      "value": "\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000"
+    }, 
+    {
+      "type": "PE_DOS_HEADER_e_oemid", 
+      "value": "0x0"
+    }, 
+    {
+      "type": "PE_DOS_HEADER_e_oeminfo", 
+      "value": "0x0"
+    }, 
+    {
+      "type": "PE_DOS_HEADER_e_res2", 
+      "value": "\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000"
+    }, 
+    {
+      "type": "PE_DOS_HEADER_e_lfanew", 
+      "value": "0xe0"
+    }, 
+    {
+      "type": "PE_FILE_HEADER_Machine", 
+      "value": "0x14c"
+    }, 
+    {
+      "type": "PE_FILE_HEADER_NumberOfSections", 
+      "value": "0x3"
+    }, 
+    {
+      "type": "PE_FILE_HEADER_TimeDateStamp", 
+      "value": "0x0"
+    }, 
+    {
+      "type": "PE_FILE_HEADER_PointerToSymbolTable", 
+      "value": "0x0"
+    }, 
+    {
+      "type": "PE_FILE_HEADER_NumberOfSymbols", 
+      "value": "0x0"
+    }, 
+    {
+      "type": "PE_FILE_HEADER_SizeOfOptionalHeader", 
+      "value": "0xe0"
+    }, 
+    {
+      "type": "PE_FILE_HEADER_Characteristics", 
+      "value": "0x10f"
+    }, 
+    {
+      "type": "PE_OPTIONAL_HEADER_Magic", 
+      "value": "0x10b"
+    }, 
+    {
+      "type": "PE_OPTIONAL_HEADER_MajorLinkerVersion", 
+      "value": "0x7"
+    }, 
+    {
+      "type": "PE_OPTIONAL_HEADER_MinorLinkerVersion", 
+      "value": "0x0"
+    }, 
+    {
+      "type": "PE_OPTIONAL_HEADER_SizeOfCode", 
+      "value": "0x0"
+    }, 
+    {
+      "type": "PE_OPTIONAL_HEADER_SizeOfInitializedData", 
+      "value": "0x0"
+    }, 
+    {
+      "type": "PE_OPTIONAL_HEADER_SizeOfUninitializedData", 
+      "value": "0x0"
+    }, 
+    {
+      "type": "PE_OPTIONAL_HEADER_AddressOfEntryPoint", 
+      "value": "0x1000"
+    }, 
+    {
+      "type": "PE_OPTIONAL_HEADER_BaseOfCode", 
+      "value": "0x0"
+    }, 
+    {
+      "type": "PE_OPTIONAL_HEADER_ImageBase", 
+      "value": "0x400000"
+    }, 
+    {
+      "type": "PE_OPTIONAL_HEADER_SectionAlignment", 
+      "value": "0x1000"
+    }, 
+    {
+      "type": "PE_OPTIONAL_HEADER_FileAlignment", 
+      "value": "0x1000"
+    }, 
+    {
+      "type": "PE_OPTIONAL_HEADER_MajorOperatingSystemVersion", 
+      "value": "0x5"
+    }, 
+    {
+      "type": "PE_OPTIONAL_HEADER_MinorOperatingSystemVersion", 
+      "value": "0x1"
+    }, 
+    {
+      "type": "PE_OPTIONAL_HEADER_MajorImageVersion", 
+      "value": "0x5"
+    }, 
+    {
+      "type": "PE_OPTIONAL_HEADER_MinorImageVersion", 
+      "value": "0x1"
+    }, 
+    {
+      "type": "PE_OPTIONAL_HEADER_MajorSubsystemVersion", 
+      "value": "0x4"
+    }, 
+    {
+      "type": "PE_OPTIONAL_HEADER_MinorSubsystemVersion", 
+      "value": "0x0"
+    }, 
+    {
+      "type": "PE_OPTIONAL_HEADER_Reserved1", 
+      "value": "0x0"
+    }, 
+    {
+      "type": "PE_OPTIONAL_HEADER_SizeOfImage", 
+      "value": "0x4000"
+    }, 
+    {
+      "type": "PE_OPTIONAL_HEADER_SizeOfHeaders", 
+      "value": "0x1000"
+    }, 
+    {
+      "type": "PE_OPTIONAL_HEADER_CheckSum", 
+      "value": "0x3533"
+    }, 
+    {
+      "type": "PE_OPTIONAL_HEADER_Subsystem", 
+      "value": "0x3"
+    }, 
+    {
+      "type": "PE_OPTIONAL_HEADER_DllCharacteristics", 
+      "value": "0x8000"
+    }, 
+    {
+      "type": "PE_OPTIONAL_HEADER_SizeOfStackReserve", 
+      "value": "0x200000"
+    }, 
+    {
+      "type": "PE_OPTIONAL_HEADER_SizeOfStackCommit", 
+      "value": "0x1000"
+    }, 
+    {
+      "type": "PE_OPTIONAL_HEADER_SizeOfHeapReserve", 
+      "value": "0x100000"
+    }, 
+    {
+      "type": "PE_OPTIONAL_HEADER_SizeOfHeapCommit", 
+      "value": "0x1000"
+    }, 
+    {
+      "type": "PE_OPTIONAL_HEADER_LoaderFlags", 
+      "value": "0x0"
+    }, 
+    {
+      "type": "PE_OPTIONAL_HEADER_NumberOfRvaAndSizes", 
+      "value": "0x10"
+    }
+  ], 
+  "filenames": [
+    "example_pe.bin"
+  ], 
+  "full_mime_type": "MS-DOS executable", 
+  "functions": [], 
+  "machoc": "", 
+  "md5": "0f6f0c6b818f072a7a6f02441d00ac69", 
+  "sha1": "39b8a7a0a99f6e2220cf60fd860923f9df3e8d01", 
+  "sha256": "e5b830bf3d82aba009244bff86d33b10a48b03f48ca52cd1d835f033e2b445e6", 
+  "size": 12361, 
+  "strings": [
+    {
+      "type": 2, 
+      "value": "USER32.dll"
+    }, 
+    {
+      "type": 2, 
+      "value": "MessageBoxA"
+    }
+  ], 
+  "type": "application/x-dosexec"
+}
