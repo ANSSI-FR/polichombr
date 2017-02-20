@@ -57,7 +57,7 @@ class APIControl(object):
     def create_sample_and_run_analysis(
             self,
             file_data_stream,
-            originate_filename,
+            originate_filename="",
             user=None,
             tlp_level=TLPLevel.TLPWHITE,
             family=None):

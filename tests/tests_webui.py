@@ -68,14 +68,13 @@ class MainTestCase(unittest.TestCase):
 
         self.login("john", "password")
         retval = self.app.post("/samples/",
-                           content_type='multipart/form-data',
                            data=dict(
-                               {'file': (data, "toto")},
+                               {'files': (data, "toto")},
                                level=1, family=0),
                            follow_redirects=True)
 
         # XXX : put a callback here to be notified when the analysis is ended
-        sleep(3)
+        sleep(2)
         return retval
 
     def add_sample_to_family(self, sid=1, fid=1):
