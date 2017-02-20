@@ -46,8 +46,6 @@ class SampleController(object):
         """
             Creates a sample from file data. Updates metadata, etc.
         """
-        if TLPLevel.tostring(tlp_level) == "":
-            return None
         sha_256 = sha256(file_data).hexdigest()
         sample = None
         # check if we already had the file or not
@@ -130,8 +128,11 @@ class SampleController(object):
             db.session.delete(act)
         for act in sample.actions:
             db.session.delete(act)
-        for an in sample.analysis_data:
-            db.session.delete(an)
+        for analysis in sample.analysis_data:
+            db.session.delete(analysis)
+        strings = StringsItem.query.filter_by(sample_id=sample.id).all()
+        for sample_string in strings:
+            db.session.delete(sample_string)
         cls.flush_matches(sample)
         db.session.delete(sample)
         db.session.commit()
@@ -312,10 +313,10 @@ class SampleController(object):
         needle = needle.lower()
         if not re.match("[0-9a-f]{5,}", needle):
             return []
-        needleq = "%" + needle + "%"
-        a = Sample.query.filter(Sample.sha256.like(needleq)).all()
-        b = Sample.query.filter(Sample.sha1.like(needleq)).all()
-        c = Sample.query.filter(Sample.md5.like(needleq)).all()
+
+        a = Sample.query.filter_by(sha256=needle).all()
+        b = Sample.query.filter_by(sha1=needle).all()
+        c = Sample.query.filter_by(md5=needle).all()
         results = list(set(a + b + c))
         function_results = None
 	# XXX fix this
@@ -418,6 +419,22 @@ class SampleController(object):
         db.session.add(match)
         db.session.commit()
 
+    @staticmethod
+    def query_matches(sample_1, sample_2, match_type):
+        """
+            Return true if there is an existing match of type "match_type"
+            between the two samples.
+        """
+        query = SampleMatch.query.filter(SampleMatch.sid_1.in_([sample_1.id,
+                                                                sample_2.id]),
+                                         SampleMatch.sid_2.in_([sample_1.id,
+                                                                sample_2.id]),
+                                         SampleMatch.match_type == match_type)
+        if query.count() != 0:
+            return True
+        return False
+
+
     @classmethod
     def match_by_importhash(cls, sample):
         """
@@ -428,20 +445,11 @@ class SampleController(object):
         for sample_2 in Sample.query.filter_by(
                 import_hash=sample.import_hash).all():
             if sample_2.id != sample.id:
-                if SampleMatch.query.filter(SampleMatch.sid_1.in_([sample.id, sample_2.id]), SampleMatch.sid_2.in_(
-                        [sample.id, sample_2.id]), SampleMatch.match_type == "iat_hash").count() == 0:
+                if not cls.query_matches(sample, sample_2, "iat_hash"):
                     cls.add_sample_match(sample, sample_2, "iat_hash")
                     # add the corresponding match to the other sample
                     cls.add_sample_match(sample_2, sample, "iat_hash")
         return True
-
-    @staticmethod
-    def query_machoc_matches(sample,  sample_2):
-        query = SampleMatch.query.filter(SampleMatch.sid_1.in_([sample.id, sample_2.id]), SampleMatch.sid_2.in_(
-                [sample.id, sample_2.id]), SampleMatch.match_type == "machoc80")
-        if query.count() != 0:
-            return True
-        return False
 
     @classmethod
     def match_by_machoc80(cls, sample):
@@ -451,7 +459,9 @@ class SampleController(object):
         if sample.functions.count() == 0:
             return True
         for sample_2 in Sample.query.all():
-            if cls.query_machoc_matches(sample, sample_2):
+            if sample_2.id == sample.id:
+                continue
+            elif cls.query_matches(sample, sample_2, "machoc80"):
                 continue
             elif cls.machoc_diff_samples(sample, sample_2) >= 0.8:
                 app.logger.debug("Add machoc match %d %d", sample.id, sample_2.id)

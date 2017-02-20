@@ -9,7 +9,8 @@
 """
 
 from flask_wtf import FlaskForm
-from wtforms import StringField, FileField, SelectField
+from flask_wtf.file import FileField, FileRequired
+from wtforms import StringField, SelectField
 from wtforms import SubmitField, TextAreaField, BooleanField
 from wtforms import PasswordField, HiddenField
 from wtforms import IntegerField
@@ -277,7 +278,8 @@ class UploadSampleForm(FlaskForm):
     """
     Upload sample.
     """
-    file = FileField('Sample File', validators=[DataRequired()])
+    files = FileField('Sample File', validators=[DataRequired()],
+                     render_kw={'multiple': True})
     level = SelectField(u'Sensibility', choices=TLPLevelChoices,
                         coerce=int, validators=[DataRequired()])
     family = SelectField(u'Associated Family', coerce=int)
@@ -345,19 +347,12 @@ class ImportForm(FlaskForm):
     importform = SubmitField(u'Submit')
 
 
-"""
-
-    SEARCH forms.
-
-"""
-
-
 class FullTextSearchForm(FlaskForm):
     """
     Full-text search.
     """
     fneedle = StringField("Search", validators=[DataRequired()])
-    search = SubmitField(u'Submit')
+    full_text_search = SubmitField(u'Submit')
 
 
 class MachocHashSearchForm(FlaskForm):
@@ -367,7 +362,7 @@ class MachocHashSearchForm(FlaskForm):
     percent = IntegerField("Minimum hit level")
     mneedle = StringField("Search", validators=[DataRequired(),
                                                 Length(min=8, max=8)])
-    search = SubmitField(u'Submit')
+    machoc_search = SubmitField(u'Submit')
 
 
 class HashSearchForm(FlaskForm):
@@ -376,4 +371,4 @@ class HashSearchForm(FlaskForm):
     """
     hneedle = StringField("Search", validators=[DataRequired(),
                                                 Length(min=32, max=64)])
-    search = SubmitField(u'Submit')
+    hash_search = SubmitField(u'Submit')

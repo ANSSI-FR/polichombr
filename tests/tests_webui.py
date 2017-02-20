@@ -1,17 +1,21 @@
 #!/usr/bin/env python
-import os
-import poli
+
 import unittest
 import tempfile
-
 from StringIO import StringIO
-
-from poli.controllers.api import APIControl
-
 from time import sleep
 
+import os
+import poli
+from poli.controllers.api import APIControl
 
-class MainTestCase(unittest.TestCase):
+from poli.models.sample import StringsItem
+
+
+class WebUITestCase(unittest.TestCase):
+    """
+        Tests the functionalities exposed by the web interface
+    """
     def setUp(self):
         self.db_fd, self.fname = tempfile.mkstemp()
         poli.app.config['SQLALCHEMY_DATABASE_URI'] = "sqlite:///"+self.fname
@@ -68,20 +72,38 @@ class MainTestCase(unittest.TestCase):
 
         self.login("john", "password")
         retval = self.app.post("/samples/",
-                           content_type='multipart/form-data',
                            data=dict(
-                               {'file': (data, "toto")},
+                               {'files': (data, "toto")},
                                level=1, family=0),
                            follow_redirects=True)
 
         # XXX : put a callback here to be notified when the analysis is ended
-        sleep(3)
+        sleep(2)
         return retval
+
+    def create_sample_from_machex(self):
+        with open("tests/example_pe.machex", "rb") as hfile:
+            data = StringIO(hfile.read())
+
+        self.login("john", "password")
+        retval = self.app.post("/import/",
+                           data=dict(
+                               {'file': (data, "toto")},
+                               level=1, family=0),
+                           follow_redirects=True)
+        return retval
+
 
     def add_sample_to_family(self, sid=1, fid=1):
         self.login("john", "password")
         retval = self.app.post("/sample/"+str(sid)+ "/",
                 data = dict(parentfamily=fid),
+                follow_redirects=True)
+        return retval
+
+    def remove_sample_from_family(self, sid=1, fid=1):
+        self.login("john", "password")
+        retval = self.app.get("/sample/"+str(sid)+ "/removefam/"+str(fid),
                 follow_redirects=True)
         return retval
 
@@ -136,8 +158,6 @@ class MainTestCase(unittest.TestCase):
         self.logout()
         retval = self.login("SomeUserName", "password2")
         self.assertIn("logout", retval.data)
-
-
 
     def test_admin(self):
         # test normal user registration
@@ -302,6 +322,171 @@ class MainTestCase(unittest.TestCase):
         retval = self.app.get("/sample/1/")
         self.assertIn("12.1 KiB", retval.data)
         # TODO: complete this!
+
+
+    def test_search_hashes(self):
+        self.login("john", "password")
+        self.create_sample()
+
+        data = {"hneedle":"0f6f0c6b818f072a7a6f02441d00ac69"}
+        retval = self.app.post("search/", data=data)
+        self.assertEqual(retval.status_code, 200)
+        self.assertIn('<a href="/sample/1/">', retval.data)
+        self.assertIn("0f6f0c6b818f072a7a6f02441d00ac69</label>", retval.data)
+
+        # test with uppercase in the hash
+        data = {"hneedle":"0F6F0C6B818f072a7a6f02441d00ac69"}
+        retval = self.app.post("search/", data=data)
+        self.assertEqual(retval.status_code, 200)
+        self.assertIn('<a href="/sample/1/">', retval.data)
+        self.assertIn("0f6f0c6b818f072a7a6f02441d00ac69</label>", retval.data)
+
+        # test with hash with a wrong length
+        data = {"hneedle":"ABCD0F6F0C6B818f072a7a6f02441d00ac69"}
+        retval = self.app.post("search/", data=data)
+        self.assertEqual(retval.status_code, 200)
+        self.assertNotIn('<a href="/sample/1/">', retval.data)
+        self.assertNotIn("0f6f0c6b818f072a7a6f02441d00ac69</label>", retval.data)
+
+        # test with wrong hash
+        data = {"hneedle":"DEAD0c6b818f072a7a6f02441d00ac69"}
+        retval = self.app.post("search/", data=data)
+        self.assertEqual(retval.status_code, 200)
+        self.assertNotIn('<a href="/sample/1/">', retval.data)
+        self.assertNotIn("0f6f0c6b818f072a7a6f02441d00ac69</label>", retval.data)
+
+
+    def test_search_full_text(self):
+        """
+            FT search function
+        """
+        self.login("john", "password")
+        self.create_sample()
+
+        data = {"fneedle": "MessageBoxA"}
+        retval = self.app.post("search/", data=data)
+        self.assertEqual(retval.status_code, 200)
+        # XXX this won't work until the analysis data is correctly commited in the tests...
+        #self.assertIn("/sample/1", retval.data)
+
+
+    def test_sample_deletion(self):
+        """
+            Delete a sample
+        """
+        self.login("john", "password")
+        self.create_sample()
+
+        retval = self.app.get("/sample/1/delete/")
+        self.assertEqual(302, retval.status_code)
+        self.assertIn("http://localhost/index", retval.headers["Location"])
+
+        retval = self.app.get("/sample/1/")
+        self.assertEqual(404, retval.status_code)
+
+        retval = self.app.get("/sample/1/delete/")
+        self.assertEqual(404, retval.status_code)
+
+
+    def test_remove_sample_from_family(self):
+        self.login("john", "password")
+        self.create_sample()
+        self.create_family()
+        self.add_sample_to_family()
+
+        retval = self.remove_sample_from_family(1, 1)
+        self.assertEqual(retval.status_code, 200)
+
+        retval = self.get_family(1)
+        self.assertNotIn("0f6f0c6b818f072a7a6f02441d00ac69", retval.data)
+
+
+#     def test_machex_import(self):
+        # """
+            # XXX This will crash.
+        # """
+        # retval = self.create_sample_from_machex()
+        # self.assertEqual(retval.status_code, 200)
+
+
+    def test_remove_sample_from_family(self):
+        self.login("john", "password")
+        self.create_sample()
+        self.create_family()
+        self.add_sample_to_family()
+
+        retval = self.remove_sample_from_family(1, 1)
+        self.assertEqual(retval.status_code, 200)
+
+        retval = self.get_family(1)
+        self.assertNotIn("0f6f0c6b818f072a7a6f02441d00ac69", retval.data)
+
+
+    def test_disassembly_view(self):
+        """
+        """
+        self.login("john", "password")
+        self.create_sample()
+
+        retval = self.app.get("/sample/1/disassemble/0x401000")
+
+        self.assertEqual(retval.status_code, 200)
+        self.assertIn('<!DOCTYPE svg PUBLIC "-//W3C//DTD SVG 1.1//EN"', retval.data)
+        self.assertIn("40100fh mov dx, 2 ;", retval.data)
+        self.assertIn("401000h mov eax, 1 ; Top function : entry", retval.data)
+
+        # XXX maybe test for getting the AnalyzeIt comments
+
+
+    def test_sample_download(self):
+        """
+            The download process is a redirection to the correct API endpoint
+        """
+        self.login("john", "password")
+        self.create_sample()
+
+        retval = self.app.get("/sample/1/download/")
+        self.assertEqual(retval.status_code, 302)
+        self.assertIn("/api/1.0/samples/1/download/", retval.headers["Location"])
+
+
+    def test_yara_rule_forms(self):
+        """
+            Try to create, rename and change TLP level of a yara rule
+        """
+        self.login("john", "password")
+        self.create_sample()
+        rule_text = """rule toto{
+            strings:
+                $1 = {4D 5A}
+            condition:
+                $1 at 0
+        }"""
+
+        data = dict(yara_name="TEST_YARA",
+                    yara_raw=rule_text,
+                    yara_tlp=1)
+        retval = self.app.post("/signatures/", data=data)
+
+        self.assertEqual(retval.status_code, 200)
+        self.assertIn("<h3 class=\"panel-title\">TEST_YARA</h3>", retval.data)
+        self.assertIn("$1 = {4D 5A}", retval.data)
+
+        # test tlp change for the rule
+        data = dict(item_id=1,
+                    level=4)
+        retval = self.app.post("/signatures/", data=data)
+        self.assertEqual(retval.status_code, 200)
+        self.assertIn("<span class=\"text-danger\">TLP RED", retval.data)
+
+        # test rule renaming
+        data = dict(item_id=1,
+                    newname="TEST_YARA_RENAMED")
+        retval = self.app.post("/signatures/", data=data)
+        self.assertEqual(retval.status_code, 200)
+        self.assertIn("<h3 class=\"panel-title\">TEST_YARA_RENAMED</h3>", retval.data)
+
+
 
 if __name__ == '__main__':
     unittest.main()
