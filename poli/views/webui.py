@@ -263,6 +263,7 @@ def view_user(user_id):
             if api.usercontrol.check_user_pass(
                     myuser, chpassform.oldpass.data):
                 api.usercontrol.set_pass(myuser, chpassform.password.data)
+                flash("Changed user password", "success")
     return render_template('user.html',
                            chnickform=chnickform,
                            chthemeform=chthemeform,
@@ -849,8 +850,6 @@ def ui_search():
                            mresults=functions_results,
                            hresults=hash_compare_results,
                            results=samples_results)
-
-
 """
 
     YARA SIGNATURES
@@ -869,18 +868,22 @@ def ui_yara():
     rename_yara_form = RenameForm()
 
     if create_yara_form.validate_on_submit():
-        api.yaracontrol.create(
+        ret = api.yaracontrol.create(
             create_yara_form.yara_name.data,
             create_yara_form.yara_raw.data,
             create_yara_form.yara_tlp.data)
-    if change_tlp_level_form.validate_on_submit():
+        if ret is None:
+            flash("Error during yara creation", "error")
+        else:
+            flash("Created yara "+ ret.name, "success")
+    elif change_tlp_level_form.validate_on_submit():
         if change_tlp_level_form.item_id:
             yar = api.yaracontrol.get_by_id(change_tlp_level_form.item_id.data)
             if yar is None:
                 abort(404)
             api.yaracontrol.set_tlp_level(
                 change_tlp_level_form.level.data, yar)
-    if rename_yara_form.validate_on_submit():
+    elif rename_yara_form.validate_on_submit():
         if rename_yara_form.item_id:
             yar = api.yaracontrol.get_by_id(rename_yara_form.item_id.data)
             if yar is None:
