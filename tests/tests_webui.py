@@ -1,17 +1,21 @@
 #!/usr/bin/env python
-import os
-import poli
+
 import unittest
 import tempfile
-
 from StringIO import StringIO
-
-from poli.controllers.api import APIControl
-
 from time import sleep
 
+import os
+import poli
+from poli.controllers.api import APIControl
 
-class MainTestCase(unittest.TestCase):
+from poli.models.sample import StringsItem
+
+
+class WebUITestCase(unittest.TestCase):
+    """
+        Tests the functionalities exposed by the web interface
+    """
     def setUp(self):
         self.db_fd, self.fname = tempfile.mkstemp()
         poli.app.config['SQLALCHEMY_DATABASE_URI'] = "sqlite:///"+self.fname
@@ -301,6 +305,63 @@ class MainTestCase(unittest.TestCase):
         retval = self.app.get("/sample/1/")
         self.assertIn("12.1 KiB", retval.data)
         # TODO: complete this!
+
+    def test_search_hashes(self):
+        self.login("john", "password")
+        self.create_sample()
+
+        data = {"hneedle":"0f6f0c6b818f072a7a6f02441d00ac69"}
+        retval = self.app.post("search/", data=data)
+        self.assertEqual(retval.status_code, 200)
+        self.assertIn('<a href="/sample/1/">', retval.data)
+        self.assertIn("0f6f0c6b818f072a7a6f02441d00ac69</label>", retval.data)
+
+        # test with uppercase in the hash
+        data = {"hneedle":"0F6F0C6B818f072a7a6f02441d00ac69"}
+        retval = self.app.post("search/", data=data)
+        self.assertEqual(retval.status_code, 200)
+        self.assertIn('<a href="/sample/1/">', retval.data)
+        self.assertIn("0f6f0c6b818f072a7a6f02441d00ac69</label>", retval.data)
+
+
+        # test with hash with a wrong length
+        data = {"hneedle":"ABCD0F6F0C6B818f072a7a6f02441d00ac69"}
+        retval = self.app.post("search/", data=data)
+        self.assertEqual(retval.status_code, 200)
+        self.assertNotIn('<a href="/sample/1/">', retval.data)
+        self.assertNotIn("0f6f0c6b818f072a7a6f02441d00ac69</label>", retval.data)
+
+        # test with wrong hash
+        data = {"hneedle":"DEAD0c6b818f072a7a6f02441d00ac69"}
+        retval = self.app.post("search/", data=data)
+        self.assertEqual(retval.status_code, 200)
+        self.assertNotIn('<a href="/sample/1/">', retval.data)
+        self.assertNotIn("0f6f0c6b818f072a7a6f02441d00ac69</label>", retval.data)
+        print retval.data
+
+    def test_search_full_text(self):
+        """
+            FT search function
+        """
+        self.login("john", "password")
+        self.create_sample()
+
+        data = {"fneedle": "MessageBoxA"}
+        retval = self.app.post("search/", data=data)
+        self.assertEqual(retval.status_code, 200)
+        # XXX this won't work until the analysis data is correctly commited in the tests...
+        #self.assertIn("/sample/1", retval.data)
+
+    def test_sample_deletion(self):
+        """
+            Delete a sample
+        """
+        self.login("john", "password")
+        self.create_sample()
+
+        retval = self.app.get("/sample/1/delete/")
+        self.assertEqual(302, retval.status_code)
+        self.assertIn("http://localhost/index", retval.headers["Location"])
 
 if __name__ == '__main__':
     unittest.main()
