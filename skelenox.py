@@ -291,6 +291,7 @@ class SkelConnection(object):
             result = json.loads(data)
         except:
             g_logger.exception("Cannot load json data from server")
+            result = None
         return result
 
     def get_sample_id(self):
@@ -300,10 +301,13 @@ class SkelConnection(object):
         endpoint = "/api/1.0/samples/"
         endpoint += lower(GetInputMD5())
         endpoint += "/"
-        data = self.poli_get(endpoint)
-        if data["sample_id"] is not None:
-            return data["sample_id"]
-        else:
+        try:
+            data = self.poli_get(endpoint)
+            if data["sample_id"] is not None:
+                return data["sample_id"]
+            else:
+                return False
+        except: # 404?
             return False
 
     def init_sample_id(self):
@@ -385,7 +389,7 @@ class SkelConnection(object):
         """
             Prepare a standard API endpoint
         """
-        endpoint = self.remote_path
+        endpoint = self.remote_path + "samples/"
         endpoint += str(self.sample_id)
         endpoint += "/" + submodule + "/"
         return endpoint

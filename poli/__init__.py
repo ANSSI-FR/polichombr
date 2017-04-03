@@ -42,7 +42,7 @@ from poli.controllers.api import APIControl
 api = APIControl()
 
 
-apiview = Blueprint('apiview', __name__, url_prefix='/api/1.0')
+apiview = Blueprint('apiview', __name__, url_prefix=app.config['API_PATH'])
 
 from poli.views import webui
 from poli.views import apiview as view
