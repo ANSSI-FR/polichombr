@@ -23,6 +23,10 @@ from flask import jsonify, request, send_file, abort, make_response
 
 
 def plain_text(data):
+    """
+        Return as plaintext data,
+        useful for IOCs, Yaras, abstracts...
+    """
     response = make_response(data)
     response.headers['Content-Type'] = 'text/plain'
     return response
@@ -30,7 +34,8 @@ def plain_text(data):
 
 @apiview.errorhandler(404)
 def api_404_handler(error):
-    return jsonify(dict(error=404, error_description="Resource not found")), 404
+    return jsonify(dict(error=404,
+                        error_description="Resource not found")), 404
 
 
 @apiview.errorhandler(500)
@@ -263,6 +268,7 @@ def api_post_family(fam_name):
     """
     abort(404)
 
+
 @apiview.route('/family/<int:family_id>/attachment/<int:file_id>/')
 @login_required
 def download_family_file(family_id, file_id):
@@ -454,18 +460,18 @@ def get_filter_arguments(mrequest):
         Get timestamp and address from request
     """
     data = mrequest.args
-    current_timestamp, addr = None, None
+    cur_timestamp, addr = None, None
     if data is not None:
         if 'timestamp' in data.keys():
-            current_timestamp = data['timestamp']
+            cur_timestamp = data['timestamp']
             form = "%Y-%m-%dT%H:%M:%S.%f"
             try:
-                current_timestamp = datetime.datetime.strptime(current_timestamp, form)
+                cur_timestamp = datetime.datetime.strptime(cur_timestamp, form)
             except ValueError:
                 abort(500, "Wrong timestamp format")
         if 'addr' in data.keys():
             addr = int(data['addr'], 16)
-    return current_timestamp, addr
+    return cur_timestamp, addr
 
 
 @apiview.route('/samples/<int:sid>/idaactions/', methods=['GET'])
@@ -558,6 +564,7 @@ def api_post_sample_types(sid):
     action_id = api.idacontrol.add_typedef(addr, typedef)
     result = api.samplecontrol.add_idaaction(sid, action_id)
     return jsonify(dict(result=result))
+
 
 @apiview.route('/samples/<int:sid>/types/', methods=['GET'])
 def api_get_sample_types(sid):

@@ -555,7 +555,7 @@ def ui_sample_upload():
             sample = api.create_sample_and_run_analysis(
                 file_data, file_name, g.user, upload_form.level.data, family)
             if sample:
-                flash("Created sample "+ str(sample.id), "success")
+                flash("Created sample " + str(sample.id), "success")
             else:
                 flash("Error during sample creation", "error")
     return redirect(url_for('index'))
@@ -881,7 +881,7 @@ def ui_yara():
         if ret is None:
             flash("Error during yara creation", "error")
         else:
-            flash("Created yara "+ ret.name, "success")
+            flash("Created yara " + ret.name, "success")
     elif change_tlp_level_form.validate_on_submit():
         if change_tlp_level_form.item_id:
             yar = api.yaracontrol.get_by_id(change_tlp_level_form.item_id.data)

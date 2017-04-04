@@ -1,3 +1,4 @@
+#!usr/bin/env python
 """
     This script is used to send samples to the API
 
@@ -5,7 +6,6 @@
 
         (c) ANSSI-FR 2016
 """
-#!/usr/bin/env python
 
 import argparse
 
