@@ -189,7 +189,7 @@ class YaraController(object):
         return True
 
     @staticmethod
-    def remove_to_family(fam, yar):
+    def remove_from_family(fam, yar):
         """
         Removes yara to family.
         """

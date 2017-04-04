@@ -6,11 +6,14 @@ from StringIO import StringIO
 from time import sleep
 
 import os
+import io
+import json
+
 import poli
 from poli.controllers.api import APIControl
 
 from poli.models.sample import StringsItem
-
+from zipfile import ZipFile
 
 class WebUITestCase(unittest.TestCase):
     """
@@ -235,6 +238,22 @@ class WebUITestCase(unittest.TestCase):
         self.create_family()
         retval = self.set_family_abstract(fid=1, abstract="TEST ABSTRACT")
         self.assertIn("TEST ABSTRACT", retval.data)
+
+    def test_family_deletion(self):
+        self.login("john", "password")
+        self.create_family()
+
+        retval = self.app.get("/family/1/delete/")
+        self.assertEqual(retval.status_code, 302)
+
+        retval = self.get_families()
+        # Is the family deleted?
+        self.assertNotIn("TOTO", retval.data)
+
+        # Is the user flashed about family deletion?
+        self.assertIn("Deleted family", retval.data)
+
+
 
     def test_family_sample(self):
         self.login("john", "password")
@@ -467,6 +486,24 @@ class WebUITestCase(unittest.TestCase):
         self.assertEqual(retval.status_code, 200)
         self.assertIn(
             "<h3 class=\"panel-title\">TEST_YARA_RENAMED</h3>", retval.data)
+
+    def test_download_skelenox(self):
+        self.login("john", "password")
+        retval = self.app.get("/skelenox/")
+        self.assertEqual(retval.status_code, 200)
+        data = io.BytesIO(retval.data)
+
+        toto = ZipFile(data)
+        self.assertEqual("skelenox.py", toto.namelist()[0])
+        self.assertEqual("skelsettings.json", toto.namelist()[1])
+
+        skel_config = toto.open("skelsettings.json")
+        skel_config = json.loads(skel_config.read())
+
+        self.assertEqual("localhost", skel_config["poli_server"])
+        # XXX activate after 08c1dfa0ea4d6f783a452777fca64e65ec0b4c11
+        #self.assertEqual('5000', skel_config["poli_port"])
+        #self.assertEqual('/api/1.0/', skel_config["poli_remote_path"])
 
 
 if __name__ == '__main__':

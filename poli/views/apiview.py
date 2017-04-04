@@ -106,9 +106,12 @@ def api_family_export_detection_snort(family_id, tlp_level):
 
 
 @apiview.route(
-    '/family/<family_id>/export/<tlp_level>/detection/openioc',
+    '/family/<family_id>/export/<tlp_level>/detection/openioc/',
     methods=['GET'])
 def api_family_export_detection_openioc(family_id, tlp_level):
+    """
+        This endpoint format should be reimplemented
+    """
     my_family = api.familycontrol.get_by_id(family_id)
     if my_family is None:
         abort(404)
@@ -244,6 +247,8 @@ def api_add_yara_to_family(fid):
     try:
         rule_name = request.json["rule_name"]
         rule = api.yaracontrol.get_by_name(rule_name)
+        if rule is None:
+            raise KeyError
         family = api.familycontrol.get_by_id(fid)
         result = api.yaracontrol.add_to_family(family, rule)
     except KeyError:
@@ -254,7 +259,7 @@ def api_add_yara_to_family(fid):
 @apiview.route('/family/<fam_name>', methods=['POST'])
 def api_post_family(fam_name):
     """
-        TODO
+        TODO: Update a family from POST request
     """
     abort(404)
 
@@ -400,6 +405,8 @@ def api_get_sample_peinfo(sid):
 @apiview.route('/samples/<int:sid>/families/', methods=['POST'])
 def api_post_sample_family(sid):
     samp = api.samplecontrol.get_by_id(sid)
+    if request.json is None:
+        abort(400, "JSON not provided")
     if samp is None:
         return jsonify({'result': False})
     fam = None

@@ -484,7 +484,8 @@ def delete_yara_family(family_id, yara_id):
     yar = api.yaracontrol.get_by_id(yara_id)
     if family is None or yar is None:
         abort(404)
-    api.yaracontrol.remove_to_family(family, yar)
+    api.yaracontrol.remove_from_family(family, yar)
+    flash("Removed yara %s from family %s"%(yar.name, family.name), "success")
     return redirect(url_for("view_family", family_id=family_id))
 
 
@@ -514,6 +515,7 @@ def delete_family(family_id):
         abort(404)
     parentfamily = family.parents
     api.familycontrol.delete(family)
+    flash("Deleted family", "success")
     if parentfamily is not None:
         return redirect(url_for('view_family', family_id=parentfamily.id))
     return redirect(url_for('view_families'))
