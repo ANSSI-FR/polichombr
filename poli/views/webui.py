@@ -163,34 +163,38 @@ def logout():
 @app.route('/skelenox/', methods=['GET', 'POST'])
 @login_required
 def dl_skelenox():
+    """
+        Generate a Zip file wich contains both the Skelenox script
+        and the associated config file.
+    """
     try:
-        ipaddr, port = request.host.split(":")
+        ip_addr, _ = request.host.split(":")
     except ValueError:
-        ipaddr = request.host
-        port = 80
+        ip_addr = request.host
+
     zipout = io.BytesIO()
     with ZipFile(zipout, "w") as myzip:
         myzip.write("skelenox.py")
-        gsx = {}
-        gsx["username"] = g.user.nickname
-        gsx["edit_flag"] = True
-        gsx["poli_server"] = ipaddr
-        gsx["poli_port"] = port
-        gsx["poli_remote_path"] = "/"
-        gsx["debug_http"] = False
-        gsx["poli_apikey"] = g.user.api_key
-        gsx["online_at_startup"] = False
-        gsx["poli_timeout"] = 5
-        gsx["display_subs_info"] = False
-        gsx["int_func_lines_count"] = 9
-        gsx["save_timeout"] = 10 * 60
-        gsx["auto_highlight"] = 1
-        gsx["backgnd_highlight_color"] = 0xA0A0FF
-        gsx["backgnd_std_color"] = 0xFFFFFFFF
-        gsx["notepad_font_name"] = "Courier New"
-        gsx["notepad_font_size"] = 9
-        sx = json.dumps(gsx, sort_keys=True, indent=4)
-        myzip.writestr("skelsettings.json", sx)
+        skel_config = {}
+        skel_config["username"] = g.user.nickname
+        skel_config["edit_flag"] = True
+        skel_config["poli_server"] = ip_addr
+        skel_config["poli_port"] = app.config['SERVER_PORT']
+        skel_config["poli_remote_path"] = app.config['API_PATH'] + "/"
+        skel_config["debug_http"] = app.config['HTTP_DEBUG']
+        skel_config["poli_apikey"] = g.user.api_key
+        skel_config["online_at_startup"] = False
+        skel_config["poli_timeout"] = 5
+        skel_config["display_subs_info"] = False
+        skel_config["int_func_lines_count"] = 9
+        skel_config["save_timeout"] = 10 * 60
+        skel_config["auto_highlight"] = 1
+        skel_config["backgnd_highlight_color"] = 0xA0A0FF
+        skel_config["backgnd_std_color"] = 0xFFFFFFFF
+        skel_config["notepad_font_name"] = "Courier New"
+        skel_config["notepad_font_size"] = 9
+        skel_json = json.dumps(skel_config, sort_keys=True, indent=4)
+        myzip.writestr("skelsettings.json", skel_json)
         myzip.close()
     response = make_response(zipout.getvalue())
     response.headers["Content-type"] = "application/octet-stream"
@@ -480,7 +484,8 @@ def delete_yara_family(family_id, yara_id):
     yar = api.yaracontrol.get_by_id(yara_id)
     if family is None or yar is None:
         abort(404)
-    api.yaracontrol.remove_to_family(family, yar)
+    api.yaracontrol.remove_from_family(family, yar)
+    flash("Removed yara %s from family %s"%(yar.name, family.name), "success")
     return redirect(url_for("view_family", family_id=family_id))
 
 
@@ -510,6 +515,7 @@ def delete_family(family_id):
         abort(404)
     parentfamily = family.parents
     api.familycontrol.delete(family)
+    flash("Deleted family", "success")
     if parentfamily is not None:
         return redirect(url_for('view_family', family_id=parentfamily.id))
     return redirect(url_for('view_families'))
@@ -549,7 +555,7 @@ def ui_sample_upload():
             sample = api.create_sample_and_run_analysis(
                 file_data, file_name, g.user, upload_form.level.data, family)
             if sample:
-                flash("Created sample "+ str(sample.id), "success")
+                flash("Created sample " + str(sample.id), "success")
             else:
                 flash("Error during sample creation", "error")
     return redirect(url_for('index'))
@@ -875,7 +881,7 @@ def ui_yara():
         if ret is None:
             flash("Error during yara creation", "error")
         else:
-            flash("Created yara "+ ret.name, "success")
+            flash("Created yara " + ret.name, "success")
     elif change_tlp_level_form.validate_on_submit():
         if change_tlp_level_form.item_id:
             yar = api.yaracontrol.get_by_id(change_tlp_level_form.item_id.data)

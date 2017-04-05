@@ -67,7 +67,6 @@ class ApiTestCase(unittest.TestCase):
                                content_type="application/json")
         return retval
 
-
 class ApiSampleTests(ApiTestCase):
     """
         Tests cases relatives to sample analysis and metadata
@@ -265,6 +264,32 @@ class ApiFamilyTests(ApiTestCase):
         data = json.loads(retval.data)["family"]
         self.assertEqual(data["parent_id"], 1)
 
+    def test_assign_sample_to_family(self):
+        """
+            Can we affect a sample to a family with the API?
+        """
+        self._create_family("TESTFAMILY")
+
+        retval = self.app.post("/api/1.0/samples/1/families/",
+                               data=json.dumps(dict(family_name="TESTFAMILY")),
+                               content_type="application/json")
+        self.assertEqual(retval.status_code, 200)
+        data = json.loads(retval.data)
+        self.assertTrue(data["result"])
+
+        retval = self.app.get("/api/1.0/family/1/")
+        data = json.loads(retval.data)
+        self.assertEqual(len(data["family"]["samples"]), 1)
+        self.assertEqual(data["family"]["samples"][0]["id"], 1)
+
+    def test_export_openioc(self):
+        """
+            Can we export an openIOC for a given family
+        """
+        self._create_family("TESTFAMILY")
+        retval = self.app.get("/api/1.0/family/1/export/4/detection/openioc/")
+        self.assertEqual(retval.status_code, 200)
+        self.assertIn("ioc", retval.data)
 
 class ApiYaraTests(ApiTestCase):
     """
@@ -346,10 +371,43 @@ class ApiYaraTests(ApiTestCase):
         data = json.loads(retval.data)
         self.assertTrue(data["result"])
 
+        # test wrong yara name
+        retval = self.app.post('/api/1.0/family/1/yaras/',
+                               data=json.dumps(dict(rule_name="WRONGYARA")),
+                               content_type="application/json")
+        self.assertEqual(retval.status_code, 400)
+
+
         retval = self.app.get('/api/1.0/family/1/export/1/detection/yara')
         self.assertEqual(retval.status_code, 200)
         self.assertIn("TESTYARA", retval.data)
         self.assertIn("4D 5A", retval.data)
+
+
+    def test_remove_from_family(self):
+        """
+            XXX, this is actually in the web UI, should be migrated in the API...
+        """
+        rule_text = """rule toto{
+            strings:
+                $1 = {4D 5A}
+            condition:
+                $1 at 0
+        }"""
+        retval = self._create_yara("TESTYARA", rule_text)
+        self._create_family("TESTFAMILY")
+        retval = self.app.post('/api/1.0/family/1/yaras/',
+                               data=json.dumps(dict(rule_name="TESTYARA")),
+                               content_type="application/json")
+        retval = self.app.get("/family/1/deleteyara/1")
+        # are we redirected to the family view?
+        self.assertEqual(retval.status_code, 302)
+        self.assertIn("href=\"/family/1", retval.data)
+
+        # is the user flashed with success?
+        retval = self.app.get("/index/")
+        self.assertIn("Removed yara TESTYARA from family TESTFAMILY", retval.data)
+
 
 #     def test_yara_update(self):
         # rule_text = """rule toto{

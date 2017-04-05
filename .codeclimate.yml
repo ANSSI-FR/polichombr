@@ -20,5 +20,6 @@ ratings:
   - "**.py"
 exclude_paths:
 - "**.rb"
+- "**.md"
 - "tests/**"
 - "poli/static/**"

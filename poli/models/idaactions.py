@@ -149,10 +149,8 @@ class IDAStructSchema(ma.ModelSchema):
                             many=True)
 
     class Meta:
-        fields = (
-                "id",
-                "timestamp",
-                "name",
-                "size",
-                "members"
-        )
+        fields = ("id",
+                  "timestamp",
+                  "name",
+                  "size",
+                  "members")

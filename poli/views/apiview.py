@@ -23,6 +23,10 @@ from flask import jsonify, request, send_file, abort, make_response
 
 
 def plain_text(data):
+    """
+        Return as plaintext data,
+        useful for IOCs, Yaras, abstracts...
+    """
     response = make_response(data)
     response.headers['Content-Type'] = 'text/plain'
     return response
@@ -30,7 +34,8 @@ def plain_text(data):
 
 @apiview.errorhandler(404)
 def api_404_handler(error):
-    return jsonify(dict(error=404, error_description="Resource not found")), 404
+    return jsonify(dict(error=404,
+                        error_description="Resource not found")), 404
 
 
 @apiview.errorhandler(500)
@@ -106,9 +111,12 @@ def api_family_export_detection_snort(family_id, tlp_level):
 
 
 @apiview.route(
-    '/family/<family_id>/export/<tlp_level>/detection/openioc',
+    '/family/<family_id>/export/<tlp_level>/detection/openioc/',
     methods=['GET'])
 def api_family_export_detection_openioc(family_id, tlp_level):
+    """
+        This endpoint format should be reimplemented
+    """
     my_family = api.familycontrol.get_by_id(family_id)
     if my_family is None:
         abort(404)
@@ -244,6 +252,8 @@ def api_add_yara_to_family(fid):
     try:
         rule_name = request.json["rule_name"]
         rule = api.yaracontrol.get_by_name(rule_name)
+        if rule is None:
+            raise KeyError
         family = api.familycontrol.get_by_id(fid)
         result = api.yaracontrol.add_to_family(family, rule)
     except KeyError:
@@ -254,9 +264,10 @@ def api_add_yara_to_family(fid):
 @apiview.route('/family/<fam_name>', methods=['POST'])
 def api_post_family(fam_name):
     """
-        TODO
+        TODO: Update a family from POST request
     """
     abort(404)
+
 
 @apiview.route('/family/<int:family_id>/attachment/<int:file_id>/')
 @login_required
@@ -400,6 +411,8 @@ def api_get_sample_peinfo(sid):
 @apiview.route('/samples/<int:sid>/families/', methods=['POST'])
 def api_post_sample_family(sid):
     samp = api.samplecontrol.get_by_id(sid)
+    if request.json is None:
+        abort(400, "JSON not provided")
     if samp is None:
         return jsonify({'result': False})
     fam = None
@@ -447,18 +460,18 @@ def get_filter_arguments(mrequest):
         Get timestamp and address from request
     """
     data = mrequest.args
-    current_timestamp, addr = None, None
+    cur_timestamp, addr = None, None
     if data is not None:
         if 'timestamp' in data.keys():
-            current_timestamp = data['timestamp']
+            cur_timestamp = data['timestamp']
             form = "%Y-%m-%dT%H:%M:%S.%f"
             try:
-                current_timestamp = datetime.datetime.strptime(current_timestamp, form)
+                cur_timestamp = datetime.datetime.strptime(cur_timestamp, form)
             except ValueError:
                 abort(500, "Wrong timestamp format")
         if 'addr' in data.keys():
             addr = int(data['addr'], 16)
-    return current_timestamp, addr
+    return cur_timestamp, addr
 
 
 @apiview.route('/samples/<int:sid>/idaactions/', methods=['GET'])
@@ -551,6 +564,7 @@ def api_post_sample_types(sid):
     action_id = api.idacontrol.add_typedef(addr, typedef)
     result = api.samplecontrol.add_idaaction(sid, action_id)
     return jsonify(dict(result=result))
+
 
 @apiview.route('/samples/<int:sid>/types/', methods=['GET'])
 def api_get_sample_types(sid):

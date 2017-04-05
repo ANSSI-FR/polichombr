@@ -22,7 +22,7 @@ THREADS_PER_PAGE = 2
 BOOTSTRAP_SERVE_LOCAL = True
 
 # security options
-CSRF_ENABLED     = True
+CSRF_ENABLED = True
 CSRF_SESSION_KEY = str(uuid.uuid4())
 SECRET_KEY = str(uuid.uuid4())
 USERS_CAN_REGISTER = True
@@ -30,8 +30,11 @@ SECURITY_PASSWORD_HASH = 'pbkdf2_sha512'
 SECURITY_PASSWORD_SALT = 'CHANGEMEINPRODUCTION'
 SECURITY_TRACKABLE = True
 
-
 # polichombr options
 STORAGE_PATH = "poli/storage"
 TASKS_PATH = "poli/controllers/tasks"
 ANALYSIS_PROCESS_POOL_SIZE = 3
+API_PATH = "/api/1.0"
+
+# Skelenox options
+HTTP_DEBUG = True # Disable HTTPS
