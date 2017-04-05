@@ -974,7 +974,7 @@ class SkelCore(object):
             """
             g_logger.debug("Being notified of exiting DB")
             self.end_skelenox()
-        idaapi.notify_when(idaapi.NW_CLOSEIDB|idaapi.NW_TERMIDA,
+        idaapi.notify_when(idaapi.NW_CLOSEIDB | idaapi.NW_TERMIDA,
                            end_notify_callback)
 
     def end_skelenox(self):
@@ -990,6 +990,7 @@ class SkelCore(object):
         self.skel_sync_agent.join()
         g_logger.info("Skelenox terminated")
 
+
 def launch_skelenox():
     """
         Create the instance and launch it
@@ -998,11 +999,13 @@ def launch_skelenox():
     skelenox.run()
     return skelenox
 
+
 def PLUGIN_ENTRY():
     """
         IDAPython plugin wrapper
     """
     return SkelenoxPlugin()
+
 
 class SkelenoxPlugin(idaapi.plugin_t):
     """

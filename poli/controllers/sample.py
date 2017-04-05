@@ -319,7 +319,7 @@ class SampleController(object):
         c = Sample.query.filter_by(md5=needle).all()
         results = list(set(a + b + c))
         function_results = None
-	# XXX fix this
+        # XXX fix this
         #if re.match("[0-9a-f]{8}", needle):
             #function_results = cls.search_machoc_single_hash(needle)
         return results, function_results
@@ -433,7 +433,6 @@ class SampleController(object):
         if query.count() != 0:
             return True
         return False
-
 
     @classmethod
     def match_by_importhash(cls, sample):

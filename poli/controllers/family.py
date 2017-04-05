@@ -249,11 +249,10 @@ class FamilyController(object):
 
             TODO: move openioc generation to a new file.
         """
-        generated_output = ""
+        generated_output = "<?xml version=\"1.0\" encoding=\"us-ascii\"?>\n"
         for item in family.detection_items:
             if item.TLP_sensibility <= tlp_level:
                 if item.item_type == DetectionType.OPENIOC:
-                    generated_output = "<?xml version=\"1.0\" encoding=\"us-ascii\"?>\n"
                     generated_output += '<ioc xmlns:xsd="http://www.w3.org/2001/XMLSchema" id="polichombr-' + \
                         str(family.id) + '-' + str(item.id) + '">\n'
                     generated_output += '<short_description>' + family.name + \
@@ -269,6 +268,7 @@ class FamilyController(object):
                     generated_output += '<definition>\n'
                     generated_output += item.abstract + '\n'
                     generated_output += '</definition>\n</ioc>\n\n\n'
+        generated_output += "</ioc>"
         return generated_output
 
     @staticmethod

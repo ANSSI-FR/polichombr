@@ -23,5 +23,4 @@ if __name__ == "__main__":
     yara_api = YaraModule()
     rule = open(args.rule).read()
     rule_id = yara_api.create_yara(args.name, rule, args.tlp)
-    print "Created rule %s with id %d" %(args.name, rule_id)
-
+    print "Created rule %s with id %d" % (args.name, rule_id)
