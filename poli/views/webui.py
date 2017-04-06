@@ -835,6 +835,8 @@ def ui_search():
         hneedle = hform.hneedle.data
         samples_results, functions_results = api.samplecontrol.search_hash(
             hneedle)
+        if len(samples_results) == 0:
+            flash("Hash not found...", "error")
     if tform.validate_on_submit():
         tneedle = tform.fneedle.data
         samples_results = api.samplecontrol.search_fulltext(tneedle)
