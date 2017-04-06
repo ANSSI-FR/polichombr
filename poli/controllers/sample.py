@@ -196,7 +196,6 @@ class SampleController(object):
         """
             Schema export.
         """
-        # TODO : any sample, not only PE ones.
         sample_schema = SampleSchema(many=True)
         data = Sample.query.all()
         return sample_schema.dump(data).data
@@ -208,6 +207,14 @@ class SampleController(object):
         """
         sample_schema = SampleSchema()
         return sample_schema.dump(sample).data
+
+    @staticmethod
+    def schema_export_many(samples):
+        """
+            Export a list of samples
+        """
+        sample_schema = SampleSchema(many=True)
+        return sample_schema.dump(samples).data
 
     @staticmethod
     def set_abstract(sample, abstract):

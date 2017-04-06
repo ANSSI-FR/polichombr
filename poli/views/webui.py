@@ -552,12 +552,13 @@ def ui_sample_upload():
             file_data = mfile.stream
             file_name = secure_filename(mfile.filename)
 
-            sample = api.create_sample_and_run_analysis(
+            samples = api.dispatch_sample_creation(
                 file_data, file_name, g.user, upload_form.level.data, family)
-            if sample:
-                flash("Created sample " + str(sample.id), "success")
-            else:
+            if len(samples) == 0:
                 flash("Error during sample creation", "error")
+            else:
+                for sample in samples:
+                    flash("Created sample " + str(sample.id), "success")
     return redirect(url_for('index'))
 
 

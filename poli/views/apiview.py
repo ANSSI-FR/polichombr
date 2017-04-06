@@ -355,19 +355,19 @@ def api_post_samples():
         app.logger.debug("No filename provided")
         orig_filename = ""
 
-    msample = api.create_sample_and_run_analysis(mfile, orig_filename)
-    if msample is None:
+    samples = api.dispatch_sample_creation(mfile, orig_filename)
+    if len(samples) == 0:
         abort(500, "Cannot create sample")
 
     if tlp_level not in range(1, 6):
         app.logger.warning("Incorrect TLP level, defaulting to AMBER")
         tlp_level = TLPLevel.TLPAMBER
 
-    result = api.samplecontrol.set_tlp_level(msample, tlp_level)
-    if result is False:
-        app.logger.warning("Cannot set TLP level for sample %d " % msample.id)
-
-    result = api.samplecontrol.schema_export(msample)
+    for sample in samples:
+        result = api.samplecontrol.set_tlp_level(sample, tlp_level)
+        if result is False:
+            app.logger.warning("Cannot set TLP level for sample %d " % sample.id)
+    result = api.samplecontrol.schema_export_many(samples)
 
     return jsonify({'sample': result})
 
