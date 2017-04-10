@@ -211,7 +211,7 @@ class WebUITestCase(unittest.TestCase):
         # Login with the old password, should fail
         retval = self.login("john", "password")
         self.assertIn("Cannot login...", retval.data)
-        self.assertIn("href=\"/login\"", retval.data)
+        self.assertIn("href=\"/login", retval.data)
 
     def test_running(self):
         retval = self.app.get('/')
