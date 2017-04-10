@@ -186,6 +186,33 @@ class WebUITestCase(unittest.TestCase):
         retval = self.app.get("/admin/", follow_redirects=True)
         self.assertNotIn("Admin", retval.data)
 
+    def test_user_password(self):
+        retval = self.login("john", "password")
+
+        retval = self.app.get("/user/1/")
+        self.assertEqual(retval.status_code, 200)
+        self.assertIn('<div class="form-group  required"><label class="control-label" for="password">New password</label>', retval.data)
+
+        data = {"oldpass":"password", "password":"newpassword", "rpt_pass":"newpassword"}
+
+        retval = self.app.post("/user/1/",data = data)
+        self.assertEqual(retval.status_code, 200)
+        self.assertIn("Changed user password", retval.data)
+
+        self.logout()
+
+        # Login with the new password
+        retval = self.login("john", "newpassword")
+        self.assertNotIn("error", retval.data)
+        self.assertNotIn("href=\"/login\"", retval.data)
+
+        self.logout()
+
+        # Login with the old password, should fail
+        retval = self.login("john", "password")
+        self.assertIn("Cannot login...", retval.data)
+        self.assertIn("href=\"/login", retval.data)
+
     def test_running(self):
         retval = self.app.get('/')
 
