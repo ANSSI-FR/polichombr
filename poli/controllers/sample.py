@@ -520,6 +520,13 @@ class SampleController(object):
         rate = float(sum(map(lambda h: max(c1[h], c2[h]), ch))) / maxlen
         return rate
 
+    @staticmethod
+    def extract_ngrams_from_machoc(funct_infos, ngrams_length):
+        """
+        Returns a list of n-grams from a list of function infos
+        """
+        pass
+
     def machoc_get_similar_functions(self, sample_dst, sample_src):
         """
             Diff two sample in order to identify similar functions.
@@ -545,30 +552,35 @@ class SampleController(object):
         retv = []
         start = time.time()
         src_sorted_fcts = []
+
         for i in sample_src.functions:
             if i.machoc_hash == -1:
                 continue
             src_hashes.append(i.machoc_hash)
             src_sorted_fcts.append((i.address, i.machoc_hash, i))
         src_sorted_fcts.sort()
+
         tmp2 = []
         for i in src_sorted_fcts:
             tmp2.append(i[1])
             if len(tmp2) == ngrams_length:
                 src_ngrams_hashes.append(tmp2)
                 tmp2 = tmp2[1:]
+
         for i in sample_dst.functions:
             if i.machoc_hash == -1:
                 continue
             dst_hashes.append(i.machoc_hash)
             dst_sorted_fcts.append((i.address, i.machoc_hash, i))
         dst_sorted_fcts.sort()
+
         tmp2 = []
         for i in dst_sorted_fcts:
             tmp2.append(i[1])
             if len(tmp2) == ngrams_length:
                 dst_ngrams_hashes.append(tmp2)
                 tmp2 = tmp2[1:]
+
         # 1 - 1 hits
         for i in sample_src.functions:
             if i.machoc_hash == -1:
@@ -581,6 +593,7 @@ class SampleController(object):
                         src_addresses_identified.append(i.address)
                         dst_addresses_identified.append(j.address)
                         break
+
         # n-grams hits
         for i in src_ngrams_hashes:
             if src_hashes.count(i[ngram_mid]) == 1 and dst_hashes.count(
@@ -619,19 +632,21 @@ class SampleController(object):
                         dst_addresses_identified.append(dst_function.address)
                     else:
                         app.logger.error("NGram diff error")
+
+        # Add the unmatched functions
         src_cpt = 0
         dst_cpt = 0
-        for i in sample_src.functions:
-            if i.machoc_hash == -1:
+        for func in sample_src.functions:
+            if func.machoc_hash == -1:
                 continue
-            if i.address not in src_addresses_identified:
-                retv.append({"src": i, "dst": None})
+            if func.address not in src_addresses_identified:
+                retv.append({"src": func, "dst": None})
                 src_cpt += 1
-        for i in sample_dst.functions:
-            if i.machoc_hash == -1:
+        for func in sample_dst.functions:
+            if func.machoc_hash == -1:
                 continue
-            if i.address not in dst_addresses_identified:
-                retv.append({"src": None, "dst": i})
+            if func.address not in dst_addresses_identified:
+                retv.append({"src": None, "dst": func})
                 dst_cpt += 1
         app.logger.debug("USING " + str(ngrams_length) + "-GRAMS")
         app.logger.debug("SRC sample not found count : " + str(src_cpt))
@@ -640,8 +655,7 @@ class SampleController(object):
         return retv
 
     @staticmethod
-    def add_metadata(sample, metadata_type,
-                     metadata_value, do_commit=True):
+    def add_metadata(sample, metadata_type, metadata_value):
         """
             Add a sample's metadata.
         """
@@ -664,8 +678,7 @@ class SampleController(object):
         s_metadata.type_id = metadata_type
         db.session.add(s_metadata)
         sample.s_metadata.append(s_metadata)
-        if do_commit:
-            db.session.commit()
+        db.session.commit()
         return True
 
     def add_multiple_metadata(self, sample, metas):
@@ -676,8 +689,7 @@ class SampleController(object):
             self.add_metadata(
                 sample,
                 metadata_type,
-                metadata_value,
-                do_commit=False)
+                metadata_value)
         db.session.commit()
         return True
 
@@ -717,7 +729,7 @@ class SampleController(object):
 
     @classmethod
     def add_function(cls, sample, address, machoc_hash,
-                     name="", overwrite=False, do_commit=True):
+                     name="", overwrite=False):
         """
             Add a function. Updates if exists.
         """
@@ -740,8 +752,7 @@ class SampleController(object):
             machoc_hash = int(machoc_hash, 16)
         function_info.machoc_hash = machoc_hash
         sample.functions.append(function_info)
-        if do_commit:
-            db.session.commit()
+        db.session.commit()
         return True
 
     def add_multiple_functions(self, sample, funcs, overwrite=False):
@@ -756,8 +767,7 @@ class SampleController(object):
                 addr,
                 funcs[addr]["machoc"],
                 funcs[addr]["name"],
-                overwrite,
-                do_commit=False)
+                overwrite)
         db.session.commit()
         return True
 
@@ -771,9 +781,7 @@ class SampleController(object):
             fdst = FunctionInfo.query.get(fid_dst)
             if fsrc is None or fdst is None:
                 return False
-            if fsrc not in sample_src.functions:
-                return False
-            if fdst not in sample_dst.functions:
+            if fsrc not in sample_src.functions or fdst not in sample_dst.functions:
                 return False
             if fsrc.name.startswith("sub_"):
                 continue
@@ -794,9 +802,7 @@ class SampleController(object):
         """
             Get sample machoc hashes.
         """
-        machoc_hashes = []
-        for functioninfo in sample.functions:
-            machoc_hashes.append(functioninfo.machoc_hash)
+        machoc_hashes = [funcinfo.machoc_hash for funcinfo in sample.functions]
         return machoc_hashes
 
     @staticmethod

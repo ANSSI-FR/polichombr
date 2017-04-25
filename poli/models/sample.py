@@ -13,7 +13,7 @@ from marshmallow import fields
 
 from poli import db, ma
 
-from poli.models.models import TLPLevel
+from poli.models.models import CustomEnum, TLPLevel
 from poli.models.analysis import AnalysisResultSchema
 
 
@@ -30,7 +30,7 @@ class SampleMetadata(db.Model):
     sample_id = db.Column(db.Integer(), db.ForeignKey("sample.id"), index=True)
 
 
-class SampleMetadataType:
+class SampleMetadataType(CustomEnum):
     """
         Possible keys for file metadata.
     """
@@ -92,17 +92,6 @@ class SampleMetadataType:
         PE_OPTIONAL_HEADER_NumberOfRvaAndSizes,
         PE_import_hash) = range(1, 57)
 
-    @classmethod
-    def tostring(cls, val):
-        for k, v in vars(cls).iteritems():
-            if v == val:
-                return k
-        return ""
-
-    @classmethod
-    def fromstring(cls, s):
-        return getattr(cls, s, None)
-
 
 class StringsItem(db.Model):
     """
@@ -116,7 +105,7 @@ class StringsItem(db.Model):
     sample_id = db.Column(db.Integer(), db.ForeignKey("sample.id"), index=True)
 
 
-class StringsType:
+class StringsType(CustomEnum):
     """
     Strings types.
     """
@@ -126,17 +115,6 @@ class StringsType:
         BUILDED,    # builded on stack
         UNPACKED    # extracted after unpacking in IDAPro
     ) = range(1, 5)
-
-    @classmethod
-    def tostring(cls, val):
-        for k, v in vars(cls).iteritems():
-            if v == val:
-                return k
-        return ""
-
-    @classmethod
-    def fromstring(cls, val):
-        return getattr(cls, val, None)
 
 
 class FunctionInfo(db.Model):
@@ -175,7 +153,7 @@ class FileName(db.Model):
     sample_id = db.Column(db.Integer(), db.ForeignKey("sample.id"))
 
 
-class AnalysisStatus:
+class AnalysisStatus(CustomEnum):
     """
         Sample's analysis status (enum). Used for analysis scheduling
         and in samples views.
@@ -185,17 +163,6 @@ class AnalysisStatus:
         RUNNING,
         TOSTART
     ) = range(1, 4)
-
-    @classmethod
-    def tostring(cls, val):
-        for k, v in vars(cls).iteritems():
-            if v == val:
-                return k
-        return ""
-
-    @classmethod
-    def fromstring(cls, val):
-        return getattr(cls, val, None)
 
 
 class CheckList(db.Model):
