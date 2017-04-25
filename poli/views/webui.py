@@ -303,6 +303,7 @@ def deactivate_user(user_id):
         flash("Cannot deactivate user", "error")
     return redirect(url_for("admin_page"))
 
+
 """
 
     FAMILIES VIEW
@@ -322,6 +323,7 @@ def view_families():
     return render_template("families.html",
                            myfamilies=api.familycontrol.get_all(),
                            form=familycreationform)
+
 
 """
 
@@ -664,7 +666,7 @@ def ui_disassemble_sample(sid, address):
     """
     try:
         integer_address = int(address, 16)
-    except:
+    except BaseException:
         abort(500)
     """
     Disassembly is not performed by function, but by address: maybe
@@ -866,6 +868,8 @@ def ui_search():
                            mresults=functions_results,
                            hresults=hash_compare_results,
                            results=samples_results)
+
+
 """
 
     YARA SIGNATURES

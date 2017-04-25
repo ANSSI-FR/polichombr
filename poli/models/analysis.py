@@ -35,6 +35,7 @@ class AnalysisResultSchema(ma.ModelSchema):
                   'analysis_date',
                   'type')
 
+
 """
     <== PE STRUCTS DATA MODELS ==>
     TODO: NOT IMPLEMENTED, task-related.

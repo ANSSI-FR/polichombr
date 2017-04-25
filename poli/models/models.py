@@ -38,6 +38,7 @@ class TLPLevel(CustomEnum):
         TLPBLACK
     ) = range(1, 6)
 
+
 TLPLevelChoices = [
     (TLPLevel.TLPWHITE, 'TLP White'),
     (TLPLevel.TLPGREEN, 'TLP Green'),
