@@ -327,8 +327,8 @@ class SampleController(object):
         results = list(set(a + b + c))
         function_results = None
         # XXX fix this
-        #if re.match("[0-9a-f]{8}", needle):
-            #function_results = cls.search_machoc_single_hash(needle)
+        # if re.match("[0-9a-f]{8}", needle):
+        #function_results = cls.search_machoc_single_hash(needle)
         return results, function_results
 
     @classmethod
@@ -470,7 +470,8 @@ class SampleController(object):
             elif cls.query_matches(sample, sample_2, "machoc80"):
                 continue
             elif cls.machoc_diff_samples(sample, sample_2) >= 0.8:
-                app.logger.debug("Add machoc match %d %d", sample.id, sample_2.id)
+                app.logger.debug("Add machoc match %d %d",
+                                 sample.id, sample_2.id)
                 cls.add_sample_match(sample, sample_2, "machoc80")
                 cls.add_sample_match(sample_2, sample, "machoc80")
         return True
@@ -721,7 +722,8 @@ class SampleController(object):
 
     @staticmethod
     def query_function_info(sample, address):
-        obj = FunctionInfo.query.filter_by(sample_id=sample.id, address=address)
+        obj = FunctionInfo.query.filter_by(
+            sample_id=sample.id, address=address)
         if obj.count() != 0:
             return obj.first()
         else:

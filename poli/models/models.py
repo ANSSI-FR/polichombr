@@ -8,6 +8,7 @@
         Generic models.
 """
 
+
 class CustomEnum(object):
     """
         Utility class to implement a int/str enum
@@ -36,6 +37,7 @@ class TLPLevel(CustomEnum):
         TLPRED,
         TLPBLACK
     ) = range(1, 6)
+
 
 TLPLevelChoices = [
     (TLPLevel.TLPWHITE, 'TLP White'),

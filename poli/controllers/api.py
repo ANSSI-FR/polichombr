@@ -61,8 +61,8 @@ class APIControl(object):
                                  tlp=TLPLevel.TLPWHITE,
                                  family=None):
         """
-            If the sample is a ZipFile, we unpack it and return the last sample,
-            otherwise we create a single sample and return it
+            If the sample is a ZipFile, we unpack it and return
+            the last sample,otherwise we return a single sample.
         """
         file_data = file_stream.read(4)
         file_stream.seek(0)
@@ -76,7 +76,6 @@ class APIControl(object):
                                                          family)
             samples = [sample]
         return samples
-
 
     def create_from_zip(self, file_stream, user, tlp, family):
         """

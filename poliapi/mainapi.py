@@ -133,7 +133,7 @@ class SampleModule(MainModule):
                            files=files,
                            data=payload)
 
-        return answer["sample"]["id"]
+        return answer["sample"][0]["id"]
 
     def assign_to_family(self, sid, fname):
         """
@@ -165,7 +165,6 @@ class SampleModule(MainModule):
         endpoint += str(sid) + '/abstract/'
 
         return self.get(endpoint)["abstract"]
-
 
     def get_sid_from_MD5(self, md5):
         endpoint = self.prepare_endpoint(root='samples')

@@ -303,6 +303,7 @@ def deactivate_user(user_id):
         flash("Cannot deactivate user", "error")
     return redirect(url_for("admin_page"))
 
+
 """
 
     FAMILIES VIEW
@@ -323,11 +324,13 @@ def view_families():
                            myfamilies=api.familycontrol.get_all(),
                            form=familycreationform)
 
+
 """
 
     FAMILY VIEW
 
 """
+
 
 def family_manage_export_form(family_id, export_form):
     """
@@ -490,7 +493,8 @@ def delete_yara_family(family_id, yara_id):
     if family is None or yar is None:
         abort(404)
     api.yaracontrol.remove_from_family(family, yar)
-    flash("Removed yara %s from family %s" % (yar.name, family.name), "success")
+    flash("Removed yara %s from family %s" % (yar.name, family.name),
+          "success")
     return redirect(url_for("view_family", family_id=family_id))
 
 
@@ -662,7 +666,7 @@ def ui_disassemble_sample(sid, address):
     """
     try:
         integer_address = int(address, 16)
-    except:
+    except BaseException:
         abort(500)
     """
     Disassembly is not performed by function, but by address: maybe
@@ -864,6 +868,8 @@ def ui_search():
                            mresults=functions_results,
                            hresults=hash_compare_results,
                            results=samples_results)
+
+
 """
 
     YARA SIGNATURES
