@@ -182,7 +182,7 @@ class FamilyController(object):
                 return False
         family.TLP_sensibility = tlp_level
         if not no_propagation:
-            dependencies = [family.samples, family.associated_file,
+            dependencies = [family.samples, family.associated_files,
                             family.detection_items]
             for dependency in dependencies:
                 for item in dependency:
