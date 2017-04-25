@@ -242,23 +242,31 @@ class WebUITestCase(unittest.TestCase):
         self.login("john", "password")
         retval = self.create_family("THISISATEST", level=1)
         retval = self.get_family(1)
-        self.assertIn('TLP White', retval.data)
+        self.assertIn('TLP WHITE', retval.data)
 
         retval = self.create_family("THISISATEST2", level=2)
         retval = self.get_family(2)
-        self.assertIn('TLP Green', retval.data)
+        self.assertIn('TLP GREEN', retval.data)
 
         retval = self.create_family("THISISATEST3", level=3)
         retval = self.get_family(3)
-        self.assertIn('TLP Amber', retval.data)
+        self.assertIn('TLP AMBER', retval.data)
 
         retval = self.create_family("THISISATEST4", level=4)
         retval = self.get_family(4)
-        self.assertIn('TLP Red', retval.data)
+        self.assertIn('TLP RED', retval.data)
 
         retval = self.create_family("THISISATEST5", level=5)
         retval = self.get_family(5)
-        self.assertIn('TLP Black', retval.data)
+        self.assertIn('TLP BLACK', retval.data)
+
+    def test_family_change_TLP(self):
+        self.login("john", "password")
+        retval = self.create_family("THISISATEST", level=1)
+        data = dict(level=4, item_id=None, change_tlp="Change TLP")
+        retval = self.app.post("/family/1/", data=data)
+        self.assertEqual(retval.status_code, 200)
+        self.assertIn("TLP RED", retval.data)
 
     def test_family_abstract(self):
         self.login("john", "password")
