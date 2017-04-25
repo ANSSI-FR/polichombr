@@ -37,4 +37,4 @@ ANALYSIS_PROCESS_POOL_SIZE = 3
 API_PATH = "/api/1.0"
 
 # Skelenox options
-HTTP_DEBUG = True # Disable HTTPS
+HTTP_DEBUG = True  # Disable HTTPS

@@ -12,7 +12,7 @@ from marshmallow import fields
 
 from poli import db, ma
 from poli.models.sample import SampleSchema
-from poli.models.models import TLPLevel
+from poli.models.models import CustomEnum, TLPLevel
 
 
 class DetectionElement(db.Model):
@@ -29,7 +29,7 @@ class DetectionElement(db.Model):
     family_id = db.Column(db.Integer(), db.ForeignKey("family.id"))
 
 
-class DetectionType:
+class DetectionType(CustomEnum):
     """
     Custom family-related detection types.
     """
@@ -38,17 +38,6 @@ class DetectionType:
         OPENIOC,    # open ioc format
         SNORT       # snort rule(set)
     ) = range(1, 4)
-
-    @classmethod
-    def tostring(cls, val):
-        for k, v in vars(cls).iteritems():
-            if v == val:
-                return k
-        return ""
-
-    @classmethod
-    def fromstring(cls, val):
-        return getattr(cls, val, None)
 
 
 class FamilyDataFile(db.Model):
@@ -64,7 +53,7 @@ class FamilyDataFile(db.Model):
     family_id = db.Column(db.Integer(), db.ForeignKey("family.id"))
 
 
-class FamilyStatus:
+class FamilyStatus(CustomEnum):
     """
         Is the family analysis complete or not?
     """
@@ -74,16 +63,6 @@ class FamilyStatus:
         NOT_STARTED
     ) = range(1, 4)
 
-    @classmethod
-    def tostring(cls, val):
-        for k, v in vars(cls).iteritems():
-            if v == val:
-                return k
-        return ""
-
-    @classmethod
-    def fromstring(cls, val):
-        return getattr(cls, val, None)
 
 # Yara signatures relationship (auto-classification).
 familytoyara = db.Table('familytoyara',

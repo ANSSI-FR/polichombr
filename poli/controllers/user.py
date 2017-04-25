@@ -113,7 +113,8 @@ class UserController(object):
         """
             Regenerate an user's password hash.
         """
-        verify_and_update_password(passw, user)
+        user.password = encrypt_password(passw)
+        db.session.commit()
         return True
 
     @staticmethod

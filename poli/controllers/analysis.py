@@ -37,7 +37,8 @@ class AnalysisFactory(object):
         srcre = re.compile('.py$', re.IGNORECASE)
         tasks_files = filter(srcre.search,
                              os.listdir(app.config['TASKS_PATH']))
-        form_module = lambda fp: os.path.splitext(fp)[0]
+
+        def form_module(fp): return os.path.splitext(fp)[0]
         tasks_modules = map(form_module, tasks_files)
         for task_filename in tasks_modules:
             if not task_filename.startswith('__'):
@@ -51,7 +52,8 @@ class AnalysisFactory(object):
                                 task_class):
                             self.tasks_classes_container.append(
                                 (task_class, task_filename))
-                            app.logger.info("Imported task %s" % (task_filename))
+                            app.logger.info("Imported task %s" %
+                                            (task_filename))
                 except Exception as e:
                     app.logger.error(
                         "Could not load %s : %s" %

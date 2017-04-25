@@ -9,6 +9,8 @@ import json
 import datetime
 from time import sleep
 from StringIO import StringIO
+from zipfile import ZipFile
+import io
 
 import poli
 from poli.controllers.api import APIControl
@@ -24,16 +26,18 @@ class ApiTestCase(unittest.TestCase):
         poli.app.config['TESTING'] = False
         poli.app.config['WTF_CSRF_ENABLED'] = False
         self.app = poli.app.test_client()
-        poli.db.create_all()
         with poli.app.app_context():
+            poli.db.create_all()
             api = APIControl()
             api.usercontrol.create("john", "password")
+            poli.db.session.commit()
+
         self._create_sample()
-        poli.db.session.commit()
 
     def tearDown(self):
         poli.db.session.remove()
-        poli.db.drop_all()
+        with poli.app.app_context():
+            poli.db.drop_all()
         os.close(self.db_fd)
         os.unlink(self.fname)
 
@@ -82,6 +86,24 @@ class ApiSampleTests(ApiTestCase):
         self.assertEqual(len(data), 1)
         data = data['samples']
         self.assertEqual(data['id'], 1)
+
+
+    def test_upload_zip_sample(self):
+        """
+            Trigger Issue #97
+        """
+        zipout = io.BytesIO()
+        with ZipFile(zipout, "w") as myzip:
+            myzip.write("tests/example_pe.bin")
+            myzip.close()
+        data = StringIO(zipout.getvalue())
+        retval = self.app.post("/api/1.0/samples/",
+                               data=dict({'file': (data, u"toto"),
+                                          'filename':"toto.zip"},
+                                         tlp_level=1, family=0),
+                               follow_redirects=True)
+        self.assertEqual(retval.status_code, 200)
+
 
     def test_get_sample_id(self):
         """

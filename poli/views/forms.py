@@ -165,7 +165,7 @@ class CreateDetectionItemForm(FlaskForm):
     Add detection item.
     """
     name = StringField(u'Name', validators=[DataRequired()])
-    abstract = TextAreaField(u'Abstract', validators=[DataRequired()])
+    item_abstract = TextAreaField(u'Abstract', validators=[DataRequired()])
     choices = [
         (DetectionType.CUSTOM, 'Custom'),
         (DetectionType.OPENIOC, 'OpenIOC'),
@@ -279,7 +279,7 @@ class UploadSampleForm(FlaskForm):
     Upload sample.
     """
     files = FileField('Sample File', validators=[DataRequired()],
-                     render_kw={'multiple': True})
+                      render_kw={'multiple': True})
     level = SelectField(u'Sensibility', choices=TLPLevelChoices,
                         coerce=int, validators=[DataRequired()])
     family = SelectField(u'Associated Family', coerce=int)

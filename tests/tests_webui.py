@@ -64,6 +64,12 @@ class WebUITestCase(unittest.TestCase):
                              data=dict(abstract=abstract),
                              follow_redirects=True)
 
+    def set_family_tlp(self, fid, level=1):
+        data = dict(level=level, item_id=None)
+        retval = self.app.post("/family/" + str(fid) + "/", data=data,
+                                follow_redirects=True)
+        return retval
+
     def set_sample_abstract(self, sid=1, abstract="TEST ABSTRACT"):
         retval = self.app.post("/sample/" + str(sid) + "/",
                                data=dict(abstract=abstract),
@@ -186,6 +192,33 @@ class WebUITestCase(unittest.TestCase):
         retval = self.app.get("/admin/", follow_redirects=True)
         self.assertNotIn("Admin", retval.data)
 
+    def test_user_password(self):
+        retval = self.login("john", "password")
+
+        retval = self.app.get("/user/1/")
+        self.assertEqual(retval.status_code, 200)
+        self.assertIn('<div class="form-group  required"><label class="control-label" for="password">New password</label>', retval.data)
+
+        data = {"oldpass":"password", "password":"newpassword", "rpt_pass":"newpassword"}
+
+        retval = self.app.post("/user/1/",data = data)
+        self.assertEqual(retval.status_code, 200)
+        self.assertIn("Changed user password", retval.data)
+
+        self.logout()
+
+        # Login with the new password
+        retval = self.login("john", "newpassword")
+        self.assertNotIn("error", retval.data)
+        self.assertNotIn("href=\"/login\"", retval.data)
+
+        self.logout()
+
+        # Login with the old password, should fail
+        retval = self.login("john", "password")
+        self.assertIn("Cannot login...", retval.data)
+        self.assertIn("href=\"/login", retval.data)
+
     def test_running(self):
         retval = self.app.get('/')
 
@@ -212,26 +245,35 @@ class WebUITestCase(unittest.TestCase):
         self.assertIn('THISISATEST', retval.data)
 
     def test_family_display_TLP(self):
+        """
+            This tests both display and TLP change,
+            as a family cannot currently be created with a custom TLP
+        """
         self.login("john", "password")
         retval = self.create_family("THISISATEST", level=1)
+        retval = self.set_family_tlp(fid=1, level=1)
         retval = self.get_family(1)
-        self.assertIn('TLP White', retval.data)
+        self.assertIn('TLP WHITE', retval.data)
 
         retval = self.create_family("THISISATEST2", level=2)
+        retval = self.set_family_tlp(fid=2, level=2)
         retval = self.get_family(2)
-        self.assertIn('TLP Green', retval.data)
+        self.assertIn('TLP GREEN', retval.data)
 
         retval = self.create_family("THISISATEST3", level=3)
+        retval = self.set_family_tlp(fid=3, level=3)
         retval = self.get_family(3)
-        self.assertIn('TLP Amber', retval.data)
+        self.assertIn('TLP AMBER', retval.data)
 
         retval = self.create_family("THISISATEST4", level=4)
+        retval = self.set_family_tlp(fid=4, level=4)
         retval = self.get_family(4)
-        self.assertIn('TLP Red', retval.data)
+        self.assertIn('TLP RED', retval.data)
 
         retval = self.create_family("THISISATEST5", level=5)
+        retval = self.set_family_tlp(fid=5, level=5)
         retval = self.get_family(5)
-        self.assertIn('TLP Black', retval.data)
+        self.assertIn('TLP BLACK', retval.data)
 
     def test_family_abstract(self):
         self.login("john", "password")

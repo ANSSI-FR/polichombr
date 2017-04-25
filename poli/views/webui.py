@@ -303,6 +303,7 @@ def deactivate_user(user_id):
         flash("Cannot deactivate user", "error")
     return redirect(url_for("admin_page"))
 
+
 """
 
     FAMILIES VIEW
@@ -323,11 +324,55 @@ def view_families():
                            myfamilies=api.familycontrol.get_all(),
                            form=familycreationform)
 
+
 """
 
     FAMILY VIEW
 
 """
+
+
+def family_manage_export_form(family_id, export_form):
+    """
+    """
+    exptype = export_form.datatype.data
+    lvl = export_form.level.data
+    if exptype == 1:
+        return redirect(
+            url_for(
+                "apiview.api_family_export_detection_yara",
+                family_id=family_id,
+                tlp_level=lvl))
+    elif exptype == 2:
+        return redirect(
+            url_for(
+                "apiview.api_family_export_samplesioc",
+                family_id=family_id,
+                tlp_level=lvl))
+    elif exptype == 3:
+        return redirect(
+            url_for(
+                "apiview.api_family_export_detection_openioc",
+                family_id=family_id,
+                tlp_level=lvl))
+    elif exptype == 4:
+        return redirect(
+            url_for(
+                "apiview.api_family_export_detection_snort",
+                family_id=family_id,
+                tlp_level=lvl))
+    elif exptype == 5:
+        return redirect(
+            url_for(
+                "apiview.api_family_export_detection_custom_elements",
+                family_id=family_id,
+                tlp_level=lvl))
+    elif exptype == 6:
+        return redirect(
+            url_for(
+                "apiview.api_family_export_sampleszip",
+                family_id=family_id,
+                tlp_level=lvl))
 
 
 @app.route('/family/<int:family_id>/', methods=['GET', 'POST'])
@@ -361,44 +406,7 @@ def view_family(family_id):
             abort(500)
 
     if export_form.validate_on_submit():
-        exptype = export_form.datatype.data
-        lvl = export_form.level.data
-        if exptype == 1:
-            return redirect(
-                url_for(
-                    "apiview.api_family_export_detection_yara",
-                    family_id=family.id,
-                    tlp_level=lvl))
-        elif exptype == 2:
-            return redirect(
-                url_for(
-                    "apiview.api_family_export_samplesioc",
-                    family_id=family.id,
-                    tlp_level=lvl))
-        elif exptype == 3:
-            return redirect(
-                url_for(
-                    "apiview.api_family_export_detection_openioc",
-                    family_id=family.id,
-                    tlp_level=lvl))
-        elif exptype == 4:
-            return redirect(
-                url_for(
-                    "apiview.api_family_export_detection_snort",
-                    family_id=family.id,
-                    tlp_level=lvl))
-        elif exptype == 5:
-            return redirect(
-                url_for(
-                    "apiview.api_family_export_detection_custom_elements",
-                    family_id=family.id,
-                    tlp_level=lvl))
-        elif exptype == 6:
-            return redirect(
-                url_for(
-                    "apiview.api_family_export_sampleszip",
-                    family_id=family.id,
-                    tlp_level=lvl))
+        family_manage_export_form(family.id, export_form)
     if add_yara_form.validate_on_submit():
         yar = api.yaracontrol.get_by_id(add_yara_form.yaraid.data)
         if yar is not None:
@@ -417,7 +425,7 @@ def view_family(family_id):
         api.familycontrol.set_status(family, status)
     if add_detection_item_form.validate_on_submit():
         api.familycontrol.create_detection_item(
-            add_detection_item_form.abstract.data,
+            add_detection_item_form.item_abstract.data,
             add_detection_item_form.name.data,
             add_detection_item_form.tlp_level.data,
             add_detection_item_form.item_type.data,
@@ -485,7 +493,8 @@ def delete_yara_family(family_id, yara_id):
     if family is None or yar is None:
         abort(404)
     api.yaracontrol.remove_from_family(family, yar)
-    flash("Removed yara %s from family %s"%(yar.name, family.name), "success")
+    flash("Removed yara %s from family %s" % (yar.name, family.name),
+          "success")
     return redirect(url_for("view_family", family_id=family_id))
 
 
@@ -552,12 +561,13 @@ def ui_sample_upload():
             file_data = mfile.stream
             file_name = secure_filename(mfile.filename)
 
-            sample = api.create_sample_and_run_analysis(
+            samples = api.dispatch_sample_creation(
                 file_data, file_name, g.user, upload_form.level.data, family)
-            if sample:
-                flash("Created sample " + str(sample.id), "success")
-            else:
+            if len(samples) == 0:
                 flash("Error during sample creation", "error")
+            else:
+                for sample in samples:
+                    flash("Created sample " + str(sample.id), "success")
     return redirect(url_for('index'))
 
 
@@ -656,7 +666,7 @@ def ui_disassemble_sample(sid, address):
     """
     try:
         integer_address = int(address, 16)
-    except:
+    except BaseException:
         abort(500)
     """
     Disassembly is not performed by function, but by address: maybe
@@ -835,6 +845,8 @@ def ui_search():
         hneedle = hform.hneedle.data
         samples_results, functions_results = api.samplecontrol.search_hash(
             hneedle)
+        if len(samples_results) == 0:
+            flash("Hash not found...", "error")
     if tform.validate_on_submit():
         tneedle = tform.fneedle.data
         samples_results = api.samplecontrol.search_fulltext(tneedle)
@@ -856,6 +868,8 @@ def ui_search():
                            mresults=functions_results,
                            hresults=hash_compare_results,
                            results=samples_results)
+
+
 """
 
     YARA SIGNATURES

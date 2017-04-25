@@ -104,8 +104,8 @@ class IDAStruct(IDAAction):
     name = db.Column(db.String(), index=True)
     size = db.Column(db.Integer())
     members = db.relationship("IDAStructMember",
-            backref=db.backref("struct"),
-            remote_side=[id])
+                              backref=db.backref("struct"),
+                              remote_side=[id])
 
     __mapper_args__ = {
         "polymorphic_identity": "idastructs"}

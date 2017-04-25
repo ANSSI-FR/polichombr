@@ -9,7 +9,23 @@
 """
 
 
-class TLPLevel(object):
+class CustomEnum(object):
+    """
+        Utility class to implement a int/str enum
+    """
+    @classmethod
+    def tostring(cls, val):
+        for key, value in vars(cls).iteritems():
+            if value == val:
+                return key
+        return ""
+
+    @classmethod
+    def fromstring(cls, val):
+        return getattr(cls, val, None)
+
+
+class TLPLevel(CustomEnum):
     """
     TLP sensibility level. https://www.us-cert.gov/tlp
     BLACK level: "Keep the information private", should not be exported.
@@ -22,16 +38,6 @@ class TLPLevel(object):
         TLPBLACK
     ) = range(1, 6)
 
-    @classmethod
-    def tostring(cls, val):
-        for key, value in vars(cls).iteritems():
-            if value == val:
-                return key
-        return ""
-
-    @classmethod
-    def fromstring(cls, val):
-        return getattr(cls, val, None)
 
 TLPLevelChoices = [
     (TLPLevel.TLPWHITE, 'TLP White'),
