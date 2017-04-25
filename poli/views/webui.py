@@ -329,6 +329,48 @@ def view_families():
 
 """
 
+def family_manage_export_form(family_id, export_form):
+    """
+    """
+    exptype = export_form.datatype.data
+    lvl = export_form.level.data
+    if exptype == 1:
+        return redirect(
+            url_for(
+                "apiview.api_family_export_detection_yara",
+                family_id=family_id,
+                tlp_level=lvl))
+    elif exptype == 2:
+        return redirect(
+            url_for(
+                "apiview.api_family_export_samplesioc",
+                family_id=family_id,
+                tlp_level=lvl))
+    elif exptype == 3:
+        return redirect(
+            url_for(
+                "apiview.api_family_export_detection_openioc",
+                family_id=family_id,
+                tlp_level=lvl))
+    elif exptype == 4:
+        return redirect(
+            url_for(
+                "apiview.api_family_export_detection_snort",
+                family_id=family_id,
+                tlp_level=lvl))
+    elif exptype == 5:
+        return redirect(
+            url_for(
+                "apiview.api_family_export_detection_custom_elements",
+                family_id=family_id,
+                tlp_level=lvl))
+    elif exptype == 6:
+        return redirect(
+            url_for(
+                "apiview.api_family_export_sampleszip",
+                family_id=family_id,
+                tlp_level=lvl))
+
 
 @app.route('/family/<int:family_id>/', methods=['GET', 'POST'])
 @login_required
@@ -361,44 +403,7 @@ def view_family(family_id):
             abort(500)
 
     if export_form.validate_on_submit():
-        exptype = export_form.datatype.data
-        lvl = export_form.level.data
-        if exptype == 1:
-            return redirect(
-                url_for(
-                    "apiview.api_family_export_detection_yara",
-                    family_id=family.id,
-                    tlp_level=lvl))
-        elif exptype == 2:
-            return redirect(
-                url_for(
-                    "apiview.api_family_export_samplesioc",
-                    family_id=family.id,
-                    tlp_level=lvl))
-        elif exptype == 3:
-            return redirect(
-                url_for(
-                    "apiview.api_family_export_detection_openioc",
-                    family_id=family.id,
-                    tlp_level=lvl))
-        elif exptype == 4:
-            return redirect(
-                url_for(
-                    "apiview.api_family_export_detection_snort",
-                    family_id=family.id,
-                    tlp_level=lvl))
-        elif exptype == 5:
-            return redirect(
-                url_for(
-                    "apiview.api_family_export_detection_custom_elements",
-                    family_id=family.id,
-                    tlp_level=lvl))
-        elif exptype == 6:
-            return redirect(
-                url_for(
-                    "apiview.api_family_export_sampleszip",
-                    family_id=family.id,
-                    tlp_level=lvl))
+        family_manage_export_form(family.id, export_form)
     if add_yara_form.validate_on_submit():
         yar = api.yaracontrol.get_by_id(add_yara_form.yaraid.data)
         if yar is not None:
@@ -417,7 +422,7 @@ def view_family(family_id):
         api.familycontrol.set_status(family, status)
     if add_detection_item_form.validate_on_submit():
         api.familycontrol.create_detection_item(
-            add_detection_item_form.abstract.data,
+            add_detection_item_form.item_abstract.data,
             add_detection_item_form.name.data,
             add_detection_item_form.tlp_level.data,
             add_detection_item_form.item_type.data,

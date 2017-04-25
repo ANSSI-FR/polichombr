@@ -165,7 +165,7 @@ class CreateDetectionItemForm(FlaskForm):
     Add detection item.
     """
     name = StringField(u'Name', validators=[DataRequired()])
-    abstract = TextAreaField(u'Abstract', validators=[DataRequired()])
+    item_abstract = TextAreaField(u'Abstract', validators=[DataRequired()])
     choices = [
         (DetectionType.CUSTOM, 'Custom'),
         (DetectionType.OPENIOC, 'OpenIOC'),
