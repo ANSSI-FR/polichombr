@@ -366,7 +366,7 @@ def api_post_samples():
     for sample in samples:
         result = api.samplecontrol.set_tlp_level(sample, tlp_level)
         if result is False:
-            app.logger.warning("Cannot set TLP level for sample %d " % sample.id)
+            app.logger.warning("Cannot set TLP level for sample %d" % sample.id)
     result = api.samplecontrol.schema_export_many(samples)
 
     return jsonify({'sample': result})

@@ -329,6 +329,7 @@ def view_families():
 
 """
 
+
 def family_manage_export_form(family_id, export_form):
     """
     """
@@ -490,7 +491,8 @@ def delete_yara_family(family_id, yara_id):
     if family is None or yar is None:
         abort(404)
     api.yaracontrol.remove_from_family(family, yar)
-    flash("Removed yara %s from family %s" % (yar.name, family.name), "success")
+    flash("Removed yara %s from family %s" % (yar.name, family.name),
+          "success")
     return redirect(url_for("view_family", family_id=family_id))
 
 

@@ -8,6 +8,7 @@
         Generic models.
 """
 
+
 class CustomEnum(object):
     """
         Utility class to implement a int/str enum
