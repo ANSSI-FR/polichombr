@@ -1,4 +1,3 @@
-sudo: false
 
 addons:
   apt:
@@ -12,8 +11,22 @@ addons:
 
 language: python
 
-python:
-  - 2.7
+python: '2.7'
+
+matrix:
+  include:
+    - os: linux
+      sudo: false
+      dist: trusty
+    - os: osx
+      language: generic
+      before_install:
+        - brew update
+        - brew install gcc graphviz ruby
+        - brew install libmagic
+
+  allow_failures:
+    - os: osx
 
 install:
   - pip install -r requirements.txt

@@ -32,13 +32,13 @@ def plain_text(data):
     return response
 
 
-@apiview.errorhandler(404)
+@apiview.app_errorhandler(404)
 def api_404_handler(error):
     return jsonify(dict(error=404,
                         error_description="Resource not found")), 404
 
 
-@apiview.errorhandler(500)
+@apiview.app_errorhandler(500)
 def api_500_handler(error):
     return jsonify({'error': 500,
                     'error_description': error.description,
