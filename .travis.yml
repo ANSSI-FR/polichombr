@@ -1,4 +1,3 @@
-sudo: false
 
 addons:
   apt:
@@ -11,6 +10,18 @@ addons:
       - libssl-dev
 
 language: python
+
+matrix:
+  include:
+    - os: linux
+      sudo: false
+    - os: osx
+      before_install:
+        - brew update
+        - brew install gcc graphviz ruby
+
+  allow_failures:
+    - os: osx
 
 python:
   - 2.7
