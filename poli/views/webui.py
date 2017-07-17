@@ -193,6 +193,7 @@ def dl_skelenox():
         skel_config["backgnd_std_color"] = 0xFFFFFFFF
         skel_config["notepad_font_name"] = "Courier New"
         skel_config["notepad_font_size"] = 9
+        skel_config["debug_level"] = "info"
         skel_json = json.dumps(skel_config, sort_keys=True, indent=4)
         myzip.writestr("skelsettings.json", skel_json)
         myzip.close()
