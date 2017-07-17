@@ -191,7 +191,13 @@ class SkelConnection(object):
                    "Connection": "Keep-Alive",
                    "X-API-Key": self.api_key}
         json_data = json.dumps(data)
-        self.h_conn.request(method, endpoint, json_data, headers)
+        try:
+            self.h_conn.request(method, endpoint, json_data, headers)
+        except httplib.CannotSendRequest as e:
+            g_logger.error("Error during request, retrying")
+            self.close_connection()
+            self.get_online()
+            self.h_conn.request(method, endpoint, json_data, headers)
         res = self.h_conn.getresponse()
 
         if res.status != 200:
@@ -598,7 +604,7 @@ class SkelHooks(object):
         def renamed(self, *args):
             g_logger.debug("[IDB Hook] Something is renamed")
             ea, new_name, is_local_name = args
-            if ea > idc.MinEA() and ea < idc.MaxEA():
+            if ea >= idc.MinEA() and ea <= idc.MaxEA():
                 if is_local_name:
                     # XXX push_new_local_name(ea, new_name)
                     pass
@@ -740,6 +746,9 @@ class SkelUtils(object):
         """
             These are standards coms, we don't want them in the DB
         """
+        if cmt is None:
+            g_logger.error("No comment provided to filter_coms")
+            return True
         black_list = [
             "size_t", "int", "LPSTR", "char", "char *", "lpString",
             "dw", "lp", "Str", "Dest", "Src", "cch", "Dst", "jumptable", "switch ",
@@ -774,23 +783,30 @@ class SkelUtils(object):
     @staticmethod
     def execute_rename(name):
         """
-            Wrapper for renaming only default names
+            This is a wrapper to execute the renaming synchronously
         """
         def get_name():
             return idc.GetTrueName(name["address"])
 
-        def make_name():
+        def make_name(force=False):
             """
                 Thread safe renaming wrapper
             """
+            def sync_ask_rename():
+                rename_flag = 0
+                if force or AskYN(rename_flag, "Replace %s by %s" %(get_name(), name["data"])) == 1:
+                    g_logger.debug("[x] renaming %s @ 0x%x as %s",
+                                   get_name(),
+                                   name["address"],
+                                   name["data"])
+                    idc.MakeName(name["address"], name["data"].encode('ascii', 'ignore'))
             return idaapi.execute_sync(
-                idc.MakeName(name["address"], name["data"].encode('ascii', 'ignore')),
+                sync_ask_rename,
                 idaapi.MFF_FAST)
-        if get_name().startswith("sub_") or get_name() != name["data"]:
-            g_logger.debug("[x] renaming %s @ 0x%x as %s",
-                           get_name(),
-                           name["address"],
-                           name["data"])
+        if get_name().startswith("sub_"):
+            make_name(force=True)
+
+        if get_name() != name["data"]:
             make_name()
 
 

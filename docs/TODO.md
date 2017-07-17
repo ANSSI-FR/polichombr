@@ -28,7 +28,7 @@ with some current bugs too
 	[ ] Display the exports names by sample
 
 ## Skelenox
-	[ ] Manage timestamp
+	[x] Manage timestamp
 	[ ] Function identification by machoc hash
 	[ ] Highlight cryptoblocks
 	[x] Fix upload of sample if it is new
