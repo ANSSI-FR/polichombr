@@ -18,8 +18,8 @@ import datetime
 from StringIO import StringIO
 from string import lower
 
-import idaapi
-import idautils
+from idaapi import *
+from idautils import *
 import idc
 
 
@@ -907,6 +907,29 @@ class SkelSyncAgent(threading.Thread):
                 break
 
 
+class SkelUI(PluginForm):
+    """
+        Skelenox UI is contained in a new tab widget.
+    """
+    def __init__(self):
+        super(SkelUI, self).__init__()
+        self.parent = None
+
+    def OnCreate(self, form):
+        g_logger.debug("Called UI initialization")
+        self.parent = self.FormToPyQtWidget(form)
+
+    def Show(self):
+        options = PluginForm.FORM_CLOSE_LATER | PluginForm.FORM_RESTORE | PluginForm.FORM_SAVE
+        return PluginForm.Show(self, "Skelenox UI", options=options)
+
+    def OnClose(self, form):
+        g_logger.debug("UI is terminating")
+
+    def Close(self, options=PluginForm.FORM_SAVE):
+        super(SkelUI, self).Close(options)
+
+
 class SkelCore(object):
     """
         This is the main class for skelenox.
@@ -920,6 +943,7 @@ class SkelCore(object):
     settings_filename = ""
     skel_hooks = None
     skel_sync_agent = None
+    skel_ui = None
 
     def __init__(self, settings_filename):
         """
@@ -959,6 +983,9 @@ class SkelCore(object):
 
         # setup hooks
         self.skel_hooks = SkelHooks(self.skel_conn)
+
+        # setup UI
+        self.skel_ui = SkelUI()
 
         # setup skelenox terminator
         self.setup_terminator()
@@ -1010,6 +1037,7 @@ class SkelCore(object):
             if AskYN(init_sync, "Do you want to synchronize already defined comments?") == 1:
                 self.send_comments()
 
+        self.skel_ui.Show()
         self.skel_sync_agent.start()
         self.skel_hooks.hook()
 
@@ -1037,6 +1065,7 @@ class SkelCore(object):
         self.skel_sync_agent.kill()
         self.skel_sync_agent.skel_conn.close_connection()
         self.skel_sync_agent.join()
+        self.skel_ui.Close()
 
         g_logger.info("Skelenox terminated")
 
