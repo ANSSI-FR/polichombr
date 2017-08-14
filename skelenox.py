@@ -18,9 +18,12 @@ import datetime
 from StringIO import StringIO
 from string import lower
 
-import idaapi
-import idautils
-import idc
+from idaapi import *
+from idautils import *
+from idc import *
+
+from PyQt5 import QtCore, QtGui, QtWidgets
+from PyQt5.QtWidgets import QWidget, QVBoxLayout
 
 
 g_logger = logging.getLogger()
@@ -253,6 +256,20 @@ class SkelConnection(object):
         else:
             g_logger.error("Cannot send type %s ( 0x%x )", mtype, address)
         return res["result"]
+
+    def get_abstract(self):
+        endpoint = self.prepare_endpoint("abstract")
+        abstract = self.poli_get(endpoint)
+        return abstract["abstract"]
+
+    def push_abstract(self, abstract):
+        endpoint = self.prepare_endpoint("abstract")
+        data = {"abstract": abstract}
+        res = self.poli_post(endpoint, data)
+        if res["result"]:
+            g_logger.debug("Abstract sent!")
+        else:
+            g_logger.error("Cannot send abstract...\n Error %s", res)
 
     def send_sample(self, filedata):
         """
@@ -829,6 +846,7 @@ class SkelSyncAgent(threading.Thread):
             Initialize connection in the new thread
         """
         self.skel_settings = SkelConfig(settings_filename)
+        self.delay = self.skel_settings.sync_frequency
         self.skel_conn = SkelConnection(self.skel_settings)
         self.skel_conn.get_online()
 
@@ -907,6 +925,99 @@ class SkelSyncAgent(threading.Thread):
                 break
 
 
+class SkelNotePad(QtWidgets.QWidget):
+    """
+        Abstract edit widget
+    """
+    skel_conn = None
+    skel_settings = None
+    editor = None
+
+    def __init__(self, parent, settings_filename):
+        super(SkelNotePad, self).__init__()
+
+        self.skel_settings = SkelConfig(settings_filename)
+
+        self.skel_conn = SkelConnection(self.skel_settings)
+        self.skel_conn.get_online()
+
+        self.counter = 0
+        self.editor = None
+        self.PopulateForm()
+
+    def PopulateForm(self):
+        layout = QVBoxLayout()
+        label = QtWidgets.QLabel()
+        label.setText("Notes about sample %s" % GetInputMD5())
+
+        self.editor = QtWidgets.QTextEdit()
+        text = self.skel_conn.get_abstract()
+        self.editor.setPlainText(text)
+
+        # editor.setAutoFormatting(QtWidgets.QTextEdit.AutoAll)
+        self.editor.textChanged.connect(self._onTextChange)
+
+        layout.addWidget(label)
+        layout.addWidget(self.editor)
+        self.setLayout(layout)
+
+    def _onTextChange(self):
+        """
+        Push the abstract every 10 changes
+        """
+        self.counter += 1
+        remote_text = self.skel_conn.get_abstract()
+        diff_len = len(self.editor.toPlainText())
+        diff_len -= len(remote_text)
+        if diff_len not in range(self.counter+2):
+            g_logger.warning("Many changes or remote changes, be aware!")
+        if self.counter > 10:
+            g_logger.debug("More than 10 changes, pushing abstract")
+            text = self.editor.toPlainText()
+            self.skel_conn.push_abstract(text)
+            self.counter = 0
+
+
+class SkelUI(PluginForm):
+    """
+        Skelenox UI is contained in a new tab widget.
+    """
+    def __init__(self, settings_filename):
+        super(SkelUI, self).__init__()
+        self.parent = None
+        self.notepad = None
+        self.settings_filename = settings_filename
+
+    def OnCreate(self, form):
+        g_logger.debug("Called UI initialization")
+        self.parent = self.FormToPyQtWidget(form)
+        self.PopulateForm()
+
+    def Show(self):
+        options = PluginForm.FORM_CLOSE_LATER | PluginForm.FORM_RESTORE | PluginForm.FORM_SAVE
+        return PluginForm.Show(self, "Skelenox UI", options=options)
+
+    def PopulateForm(self):
+        self.tabs = QtWidgets.QTabWidget()
+        layout = QVBoxLayout()
+        layout.addWidget(self.tabs)
+
+        self.notepad = SkelNotePad(self, self.settings_filename)
+        self.tabs.addTab(self.notepad, "Notepad")
+
+        label = QtWidgets.QLabel("TODO: function informations")
+
+        self.tabs.addTab(label, "Func Infos")
+
+        self.parent.setLayout(layout)
+
+    def OnClose(self, form):
+        g_logger.debug("UI is terminating")
+
+    def Close(self, options=PluginForm.FORM_SAVE):
+        super(SkelUI, self).Close(options)
+
+
 class SkelCore(object):
     """
         This is the main class for skelenox.
@@ -920,6 +1031,7 @@ class SkelCore(object):
     settings_filename = ""
     skel_hooks = None
     skel_sync_agent = None
+    skel_ui = None
 
     def __init__(self, settings_filename):
         """
@@ -959,6 +1071,9 @@ class SkelCore(object):
 
         # setup hooks
         self.skel_hooks = SkelHooks(self.skel_conn)
+
+        # setup UI
+        self.skel_ui = SkelUI(settings_filename)
 
         # setup skelenox terminator
         self.setup_terminator()
@@ -1010,6 +1125,7 @@ class SkelCore(object):
             if AskYN(init_sync, "Do you want to synchronize already defined comments?") == 1:
                 self.send_comments()
 
+        self.skel_ui.Show()
         self.skel_sync_agent.start()
         self.skel_hooks.hook()
 
@@ -1037,6 +1153,7 @@ class SkelCore(object):
         self.skel_sync_agent.kill()
         self.skel_sync_agent.skel_conn.close_connection()
         self.skel_sync_agent.join()
+        self.skel_ui.Close()
 
         g_logger.info("Skelenox terminated")
 
