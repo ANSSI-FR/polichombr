@@ -19,7 +19,6 @@ class WebUITestCase(unittest.TestCase):
     """
         Tests the functionalities exposed by the web interface
     """
-
     def setUp(self):
         self.db_fd, self.fname = tempfile.mkstemp()
         poli.app.config['SQLALCHEMY_DATABASE_URI'] = "sqlite:///" + self.fname

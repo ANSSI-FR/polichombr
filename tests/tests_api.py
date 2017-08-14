@@ -212,6 +212,12 @@ class ApiSampleTests(ApiTestCase):
         result = json.loads(retval.data)
         self.assertIn(result['abstract'], 'This is a test for abstract')
 
+    def tests_machoc_funcinfos(self):
+        retval = self.app.get('/api/1.0/machoc/123456')
+        self.assertEqual(retval.status_code, 200)
+        res = json.loads(retval.data)
+        self.assertEqual(len(res), 0)
+
 
 class ApiFamilyTests(ApiTestCase):
     """

@@ -195,7 +195,7 @@ Which returns another id.
 
 ## `/yaras/`
  Manage the yara rules
- 
+
  * [GET]  : Get all the defined yara rules
 ```
 	curl -XGET http://127.0.0.1/api/1.0/yaras/
@@ -225,7 +225,7 @@ Result:
 ```
 
  * [POST] : create a new yara rule
- 
+
  Arguments:
   * `name` : the rule name (should not be used)
   * `rule` : the yara rule text
@@ -250,4 +250,68 @@ The script [create_yara.py](https://github.com/ANSSI-FR/polichombr/tree/master/e
 ```
 	python examples/create_yara.py test.yar "TEST MZ"
 	Created rule TEST MZ with id 1
+```
+
+## `/machoc/`
+ Get functions matching a specific machoc match
+ * [GET] : Fetch functions
+
+Arguments:
+ * The machoc hash in integer form
+
+Returns:
+ * A list of matching functions
+
+Example:
+```
+	curl -X GET http://localhost:5000/api/1.0/machoc/222275914
+```
+
+Result:
+```
+
+[
+  {
+    "address": 4208178,
+    "id": 14,
+    "machoc_hash": 222275914,
+    "name": "sub_403632",
+    "sample_id": 2
+  },
+  {
+    "address": 4200048,
+    "id": 32,
+    "machoc_hash": 222275914,
+    "name": "sub_401670",
+    "sample_id": 2
+  },
+  {
+    "address": 4213900,
+    "id": 41,
+    "machoc_hash": 222275914,
+    "name": "sub_404c8c",
+    "sample_id": 2
+  },
+  {
+    "address": 4207824,
+    "id": 64,
+    "machoc_hash": 222275914,
+    "name": "sub_4034d0",
+    "sample_id": 2
+  },
+  {
+    "address": 4211938,
+    "id": 70,
+    "machoc_hash": 222275914,
+    "name": "sub_4044e2",
+    "sample_id": 2
+  },
+  {
+    "address": 4214017,
+    "id": 84,
+    "machoc_hash": 222275914,
+    "name": "sub_404d01",
+    "sample_id": 2
+  }
+]
 ```

@@ -836,14 +836,12 @@ class SampleController(object):
         return True
 
     @staticmethod
-    def get_function_by_machoc_hash(sample, needle):
+    def get_functions_by_machoc_hash(needle):
         """
-            Get by hash.
+            Return a list of functions matching a given machoc hash
         """
-        for function in sample.functions:
-            if function.machoc_hash == needle:
-                return function
-        return None
+        funcs = FunctionInfo.query.filter_by(machoc_hash=needle).all()
+        return funcs
 
     @classmethod
     def rename_func_from_action(cls, sid, address, name):
@@ -870,7 +868,7 @@ class SampleController(object):
         """
         if isinstance(needle, str):
             needle = int(needle, 16)
-        function_infos = FunctionInfo.query.filter_by(machoc_hash=needle)
+        function_infos = FunctionInfo.query.filter_by(machoc_hash=needle).all()
         samples = []
         if function_infos is None:
             return []
