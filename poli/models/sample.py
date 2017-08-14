@@ -287,6 +287,18 @@ class Sample(db.Model):
         return 'Sample %d' % self.id
 
 
+class FunctionInfoSchema(ma.ModelSchema):
+    """
+        Marshmallow wrapper for FunctionInfo model
+    """
+    class Meta:
+        fields = ('id',
+                  'address',
+                  'name',
+                  'sample_id',
+                  'machoc_hash')
+
+
 class SampleMatchSchema(ma.ModelSchema):
     """
     Match schema.
