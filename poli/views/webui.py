@@ -178,21 +178,14 @@ def dl_skelenox():
         skel_config = {}
         skel_config["username"] = g.user.nickname
         skel_config["edit_flag"] = True
+        skel_config["initial_sync"] = True
         skel_config["poli_server"] = ip_addr
         skel_config["poli_port"] = app.config['SERVER_PORT']
         skel_config["poli_remote_path"] = app.config['API_PATH'] + "/"
         skel_config["debug_http"] = app.config['HTTP_DEBUG']
         skel_config["poli_apikey"] = g.user.api_key
-        skel_config["online_at_startup"] = False
-        skel_config["poli_timeout"] = 5
-        skel_config["display_subs_info"] = False
-        skel_config["int_func_lines_count"] = 9
         skel_config["save_timeout"] = 10 * 60
-        skel_config["auto_highlight"] = 1
-        skel_config["backgnd_highlight_color"] = 0xA0A0FF
-        skel_config["backgnd_std_color"] = 0xFFFFFFFF
-        skel_config["notepad_font_name"] = "Courier New"
-        skel_config["notepad_font_size"] = 9
+        skel_config["sync_frequency"] = 1.0 * 100
         skel_config["debug_level"] = "info"
         skel_json = json.dumps(skel_config, sort_keys=True, indent=4)
         myzip.writestr("skelsettings.json", skel_json)
