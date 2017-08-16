@@ -951,6 +951,10 @@ class SkelNotePad(QtWidgets.QWidget):
         label.setText("Notes about sample %s" % GetInputMD5())
 
         self.editor = QtWidgets.QTextEdit()
+
+        self.editor.setFontFamily(self.skel_settings.notepad_font_name)
+        self.editor.setFontPointSize(self.skel_settings.notepad_font_size)
+
         text = self.skel_conn.get_abstract()
         self.editor.setPlainText(text)
 
