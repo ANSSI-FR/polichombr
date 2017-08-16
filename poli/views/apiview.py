@@ -476,7 +476,7 @@ def get_filter_arguments(mrequest):
 @apiview.route('/samples/<int:sid>/idaactions/', methods=['GET'])
 def api_get_idaactions_updates(sid):
     """
-        Get all actions since a timestamp
+        Get all actions for a sample
     """
     timestamp = datetime.datetime.now()
 
@@ -484,6 +484,24 @@ def api_get_idaactions_updates(sid):
 
     return jsonify({'idaactions': actions,
                     'timestamp': datetime.datetime.now()})
+
+
+@apiview.route('/samples/<int:sid>/functions/', methods=['GET'])
+def api_get_sample_functions(sid):
+    functions = api.samplecontrol.get_functions(sid)
+    schema = FunctionInfoSchema(many=True)
+    return jsonify(schema.dump(functions).data)
+
+
+@apiview.route('/samples/<int:sid>/functions/proposednames', methods=['GET'])
+def api_suggest_func_names(sid):
+    """
+        Returns a dictionary containing proposed function names
+        based on machoc matches.
+    """
+    sample = api.samplecontrol.get_by_id(sid)
+    proposed_funcs = api.samplecontrol.get_proposed_funcnames(sample)
+    return jsonify({'functions': proposed_funcs})
 
 
 @apiview.route('/samples/<int:sid>/comments/', methods=['GET'])

@@ -299,16 +299,6 @@ class SampleController(object):
         db.session.commit()
         return True
 
-    @staticmethod
-    def search_machoc_single_hash(needle):
-        """
-            Search needle machoc hash.
-        """
-        if isinstance(needle, str):
-            needle = int(needle, 16)
-        return FunctionInfo.query.filter(
-            FunctionInfo.machoc_hash == needle).all()
-
     @classmethod
     def search_hash(cls, needle):
         """
@@ -328,7 +318,7 @@ class SampleController(object):
         function_results = None
         # XXX fix this
         # if re.match("[0-9a-f]{8}", needle):
-        #function_results = cls.search_machoc_single_hash(needle)
+        # function_results = cls.get_functions_by_machoc_hash(needle)
         return results, function_results
 
     @classmethod
@@ -525,10 +515,12 @@ class SampleController(object):
     def extract_ngrams_from_machoc(funct_infos, ngrams_length):
         """
         Returns a list of n-grams from a list of function infos
+        TODO: implement
         """
         pass
 
-    def machoc_get_similar_functions(self, sample_dst, sample_src):
+    @staticmethod
+    def machoc_get_similar_functions(sample_dst, sample_src):
         """
             Diff two sample in order to identify similar functions.
             This is performed by:
@@ -794,17 +786,31 @@ class SampleController(object):
         return True
 
     @staticmethod
+    def get_functions(sample_id):
+        """
+            Return all the functions for a sample
+        """
+        functions = FunctionInfo.query.filter_by(sample_id=sample_id).all()
+        return functions
+
+    @staticmethod
     def get_function_by_address(samp, address):
-        for i in samp.functions:
-            if i.address == address:
-                return i
+        """
+        Utility function
+        """
+        functions = FunctionInfo.query.filter_by(sample_id=samp.id)
+        functions = functions.filter_by(address=address)
+
+        func = functions.first()
+        return func
 
     @staticmethod
     def get_functions_hashes(sample):
         """
             Get sample machoc hashes.
         """
-        machoc_hashes = [funcinfo.machoc_hash for funcinfo in sample.functions]
+        functions = FunctionInfo.query.filter_by(sample_id=sample.id).all()
+        machoc_hashes = [funcinfo.machoc_hash for funcinfo in functions]
         return machoc_hashes
 
     @staticmethod
@@ -816,6 +822,26 @@ class SampleController(object):
             if int(functioninfo.address) == address:
                 return functioninfo
         return None
+
+    @classmethod
+    def get_proposed_funcnames(cls, sample):
+        """
+            Get a list of names for similar function hashes
+            return a dict of {"address" : [list of names]}
+        """
+        funcs = [{"address": f.address,
+                  "machoc_hash": f.machoc_hash,
+                  "proposed_names": list()}
+                 for f in sample.functions]
+        app.logger.debug("Got %d funcs to compare for sample %d",
+                         len(funcs),
+                         sample.id)
+        for func in funcs:
+            matches = FunctionInfo.query.with_entities(FunctionInfo.name)
+            matches = matches.filter_by(machoc_hash=func["machoc_hash"])
+            matches = matches.filter(FunctionInfo.name.notlike("sub_%")).all()
+            func["proposed_names"] = [match[0] for match in matches]
+        return funcs
 
     @staticmethod
     def update_function_hash(function, machoc_hash):

@@ -212,11 +212,42 @@ class ApiSampleTests(ApiTestCase):
         result = json.loads(retval.data)
         self.assertIn(result['abstract'], 'This is a test for abstract')
 
-    def tests_machoc_funcinfos(self):
+    def test_machoc_funcinfos(self):
         retval = self.app.get('/api/1.0/machoc/123456')
         self.assertEqual(retval.status_code, 200)
         res = json.loads(retval.data)
         self.assertEqual(len(res), 0)
+
+    def test_sample_functions(self):
+        with poli.app.app_context():
+            sample = poli.models.sample.Sample.query.get(1)
+            poli.api.samplecontrol.add_function(sample, 0xDEAD, 0x7357BEEF, "test_function")
+        retval = self.app.get('/api/1.0/samples/1/functions/')
+        self.assertEqual(retval.status_code, 200)
+        data = json.loads(retval.data)
+        self.assertEqual(len(data), 1)
+        func = data[0]
+        self.assertEqual(func["address"], 0xDEAD)
+        self.assertEqual(func["machoc_hash"], 0x7357BEEF)
+
+    def test_proposed_names(self):
+        """
+            Test that we return correct names
+        """
+        with poli.app.app_context():
+            sample = poli.models.sample.Sample.query.get(1)
+            poli.api.samplecontrol.add_function(sample, 0xDEAD, 0x7357BEEF, "test_function")
+            poli.api.samplecontrol.add_function(sample, 0xBEEF, 0x7357BEEF, "proposed_name")
+            poli.api.samplecontrol.add_function(sample, 0xF00D, 0x7357BEEF, "sub_not_shown")
+        retval = self.app.get('/api/1.0/samples/1/functions/proposednames')
+        self.assertEqual(retval.status_code, 200)
+        data = json.loads(retval.data)
+        func = data["functions"]
+        self.assertEqual(str(type(func)), "<type 'list'>")
+        self.assertEqual(len(func), 3)
+        self.assertIn("test_function", func[0]["proposed_names"])
+        self.assertIn("proposed_name", func[0]["proposed_names"])
+        self.assertNotIn("sub_not_shown", func[0]["proposed_names"])
 
 
 class ApiFamilyTests(ApiTestCase):
@@ -280,7 +311,6 @@ class ApiFamilyTests(ApiTestCase):
         """
         self._create_family("MOTHER FAMILY")
         self._create_family("CHILD FAMILY", parent="MOTHER FAMILY")
-
 
         retval = self.app.get('/api/1.0/family/1/')
         data = json.loads(retval.data)["family"]
