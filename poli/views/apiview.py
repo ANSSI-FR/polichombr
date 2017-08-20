@@ -493,7 +493,7 @@ def api_get_sample_functions(sid):
     return jsonify(schema.dump(functions).data)
 
 
-@apiview.route('/samples/<int:sid>/functions/proposednames', methods=['GET'])
+@apiview.route('/samples/<int:sid>/functions/proposednames/', methods=['GET'])
 def api_suggest_func_names(sid):
     """
         Returns a dictionary containing proposed function names

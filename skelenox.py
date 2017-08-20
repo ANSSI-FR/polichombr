@@ -358,6 +358,15 @@ class SkelConnection(object):
         res = self.poli_get(endpoint)
         return res["names"]
 
+    def get_proposed_names(self):
+        """
+            Get machoc proposed names
+            Returns a list of dictionaries by address
+        """
+        endpoint = self.prepare_endpoint("functions/proposednames")
+        res = self.poli_get(endpoint)
+        return res["functions"]
+
     def push_name(self, address=0, name=None):
         """
             Send a define name, be it func or area
@@ -982,6 +991,107 @@ class SkelNotePad(QtWidgets.QWidget):
             self.counter = 0
 
 
+class SkelFunctionInfosList(QtWidgets.QTableWidget):
+    """
+        Simple list widget to display proposed names
+    """
+    class SkelFuncListItem(object):
+        def __init__(self,
+                     address=None,
+                     curname=None,
+                     machoc=None,
+                     proposed=None
+                     ):
+            self.address = address
+            self.curname = curname
+            self.machoc = machoc
+            self.proposed = proposed
+
+        def get_widgets(self):
+            widgets = {}
+            widgets["address"] = QtWidgets.QTableWidgetItem(self.address)
+            widgets["curname"] = QtWidgets.QTableWidgetItem(self.curname)
+            widgets["machoc"] = QtWidgets.QTableWidgetItem(self.machoc)
+            widgets["proposed"] = QtWidgets.QTableWidgetItem(self.proposed)
+
+            return widgets
+
+    def __init__(self, settings_filename):
+        super(SkelFunctionInfosList, self).__init__()
+
+        self.config = SkelConfig(settings_filename)
+        self.skel_conn = SkelConnection(self.config)
+        self.skel_conn.get_online()
+
+        self.init_table()
+        self.populate_table()
+
+    def init_table(self):
+        """
+        Set the initial header
+        """
+        self.setColumnCount(4)
+        self.setRowCount(1)
+        labels = ["Address", "Current Name", "machoc", "proposed name"]
+        self.setHorizontalHeaderLabels(labels)
+
+    def populate_table(self):
+        """
+            Download the list of proposed names and display it
+        """
+        functions = self.skel_conn.get_proposed_names()
+        items = []
+        for func in functions:
+            func_name = GetTrueName(func["address"])
+            for name in func["proposed_names"]:
+                item = self.SkelFuncListItem(
+                        hex(func["address"]),
+                        func_name,
+                        hex(func["machoc_hash"]),
+                        name)
+                items.append(item)
+        self.setRowCount(len(items))
+
+        for item_index, item in enumerate(items):
+            widgets = item.get_widgets()
+            self.setItem(item_index, 0, widgets["address"])
+            self.setItem(item_index, 1, widgets["curname"])
+            self.setItem(item_index, 2, widgets["machoc"])
+            self.setItem(item_index, 3, widgets["proposed"])
+
+
+class SkelFunctionInfos(QtWidgets.QWidget):
+    """
+        Abstract edit widget
+    """
+    skel_conn = None
+    skel_settings = None
+    editor = None
+
+    def __init__(self, parent, settings_filename):
+        super(SkelFunctionInfos, self).__init__()
+
+        self.skel_settings = SkelConfig(settings_filename)
+        self.settings_filename = settings_filename
+
+        self.skel_conn = SkelConnection(self.skel_settings)
+        self.skel_conn.get_online()
+
+        self.choose = None
+        self.PopulateForm()
+
+    def PopulateForm(self):
+        layout = QVBoxLayout()
+        label = QtWidgets.QLabel()
+        label.setText("Proposed function names for sample %s" % GetInputMD5())
+
+        self.funcinfos = SkelFunctionInfosList(self.settings_filename)
+
+        layout.addWidget(label)
+        layout.addWidget(self.funcinfos)
+        self.setLayout(layout)
+
+
 class SkelUI(PluginForm):
     """
         Skelenox UI is contained in a new tab widget.
@@ -989,8 +1099,10 @@ class SkelUI(PluginForm):
     def __init__(self, settings_filename):
         super(SkelUI, self).__init__()
         self.parent = None
-        self.notepad = None
         self.settings_filename = settings_filename
+
+        self.notepad = None
+        self.funcinfos = None
 
     def OnCreate(self, form):
         g_logger.debug("Called UI initialization")
@@ -1007,11 +1119,10 @@ class SkelUI(PluginForm):
         layout.addWidget(self.tabs)
 
         self.notepad = SkelNotePad(self, self.settings_filename)
+        self.funcinfos = SkelFunctionInfos(self, self.settings_filename)
+
         self.tabs.addTab(self.notepad, "Notepad")
-
-        label = QtWidgets.QLabel("TODO: function informations")
-
-        self.tabs.addTab(label, "Func Infos")
+        self.tabs.addTab(self.funcinfos, "Func Infos")
 
         self.parent.setLayout(layout)
 
