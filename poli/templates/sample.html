@@ -312,9 +312,9 @@
 			    <tr><th>FIELD</th><th>VALUE</th></tr>
 			</thead>
 			<tbody>
-		        {% for meta in metasample%}
+		        {% for meta in sample.s_metadata%}
                     <tr>
-                        <td>{{meta.type}}</td>
+                        <td>{{format_meta(meta)}}</td>
                         <td>{{meta.value}}</td>
                     </tr>
 	        	{% endfor %}

@@ -584,6 +584,31 @@ def ui_import():
     return redirect(url_for('index'))
 
 
+@app.context_processor
+def utility_processor():
+    def format_metadata(meta):
+        """
+            Used to format correctly a sample metadata type in Jinja
+        """
+        return u'%s' % (SampleMetadataType.tostring(meta.type_id))
+    return dict(format_meta=format_metadata)
+
+
+def parse_machoc_form(sample, form):
+    """
+        Returns the matches results
+    """
+    comparison_level = form.percent.data
+    if comparison_level < 1:
+        comparison_level = 1
+    elif comparison_level > 100:
+        comparison_level = 100
+    comparison_level = float(comparison_level) / 100
+    results = api.samplecontrol.machoc_diff_with_all_samples(
+        sample, comparison_level)
+    return results
+
+
 def gen_sample_view(sample_id, graph=None, fctaddr=None):
     """
     Generates a sample's view (template). We split the view because of the
@@ -599,11 +624,7 @@ def gen_sample_view(sample_id, graph=None, fctaddr=None):
     families_choices = [(f.id, f.name) for f in Family.query.order_by('name')]
     add_family_form.parentfamily.choices = families_choices
     change_tlp_level_form = ChangeTLPForm()
-    machoc_compare_form = CompareMachocForm()
-    sample_metadata = []
-    for i in sample.s_metadata:
-        sample_metadata.append(
-            {"type": SampleMetadataType.tostring(i.type_id), "value": i.value})
+    machoc_form = CompareMachocForm()
 
     if add_family_form.validate_on_submit():
         family_id = add_family_form.parentfamily.data
@@ -621,25 +642,17 @@ def gen_sample_view(sample_id, graph=None, fctaddr=None):
         level = change_tlp_level_form.level.data
         api.samplecontrol.set_tlp_level(sample, level)
     machoc_comparison_results = None
-    if machoc_compare_form.validate_on_submit():
-        comparison_level = machoc_compare_form.percent.data
-        if comparison_level < 1:
-            comparison_level = 1
-        elif comparison_level > 100:
-            comparison_level = 100
-        comparison_level = float(comparison_level) / 100
-        machoc_comparison_results = api.samplecontrol.machoc_diff_with_all_samples(
-            sample, comparison_level)
+    if machoc_form.validate_on_submit():
+        machoc_comparison_results = parse_machoc_form(sample, machoc_form)
 
     return render_template("sample.html",
                            sample=sample,
                            abstractform=set_sample_abstract_form,
                            checklists=api.samplecontrol.get_all_checklists(),
                            changetlpform=change_tlp_level_form,
-                           compareform=machoc_compare_form,
+                           compareform=machoc_form,
                            expform=machex_export_form,
                            hresults=machoc_comparison_results,
-                           metasample=sample_metadata,
                            addfamilyform=add_family_form,
                            graph=graph,
                            fctaddr=fctaddr)

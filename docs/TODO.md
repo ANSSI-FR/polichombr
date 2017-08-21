@@ -34,8 +34,8 @@ with some current bugs too
 	[ ] Make difference between regular comments and RptCmts
 	[ ] Hook for segments / structs / enums etc
 	[ ] Integrates with HexRays decompiler
-	[ ] Integrate the abstract as a notepad, so on analyst should not have to leave IDA
 	[ ] Put the coms/names blacklist in a config file
+	[ ] Make the proposed names view clickable
 
 ## Tests
 	The tests are far from complete, so more tests are needed

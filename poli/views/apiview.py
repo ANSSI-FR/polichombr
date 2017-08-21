@@ -476,7 +476,7 @@ def get_filter_arguments(mrequest):
 @apiview.route('/samples/<int:sid>/idaactions/', methods=['GET'])
 def api_get_idaactions_updates(sid):
     """
-        Get all actions since a timestamp
+        Get all actions for a sample
     """
     timestamp = datetime.datetime.now()
 
@@ -484,6 +484,24 @@ def api_get_idaactions_updates(sid):
 
     return jsonify({'idaactions': actions,
                     'timestamp': datetime.datetime.now()})
+
+
+@apiview.route('/samples/<int:sid>/functions/', methods=['GET'])
+def api_get_sample_functions(sid):
+    functions = api.samplecontrol.get_functions(sid)
+    schema = FunctionInfoSchema(many=True)
+    return jsonify(schema.dump(functions).data)
+
+
+@apiview.route('/samples/<int:sid>/functions/proposednames/', methods=['GET'])
+def api_suggest_func_names(sid):
+    """
+        Returns a dictionary containing proposed function names
+        based on machoc matches.
+    """
+    sample = api.samplecontrol.get_by_id(sid)
+    proposed_funcs = api.samplecontrol.get_proposed_funcnames(sample)
+    return jsonify({'functions': proposed_funcs})
 
 
 @apiview.route('/samples/<int:sid>/comments/', methods=['GET'])
@@ -513,7 +531,11 @@ def api_post_sample_comments(sid):
         abort(400, "Missing comment or address arguments")
     address = data['address']
     comment = data['comment']
-    app.logger.debug("Getting a new comment for sample %d : %s@0x%x", sid, comment, address)
+    app.logger.debug(
+        "Getting a new comment for sample %d : %s@0x%x",
+        sid,
+        comment,
+        address)
     action_id = api.idacontrol.add_comment(address, comment)
     result = api.samplecontrol.add_idaaction(sid, action_id)
     return jsonify({'result': result})
@@ -543,7 +565,11 @@ def api_post_sample_names(sid):
     data = request.json
     addr = data['address']
     name = data['name']
-    app.logger.debug("Getting a new name for sample %d : %s@0x%x", sid, name, addr)
+    app.logger.debug(
+        "Getting a new name for sample %d : %s@0x%x",
+        sid,
+        name,
+        addr)
     action_id = api.idacontrol.add_name(addr, name)
     result = api.samplecontrol.add_idaaction(sid, action_id)
     if result is True:
