@@ -239,7 +239,7 @@ class ApiSampleTests(ApiTestCase):
             poli.api.samplecontrol.add_function(sample, 0xDEAD, 0x7357BEEF, "test_function")
             poli.api.samplecontrol.add_function(sample, 0xBEEF, 0x7357BEEF, "proposed_name")
             poli.api.samplecontrol.add_function(sample, 0xF00D, 0x7357BEEF, "sub_not_shown")
-        retval = self.app.get('/api/1.0/samples/1/functions/proposednames')
+        retval = self.app.get('/api/1.0/samples/1/functions/proposednames/')
         self.assertEqual(retval.status_code, 200)
         data = json.loads(retval.data)
         func = data["functions"]
