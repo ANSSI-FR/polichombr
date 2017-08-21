@@ -2,7 +2,7 @@
     Skelenox: the collaborative IDA Pro Agent
 
     This file is part of Polichombr
-        (c) ANSSI-FR 2016
+        (c) ANSSI-FR 2017
 """
 
 import os
@@ -18,9 +18,13 @@ import datetime
 from StringIO import StringIO
 from string import lower
 
-import idaapi
-import idautils
-import idc
+from idaapi import *
+from idautils import *
+from idc import *
+
+from PyQt5 import QtCore, QtGui, QtWidgets
+from PyQt5.QtWidgets import QWidget, QVBoxLayout
+
 
 g_logger = logging.getLogger()
 for h in g_logger.handlers:
@@ -50,19 +54,9 @@ class SkelConfig(object):
         self.poli_remote_path = ""
         self.poli_apikey = ""
         self.debug_http = False
-        self.online_at_startup = None
-        self.poli_timeout = 5
 
         # Skelenox general config
         self.save_timeout = 10 * 60
-
-        # White background, edit to your color scheme preference
-        self.backgnd_highlight_color = 0xA0A0FF
-        self.backgnd_std_color = 0xFFFFFF
-
-        # dark background
-        # self.backgnd_highlight_color = 0x333333
-        # self.backgnd_std_color = 0x0
 
         if os.path.isfile(filename):
             g_logger.info("Loading settings file")
@@ -108,7 +102,7 @@ class SkelConfig(object):
         values = {}
         for elem in vars(self).keys():
             values[elem] = vars(self)[elem]
-        print json.dumps(values, sort_keys=True, indent=4)
+        g_logger.info(json.dumps(values, sort_keys=True, indent=4))
 
 
 class SkelConnection(object):
@@ -263,6 +257,20 @@ class SkelConnection(object):
             g_logger.error("Cannot send type %s ( 0x%x )", mtype, address)
         return res["result"]
 
+    def get_abstract(self):
+        endpoint = self.prepare_endpoint("abstract")
+        abstract = self.poli_get(endpoint)
+        return abstract["abstract"]
+
+    def push_abstract(self, abstract):
+        endpoint = self.prepare_endpoint("abstract")
+        data = {"abstract": abstract}
+        res = self.poli_post(endpoint, data)
+        if res["result"]:
+            g_logger.debug("Abstract sent!")
+        else:
+            g_logger.error("Cannot send abstract...\n Error %s", res)
+
     def send_sample(self, filedata):
         """
             Ugly wrapper for uploading a file in multipart/form-data
@@ -313,7 +321,7 @@ class SkelConnection(object):
                 return data["sample_id"]
             else:
                 return False
-        except: # 404?
+        except:  # 404?
             return False
 
     def init_sample_id(self):
@@ -349,6 +357,15 @@ class SkelConnection(object):
             endpoint += datetime.datetime.strftime(timestamp, format_ts)
         res = self.poli_get(endpoint)
         return res["names"]
+
+    def get_proposed_names(self):
+        """
+            Get machoc proposed names
+            Returns a list of dictionaries by address
+        """
+        endpoint = self.prepare_endpoint("functions/proposednames")
+        res = self.poli_get(endpoint)
+        return res["functions"]
 
     def push_name(self, address=0, name=None):
         """
@@ -388,7 +405,6 @@ class SkelConnection(object):
             [ ] Get struct id from name
         """
         endpoint = self.prepare_endpoint('structs')
-        print endpoint
         return False
 
     def prepare_endpoint(self, submodule):
@@ -435,7 +451,6 @@ class SkelHooks(object):
             self.skel_conn = skel_conn
 
         def preprocess(self, name):
-            #checkupdates()  # XXX : enable it after correct timestamp management
             self.cmdname = name
             self.addr = idc.here()
             return 0
@@ -459,15 +474,14 @@ class SkelHooks(object):
                                                     idc.GetCommentEx(self.addr, 1))
                     if idc.GetFunctionCmt(self.addr, 1) != "":
                         self.skel_conn.push_comment(self.addr,
-                                idc.GetFunctionCmt(self.addr, 1))
+                                                    idc.GetFunctionCmt(self.addr, 1))
 
                 elif self.cmdname == "MakeFunction":
                     if idc.GetFunctionAttr(self.addr, 0) is not None:
+                        # Push "MakeFunction" change
                         pass
-                        #push_change("idc.MakeFunction", shex(idc.GetFunctionAttr(
-                        #    self.addr, 0)), shex(idc.GetFunctionAttr(self.addr, 4)))
                 elif self.cmdname == "DeclareStructVar":
-                    print "Fixme : declare Struct variable"
+                    g_logger.error("Fixme : declare Struct variable")
                 elif self.cmdname == "SetType":
                     newtype = idc.GetType(self.addr)
                     if newtype is None:
@@ -477,7 +491,7 @@ class SkelHooks(object):
                         self.skel_conn.push_type(int(self.addr), newtype)
                     # XXX IMPLEMENT
                 elif self.cmdname == "OpStructOffset":
-                    print "Fixme, used when typing a struct member/stack var/data pointer to a struct offset "
+                    g_logger.debug("A struct member is typed to struct offset")
             except KeyError:
                 pass
             return 0
@@ -521,8 +535,6 @@ class SkelHooks(object):
                 struc_member_created(self, sptr, mptr) -> int
             """
             sptr, mptr = args
-            #print dir(sptr)
-            #print dir(mptr)
             m_start_offset = mptr.soff
             m_end_offset = mptr.eoff
 
@@ -612,7 +624,7 @@ class SkelHooks(object):
                     if not SkelUtils.name_blacklist(new_name):
                         self.skel_conn.push_name(ea, new_name)
             else:
-                print "ea outside program..."
+                g_logger.warning("ea outside program...")
 
             return idaapi.IDP_Hooks.renamed(self, *args)
 
@@ -673,7 +685,8 @@ class SkelUtils(object):
                 SEH*
         """
         if name is not None:
-            default_values = ['sub_', 'nullsub', 'unknown', 'SEH_']
+            default_values = ['sub_', 'nullsub', 'unknown', 'SEH_',
+                              '__imp', 'j_', '__IMP']
             for val in default_values:
                 if val in name[:len(val)+1]:
                     return True
@@ -755,9 +768,11 @@ class SkelUtils(object):
             "unsigned int", "void *", "indirect table for switch statement", "Size"
             "this", "jump table for", "switch jump", "nSize", "hInternet", "hObject",
             "SEH", "Exception handler", "Source", "Size", "Val", "Time",
-            "struct", "unsigned __int"]
+            "struct", "unsigned __int", "this", "__int32", "void (", "Memory",
+            "HINSTANCE", "jumptable"
+            ]
         for elem in black_list:
-            if elem in cmt[:len(elem)+1]:
+            if cmt.lower().startswith(elem.lower()):
                 g_logger.debug("Comment %s has been blacklisted", cmt)
                 return True
         return False
@@ -765,7 +780,7 @@ class SkelUtils(object):
     @staticmethod
     def execute_comment(comment):
         """
-            XXX : switch on the comment type
+            Thread safe comment wrapper
         """
         def make_rpt():
             idc.MakeRptCmt(
@@ -794,7 +809,7 @@ class SkelUtils(object):
             """
             def sync_ask_rename():
                 rename_flag = 0
-                if force or AskYN(rename_flag, "Replace %s by %s" %(get_name(), name["data"])) == 1:
+                if force or AskYN(rename_flag, "Replace %s by %s" % (get_name(), name["data"])) == 1:
                     g_logger.debug("[x] renaming %s @ 0x%x as %s",
                                    get_name(),
                                    name["address"],
@@ -837,6 +852,7 @@ class SkelSyncAgent(threading.Thread):
             Initialize connection in the new thread
         """
         self.skel_settings = SkelConfig(settings_filename)
+        self.delay = self.skel_settings.sync_frequency
         self.skel_conn = SkelConnection(self.skel_settings)
         self.skel_conn.get_online()
 
@@ -905,13 +921,213 @@ class SkelSyncAgent(threading.Thread):
             try:
                 self.update_event.wait()
                 self.update_event.clear()
-                if self.kill_event.wait(timeout=0.01):
+                timeout = self.skel_settings.sync_frequency
+                if self.kill_event.wait(timeout):
                     return 0
                 # if we are up, sync names
                 self.sync_names()
             except Exception as mye:
                 g_logger.exception(mye)
                 break
+
+
+class SkelNotePad(QtWidgets.QWidget):
+    """
+        Abstract edit widget
+    """
+    skel_conn = None
+    skel_settings = None
+    editor = None
+
+    def __init__(self, parent, settings_filename):
+        super(SkelNotePad, self).__init__()
+
+        self.skel_settings = SkelConfig(settings_filename)
+
+        self.skel_conn = SkelConnection(self.skel_settings)
+        self.skel_conn.get_online()
+
+        self.counter = 0
+        self.editor = None
+        self.PopulateForm()
+
+    def PopulateForm(self):
+        layout = QVBoxLayout()
+        label = QtWidgets.QLabel()
+        label.setText("Notes about sample %s" % GetInputMD5())
+
+        self.editor = QtWidgets.QTextEdit()
+
+        self.editor.setFontFamily(self.skel_settings.notepad_font_name)
+        self.editor.setFontPointSize(self.skel_settings.notepad_font_size)
+
+        text = self.skel_conn.get_abstract()
+        self.editor.setPlainText(text)
+
+        # editor.setAutoFormatting(QtWidgets.QTextEdit.AutoAll)
+        self.editor.textChanged.connect(self._onTextChange)
+
+        layout.addWidget(label)
+        layout.addWidget(self.editor)
+        self.setLayout(layout)
+
+    def _onTextChange(self):
+        """
+        Push the abstract every 10 changes
+        """
+        self.counter += 1
+        remote_text = self.skel_conn.get_abstract()
+        diff_len = len(self.editor.toPlainText())
+        diff_len -= len(remote_text)
+        if diff_len not in range(self.counter+2):
+            g_logger.warning("Many changes or remote changes, be aware!")
+        if self.counter > 10:
+            g_logger.debug("More than 10 changes, pushing abstract")
+            text = self.editor.toPlainText()
+            self.skel_conn.push_abstract(text)
+            self.counter = 0
+
+
+class SkelFunctionInfosList(QtWidgets.QTableWidget):
+    """
+        Simple list widget to display proposed names
+    """
+    class SkelFuncListItem(object):
+        def __init__(self,
+                     address=None,
+                     curname=None,
+                     machoc=None,
+                     proposed=None
+                     ):
+            self.address = address
+            self.curname = curname
+            self.machoc = machoc
+            self.proposed = proposed
+
+        def get_widgets(self):
+            widgets = {}
+            widgets["address"] = QtWidgets.QTableWidgetItem(self.address)
+            widgets["curname"] = QtWidgets.QTableWidgetItem(self.curname)
+            widgets["machoc"] = QtWidgets.QTableWidgetItem(self.machoc)
+            widgets["proposed"] = QtWidgets.QTableWidgetItem(self.proposed)
+
+            return widgets
+
+    def __init__(self, settings_filename):
+        super(SkelFunctionInfosList, self).__init__()
+
+        self.config = SkelConfig(settings_filename)
+        self.skel_conn = SkelConnection(self.config)
+        self.skel_conn.get_online()
+
+        self.init_table()
+        self.populate_table()
+
+    def init_table(self):
+        """
+        Set the initial header
+        """
+        self.setColumnCount(4)
+        self.setRowCount(1)
+        labels = ["Address", "Current Name", "machoc", "proposed name"]
+        self.setHorizontalHeaderLabels(labels)
+
+    def populate_table(self):
+        """
+            Download the list of proposed names and display it
+        """
+        functions = self.skel_conn.get_proposed_names()
+        items = []
+        for func in functions:
+            func_name = GetTrueName(func["address"])
+            for name in func["proposed_names"]:
+                item = self.SkelFuncListItem(
+                        hex(func["address"]),
+                        func_name,
+                        hex(func["machoc_hash"]),
+                        name)
+                items.append(item)
+        self.setRowCount(len(items))
+
+        for item_index, item in enumerate(items):
+            widgets = item.get_widgets()
+            self.setItem(item_index, 0, widgets["address"])
+            self.setItem(item_index, 1, widgets["curname"])
+            self.setItem(item_index, 2, widgets["machoc"])
+            self.setItem(item_index, 3, widgets["proposed"])
+
+
+class SkelFunctionInfos(QtWidgets.QWidget):
+    """
+        Widgets that displays machoc names for the current sample
+    """
+    skel_conn = None
+    skel_settings = None
+    editor = None
+
+    def __init__(self, parent, settings_filename):
+        super(SkelFunctionInfos, self).__init__()
+
+        self.skel_settings = SkelConfig(settings_filename)
+        self.settings_filename = settings_filename
+
+        self.skel_conn = SkelConnection(self.skel_settings)
+        self.skel_conn.get_online()
+
+        self.choose = None
+        self.PopulateForm()
+
+    def PopulateForm(self):
+        layout = QVBoxLayout()
+        label = QtWidgets.QLabel()
+        label.setText("Proposed function names for sample %s" % GetInputMD5())
+
+        self.funcinfos = SkelFunctionInfosList(self.settings_filename)
+
+        layout.addWidget(label)
+        layout.addWidget(self.funcinfos)
+        self.setLayout(layout)
+
+
+class SkelUI(PluginForm):
+    """
+        Skelenox UI is contained in a new tab widget.
+    """
+    def __init__(self, settings_filename):
+        super(SkelUI, self).__init__()
+        self.parent = None
+        self.settings_filename = settings_filename
+
+        self.notepad = None
+        self.funcinfos = None
+
+    def OnCreate(self, form):
+        g_logger.debug("Called UI initialization")
+        self.parent = self.FormToPyQtWidget(form)
+        self.PopulateForm()
+
+    def Show(self):
+        options = PluginForm.FORM_CLOSE_LATER | PluginForm.FORM_RESTORE | PluginForm.FORM_SAVE
+        return PluginForm.Show(self, "Skelenox UI", options=options)
+
+    def PopulateForm(self):
+        self.tabs = QtWidgets.QTabWidget()
+        layout = QVBoxLayout()
+        layout.addWidget(self.tabs)
+
+        self.notepad = SkelNotePad(self, self.settings_filename)
+        self.funcinfos = SkelFunctionInfos(self, self.settings_filename)
+
+        self.tabs.addTab(self.notepad, "Notepad")
+        self.tabs.addTab(self.funcinfos, "Func Infos")
+
+        self.parent.setLayout(layout)
+
+    def OnClose(self, form):
+        g_logger.debug("UI is terminating")
+
+    def Close(self, options=PluginForm.FORM_SAVE):
+        super(SkelUI, self).Close(options)
 
 
 class SkelCore(object):
@@ -927,6 +1143,7 @@ class SkelCore(object):
     settings_filename = ""
     skel_hooks = None
     skel_sync_agent = None
+    skel_ui = None
 
     def __init__(self, settings_filename):
         """
@@ -953,7 +1170,6 @@ class SkelCore(object):
         SaveBase(self.backup_file, idaapi.DBFL_TEMP)
         self.last_saved = time.time()
 
-        self.skel_settings.online_at_startup = True
         if self.skel_hooks is not None:
             self.skel_hooks.cleanup_hooks()
 
@@ -968,15 +1184,60 @@ class SkelCore(object):
         # setup hooks
         self.skel_hooks = SkelHooks(self.skel_conn)
 
+        # setup UI
+        self.skel_ui = SkelUI(settings_filename)
+
         # setup skelenox terminator
         self.setup_terminator()
 
         g_logger.info("Skelenox init finished")
 
+    def send_names(self):
+        """
+            Used to send all the names to the server.
+            Usecase: Previously analyzed IDB
+        """
+        for head in idautils.Names():
+            if not SkelUtils.func_name_blacklist(head[1]):
+                mtype = GetType(head[0])
+                if mtype and not mtype.lower().startswith("char["):
+                    print head[1]
+                    self.skel_conn.push_name(head[0], head[1])
+
+    def send_comments(self):
+        """
+            Initial sync of comments
+        """
+        for head in Heads():
+            com = Comment(head)
+            rpt_com = RptCmt(head)
+            send_com = ""
+            if com and not SkelUtils.filter_coms_blacklist(com):
+                send_com += com
+
+            if rpt_com and not SkelUtils.filter_coms_blacklist(rpt_com):
+                send_com += " " + rpt_com
+
+            if len(send_com) > 0:
+                try:
+                    self.skel_conn.push_comment(head, send_com)
+                except Exception as e:
+                    g_logger.exception(e)
+
     def run(self):
         """
             Launch the hooks!
         """
+        idaapi.disable_script_timeout()
+        if self.skel_settings.initial_sync:
+            init_sync = 0
+            if AskYN(init_sync, "Do you want to synchronize already defined names?") == 1:
+                self.send_names()
+
+            if AskYN(init_sync, "Do you want to synchronize already defined comments?") == 1:
+                self.send_comments()
+
+        self.skel_ui.Show()
         self.skel_sync_agent.start()
         self.skel_hooks.hook()
 
@@ -1004,6 +1265,8 @@ class SkelCore(object):
         self.skel_sync_agent.kill()
         self.skel_sync_agent.skel_conn.close_connection()
         self.skel_sync_agent.join()
+        self.skel_ui.Close()
+
         g_logger.info("Skelenox terminated")
 
 
@@ -1020,6 +1283,7 @@ def PLUGIN_ENTRY():
     """
         IDAPython plugin wrapper
     """
+    Wait()
     return SkelenoxPlugin()
 
 

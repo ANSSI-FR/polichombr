@@ -38,6 +38,9 @@ permits some basic actions for a Polichombr instance.
 ### Automated hotpoints detection 
 ![screenshot](docs/screenshots/screen_analyzeit.png)
 
+### Taking notes right from IDA
+![screenshot](docs/screenshots/ida_abstract.png)
+
 ### Plugins / tasks
 Tasks are loaded from the app/controllers/tasks directory, and must inherit from the Task object.
 In particular, several tasks are already implemented:

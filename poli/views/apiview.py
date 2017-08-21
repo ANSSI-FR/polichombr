@@ -14,6 +14,7 @@ import datetime
 from poli import api, apiview, app
 from poli.models.family import FamilySchema
 from poli.models.sample import Sample, SampleSchema
+from poli.models.sample import FunctionInfoSchema
 from poli.models.yara_rule import YaraSchema
 from poli.models.models import TLPLevel
 
@@ -34,12 +35,18 @@ def plain_text(data):
 
 @apiview.app_errorhandler(404)
 def api_404_handler(error):
+    """
+        404 error handler for the whole API module
+    """
     return jsonify(dict(error=404,
                         error_description="Resource not found")), 404
 
 
 @apiview.app_errorhandler(500)
 def api_500_handler(error):
+    """
+        Module wide, returned in case of server error
+    """
     return jsonify({'error': 500,
                     'error_description': error.description,
                     'error_message': error.message}), 500
@@ -47,6 +54,9 @@ def api_500_handler(error):
 
 @apiview.errorhandler(400)
 def api_400_handler(error):
+    """
+        Module wide error handler, returned when there is an argument problem
+    """
     return jsonify({'error': 400,
                     'error_description': error.description,
                     'error_message': error.message}), 400
@@ -68,19 +78,7 @@ def api_help():
         see docs/API.md for more informations
     """
     text = """
-    /
-    /samples/
-    /samples/
-    /samples/<int:sid>/download
-    /samples/<int:sid>
-    /samples/<shash>/
-
-    /families/
-        Get all the data for all the families
-
-    /family/
-        [POST] : create a new family
-        [GET]  : nothing
+        See docs/API.md for more informations
     """
     return plain_text(text)
 
@@ -478,7 +476,7 @@ def get_filter_arguments(mrequest):
 @apiview.route('/samples/<int:sid>/idaactions/', methods=['GET'])
 def api_get_idaactions_updates(sid):
     """
-        Get all actions since a timestamp
+        Get all actions for a sample
     """
     timestamp = datetime.datetime.now()
 
@@ -486,6 +484,24 @@ def api_get_idaactions_updates(sid):
 
     return jsonify({'idaactions': actions,
                     'timestamp': datetime.datetime.now()})
+
+
+@apiview.route('/samples/<int:sid>/functions/', methods=['GET'])
+def api_get_sample_functions(sid):
+    functions = api.samplecontrol.get_functions(sid)
+    schema = FunctionInfoSchema(many=True)
+    return jsonify(schema.dump(functions).data)
+
+
+@apiview.route('/samples/<int:sid>/functions/proposednames/', methods=['GET'])
+def api_suggest_func_names(sid):
+    """
+        Returns a dictionary containing proposed function names
+        based on machoc matches.
+    """
+    sample = api.samplecontrol.get_by_id(sid)
+    proposed_funcs = api.samplecontrol.get_proposed_funcnames(sample)
+    return jsonify({'functions': proposed_funcs})
 
 
 @apiview.route('/samples/<int:sid>/comments/', methods=['GET'])
@@ -515,6 +531,11 @@ def api_post_sample_comments(sid):
         abort(400, "Missing comment or address arguments")
     address = data['address']
     comment = data['comment']
+    app.logger.debug(
+        "Getting a new comment for sample %d : %s@0x%x",
+        sid,
+        comment,
+        address)
     action_id = api.idacontrol.add_comment(address, comment)
     result = api.samplecontrol.add_idaaction(sid, action_id)
     return jsonify({'result': result})
@@ -544,6 +565,11 @@ def api_post_sample_names(sid):
     data = request.json
     addr = data['address']
     name = data['name']
+    app.logger.debug(
+        "Getting a new name for sample %d : %s@0x%x",
+        sid,
+        name,
+        addr)
     action_id = api.idacontrol.add_name(addr, name)
     result = api.samplecontrol.add_idaaction(sid, action_id)
     if result is True:
@@ -690,7 +716,7 @@ def api_get_machoc_matches(sid):
     """
         TODO : Get machoc hashes
     """
-    samp = api.samplecontrol.get_by_id(sid)
+    result = api.samplecontrol.get_by_id(sid)
     result = None
     return jsonify({'result': result})
 
@@ -700,7 +726,7 @@ def api_get_iat_matches(sid):
     """
         TODO : Get IAT hashes
     """
-    samp = api.samplecontrol.get_by_id(sid)
+    result = api.samplecontrol.get_by_id(sid)
     result = None
     return jsonify({'result': result})
 
@@ -710,7 +736,7 @@ def api_get_yara_matches(sid):
     """
         TODO : Get yara matches
     """
-    samp = api.samplecontrol.get_by_id(sid)
+    result = api.samplecontrol.get_by_id(sid)
     result = None
     return jsonify({'result': result})
 
@@ -748,3 +774,19 @@ def api_create_yara():
     if result is None or not result:
         abort(500, "Cannot create yara rule")
     return jsonify({"id": result.id})
+
+
+@apiview.route('/machoc/<int:machoc_hash>', methods=["GET"])
+def api_get_machoc_names(machoc_hash):
+    """
+        Get user-defined names associated with machoc hashes
+        @arg machoc_hash
+        @return A list of names
+    """
+    functions = api.samplecontrol.get_functions_by_machoc_hash(machoc_hash)
+    app.logger.debug("Got %d functions matching machoc %x",
+                     len(functions),
+                     machoc_hash)
+
+    schema = FunctionInfoSchema(many=True)
+    return jsonify(schema.dump(functions).data)
