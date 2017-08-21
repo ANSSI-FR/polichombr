@@ -32,6 +32,7 @@ from poli.models.idaactions import IDAAction
 
 
 class SampleController(object):
+
     """
         Wrapper to the Sample model. It is in charge of managing the creation,
         extraction and modification of samples, and all of directly related

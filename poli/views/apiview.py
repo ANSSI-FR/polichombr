@@ -531,7 +531,11 @@ def api_post_sample_comments(sid):
         abort(400, "Missing comment or address arguments")
     address = data['address']
     comment = data['comment']
-    app.logger.debug("Getting a new comment for sample %d : %s@0x%x", sid, comment, address)
+    app.logger.debug(
+        "Getting a new comment for sample %d : %s@0x%x",
+        sid,
+        comment,
+        address)
     action_id = api.idacontrol.add_comment(address, comment)
     result = api.samplecontrol.add_idaaction(sid, action_id)
     return jsonify({'result': result})
@@ -561,7 +565,11 @@ def api_post_sample_names(sid):
     data = request.json
     addr = data['address']
     name = data['name']
-    app.logger.debug("Getting a new name for sample %d : %s@0x%x", sid, name, addr)
+    app.logger.debug(
+        "Getting a new name for sample %d : %s@0x%x",
+        sid,
+        name,
+        addr)
     action_id = api.idacontrol.add_name(addr, name)
     result = api.samplecontrol.add_idaaction(sid, action_id)
     if result is True:

@@ -2,7 +2,7 @@
     Skelenox: the collaborative IDA Pro Agent
 
     This file is part of Polichombr
-        (c) ANSSI-FR 2016
+        (c) ANSSI-FR 2017
 """
 
 import os
@@ -478,9 +478,8 @@ class SkelHooks(object):
 
                 elif self.cmdname == "MakeFunction":
                     if idc.GetFunctionAttr(self.addr, 0) is not None:
+                        # Push "MakeFunction" change
                         pass
-                        #push_change("idc.MakeFunction", shex(idc.GetFunctionAttr(
-                        #    self.addr, 0)), shex(idc.GetFunctionAttr(self.addr, 4)))
                 elif self.cmdname == "DeclareStructVar":
                     g_logger.error("Fixme : declare Struct variable")
                 elif self.cmdname == "SetType":
@@ -492,7 +491,7 @@ class SkelHooks(object):
                         self.skel_conn.push_type(int(self.addr), newtype)
                     # XXX IMPLEMENT
                 elif self.cmdname == "OpStructOffset":
-                    g_logger.error("Fixme, used when typing a struct member/stack pointer to a struct offset ")
+                    g_logger.debug("A struct member is typed to struct offset")
             except KeyError:
                 pass
             return 0
@@ -782,8 +781,6 @@ class SkelUtils(object):
     def execute_comment(comment):
         """
             Thread safe comment wrapper
-            TODO : Diff between RptCom and Com
-            TODO : Ask user when there is a conflict
         """
         def make_rpt():
             idc.MakeRptCmt(
@@ -1062,7 +1059,7 @@ class SkelFunctionInfosList(QtWidgets.QTableWidget):
 
 class SkelFunctionInfos(QtWidgets.QWidget):
     """
-        Abstract edit widget
+        Widgets that displays machoc names for the current sample
     """
     skel_conn = None
     skel_settings = None
