@@ -564,6 +564,27 @@ class WebUISampleManagementTests(WebUIBaseClass):
         self.assertIn("/api/1.0/samples/1/download/",
                       retval.headers["Location"])
 
+    def test_machoc_diff(self):
+        """
+            Machoc diffing
+            TODO: test posting and renaming
+        """
+        self.login("john", "password")
+        self.create_sample()
+
+        with open("tests/example_pe.bin", "rb") as hfile:
+            data = StringIO(hfile.read()[:-10])
+
+        retval = self.app.post("/samples/",
+                               data=dict(
+                                   {'files': (data, "toto")},
+                                   level=1, family=0),
+                               follow_redirects=True)
+
+        retval = self.app.get("/machocdiff/1/2/")
+
+        self.assertEqual(retval.status_code, 200)
+
 
 if __name__ == '__main__':
     unittest.main()
