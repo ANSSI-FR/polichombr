@@ -47,9 +47,9 @@
                     <tbody>
                         {% for i in sdiff %}
                             <tr>
-                                <td>{{i['dst'].address}}</td>
+                                <td>{{"0x%x" % i['dst'].address}}</td>
                                 <td>{{i['dst'].name}}</td>
-                                <td>{{i['src'].address}}</td>
+                                <td>{{"0x%x" % i['src'].address}}</td>
                                 <td>{{i['src'].name}}</td>
                                 <td>
                                     {% if i['src'] and i['dst'] %}

@@ -1,7 +1,7 @@
 """
     This file is part of Polichombr.
 
-    (c) 2016 ANSSI-FR
+    (c) 2017 ANSSI-FR
 
 
     Description:
@@ -10,7 +10,6 @@
 
 
 import json
-import os
 import io
 
 from zipfile import ZipFile
@@ -213,6 +212,9 @@ def admin_page():
 @app.route('/settings/', methods=['GET', 'POST'])
 @login_required
 def ui_settings():
+    """
+        Manage per user settings forms
+    """
     addchecklistform = CreateCheckListForm()
     if addchecklistform.validate_on_submit():
         api.samplecontrol.create_checklist(addchecklistform.title.data,
@@ -377,9 +379,7 @@ def view_family(family_id):
     """
     Family view and forms handling.
     """
-    family = api.familycontrol.get_by_id(family_id)
-    if family is None:
-        abort(404)
+    family = api.get_elem_by_type("family", family_id)
 
     family_users = api.familycontrol.get_users_for_family(family)
     export_form = ExportFamilyForm()
@@ -404,9 +404,8 @@ def view_family(family_id):
     if export_form.validate_on_submit():
         family_manage_export_form(family.id, export_form)
     if add_yara_form.validate_on_submit():
-        yar = api.yaracontrol.get_by_id(add_yara_form.yaraid.data)
-        if yar is not None:
-            api.yaracontrol.add_to_family(family, yar)
+        yar = api.get_elem_by_type("yara", add_yara_form.yaraid.data)
+        api.yaracontrol.add_to_family(family, yar)
     if family_abstract_form.validate_on_submit():
         abstract = family_abstract_form.abstract.data
         api.familycontrol.set_abstract(family, abstract)
@@ -454,13 +453,9 @@ def add_remove_me(family_id):
     """
     Add or remove the current user to the families referents.
     """
-    family = api.familycontrol.get_by_id(family_id)
-    if family is None:
-        abort(404)
-    if g.user in family.users:
-        api.familycontrol.remove_user(g.user, family)
-    else:
-        api.familycontrol.add_user(g.user, family)
+    family_id = api.remove_user_from_element("family",
+                                             family_id,
+                                             g.user)
     return redirect(url_for('view_family', family_id=family_id))
 
 
@@ -470,10 +465,8 @@ def delete_family_file(family_id, file_id):
     """
     Delete a family attached file.
     """
-    family = api.familycontrol.get_by_id(family_id)
-    attachment = api.familycontrol.get_file_by_id(file_id)
-    if family is None or attachment is None:
-        abort(404)
+    family = api.get_elem_by_type("family", family_id)
+    attachment = api.get_elem_by_type("family_file", file_id)
     api.familycontrol.delete_file(attachment)
     return redirect(url_for('view_family', family_id=family.id))
 
@@ -484,10 +477,8 @@ def delete_yara_family(family_id, yara_id):
     """
     Deletes an associated yara rule.
     """
-    family = api.familycontrol.get_by_id(family_id)
-    yar = api.yaracontrol.get_by_id(yara_id)
-    if family is None or yar is None:
-        abort(404)
+    family = api.get_elem_by_type("family", family_id)
+    yar = api.get_elem_by_type("yara", yara_id)
     api.yaracontrol.remove_from_family(family, yar)
     flash("Removed yara %s from family %s" % (yar.name, family.name),
           "success")
@@ -500,10 +491,8 @@ def delete_family_item(family_id, item_id):
     """
     Delete a family detection item.
     """
-    family = api.familycontrol.get_by_id(family_id)
-    detection_item = api.familycontrol.get_detection_item_by_id(item_id)
-    if family is None or detection_item is None:
-        abort(404)
+    family = api.get_elem_by_type("family", family_id)
+    detection_item = api.get_elem_by_type("detection_item", item_id)
     api.familycontrol.delete_detection_item(detection_item)
     return redirect(url_for('view_family', family_id=family.id))
 
@@ -514,10 +503,8 @@ def delete_family(family_id):
     """
     Delete a family.
     """
-    family = api.familycontrol.get_by_id(family_id)
+    family = api.get_elem_by_type("family", family_id)
     parentfamily = None
-    if family is None:
-        abort(404)
     parentfamily = family.parents
     api.familycontrol.delete(family)
     flash("Deleted family", "success")
@@ -548,10 +535,7 @@ def ui_sample_upload():
         family_id = upload_form.family.data
         family = None
         if family_id != 0:
-            family = api.familycontrol.get_by_id(family_id)
-            if family is None:
-                flash("Could not find the family", "error")
-                abort(404)
+            family = api.get_elem_by_type("family", family_id)
 
         for mfile in upload_form.files.raw_data:
             file_data = mfile.stream
@@ -586,6 +570,9 @@ def ui_import():
 
 @app.context_processor
 def utility_processor():
+    """
+        define utilities for Jinja processing
+    """
     def format_metadata(meta):
         """
             Used to format correctly a sample metadata type in Jinja
@@ -615,9 +602,7 @@ def gen_sample_view(sample_id, graph=None, fctaddr=None):
     disassembly view, which is directly included in the sample's view, but
     not "by default".
     """
-    sample = api.samplecontrol.get_by_id(sample_id)
-    if sample is None:
-        abort(404)
+    sample = api.get_elem_by_type("sample", sample_id)
     machex_export_form = ExportMachexForm(sampleid=sample.id)
     set_sample_abstract_form = SampleAbstractForm()
     add_family_form = AddSampleToFamilyForm()
@@ -628,9 +613,7 @@ def gen_sample_view(sample_id, graph=None, fctaddr=None):
 
     if add_family_form.validate_on_submit():
         family_id = add_family_form.parentfamily.data
-        family = api.familycontrol.get_by_id(family_id)
-        if family is None:
-            abort(404)
+        family = api.get_elem_by_type("family", family_id)
         api.familycontrol.add_sample(sample, family)
     if set_sample_abstract_form.validate_on_submit():
         abstract = set_sample_abstract_form.abstract.data
@@ -694,9 +677,7 @@ def machexport():
     machex_export_form = ExportMachexForm()
     if machex_export_form.validate_on_submit():
         sample_id = machex_export_form.sampleid.data
-        sample = api.samplecontrol.get_by_id(sample_id)
-        if sample is None:
-            abort(404)
+        sample = api.get_elem_by_type("sample", sample_id)
         fnamexp = False
         fmachexp = False
         fstringexp = False
@@ -737,12 +718,8 @@ def diff_samples(sample_id, sample2_id):
     Diff two samples using MACHOC. Maybe we could move this view in the sample
     view, just as we did for the disassemble view?
     """
-    sample1 = api.samplecontrol.get_by_id(sample_id)
-    if sample1 is None:
-        abort(500)
-    sample2 = api.samplecontrol.get_by_id(sample2_id)
-    if sample2 is None:
-        abort(500)
+    sample1 = api.get_elem_by_type("sample", sample_id)
+    sample2 = api.get_elem_by_type("sample", sample2_id)
     sdiff = []
     # POST request means that the samples names sharing has been submitted.
     if request.method == "POST":
@@ -774,10 +751,8 @@ def check_field(sample_id, checklist_id):
     """
     Check or uncheck a checklist element.
     """
-    sample = api.samplecontrol.get_by_id(sample_id)
-    checklist = api.samplecontrol.get_checklist_by_id(checklist_id)
-    if sample is None or checklist is None:
-        abort(404)
+    sample = api.get_elem_by_type("sample", sample_id)
+    checklist = api.get_elem_by_type("checklist", checklist_id)
     api.samplecontrol.toggle_sample_checklist(sample, checklist)
     return redirect(url_for('view_sample', sample_id=sample_id))
 
@@ -788,13 +763,9 @@ def add_remove_me_samp(sample_id):
     """
     Add or remove the current user to the sample's users.
     """
-    sample = api.samplecontrol.get_by_id(sample_id)
-    if sample is None:
-        abort(404)
-    if g.user in sample.users:
-        api.samplecontrol.remove_user(g.user, sample)
-    else:
-        api.samplecontrol.add_user(g.user, sample)
+    api.remove_user_from_element("sample",
+                                 sample_id,
+                                 g.user)
     return redirect(url_for('view_sample', sample_id=sample_id))
 
 
@@ -804,13 +775,9 @@ def ui_sample_remove_family(sample_id, family_id):
     """
     Add or remove the current user to the sample's users.
     """
-    sample = api.samplecontrol.get_by_id(sample_id)
-    if sample is not None:
-        family = api.familycontrol.get_by_id(family_id)
-        if family is not None:
-            api.familycontrol.remove_sample(sample, family)
-    else:
-        abort(404)
+    sample = api.get_elem_by_type("sample", sample_id)
+    family = api.get_elem_by_type("family", family_id)
+    api.familycontrol.remove_sample(sample, family)
     return redirect(url_for('view_sample', sample_id=sample_id))
 
 
@@ -820,11 +787,8 @@ def delete_sample(sample_id):
     """
     Delete from DB.
     """
-    sample = api.samplecontrol.get_by_id(sample_id)
-    if sample is not None:
-        api.samplecontrol.delete(sample)
-    else:
-        abort(404)
+    sample = api.get_elem_by_type("sample", sample_id)
+    api.samplecontrol.delete(sample)
     return redirect(url_for('index'))
 
 
@@ -907,16 +871,14 @@ def ui_yara():
             flash("Created yara " + ret.name, "success")
     elif change_tlp_level_form.validate_on_submit():
         if change_tlp_level_form.item_id:
-            yar = api.yaracontrol.get_by_id(change_tlp_level_form.item_id.data)
-            if yar is None:
-                abort(404)
+            yar = api.get_elem_by_type("yara",
+                                       change_tlp_level_form.item_id.data)
             api.yaracontrol.set_tlp_level(
                 change_tlp_level_form.level.data, yar)
     elif rename_yara_form.validate_on_submit():
         if rename_yara_form.item_id:
-            yar = api.yaracontrol.get_by_id(rename_yara_form.item_id.data)
-            if yar is None:
-                abort(404)
+            yar = api.get_elem_by_type("yara",
+                                       rename_yara_form.item_id.data)
             api.yaracontrol.rename(rename_yara_form.newname.data, yar)
 
     yaras = api.yaracontrol.get_all()
@@ -933,8 +895,6 @@ def ui_delete_yara(sig_id):
     """
     Delete YARA rule.
     """
-    yar = api.yaracontrol.get_by_id(sig_id)
-    if not yar:
-        abort(404)
+    yar = api.get_elem_by_type("yara", sig_id)
     api.yaracontrol.delete(yar)
     return redirect(url_for('ui_yara'))
