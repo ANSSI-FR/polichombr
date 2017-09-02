@@ -36,6 +36,8 @@ with some current bugs too
 	[ ] Integrates with HexRays decompiler
 	[ ] Put the coms/names blacklist in a config file
 	[ ] Make the proposed names view clickable
+	[ ] Parse usercall and userpurge types for functions
+	[ ] Add a button to the abstract view to push it
 
 ## Tests
 	The tests are far from complete, so more tests are needed
