@@ -1,7 +1,7 @@
 """
     This file is part of Polichombr.
 
-    (c) 2016 ANSSI-FR
+    (c) 2017 ANSSI-FR
 
 
     Description:
@@ -365,22 +365,20 @@ class SampleController(object):
 
     def search_machoc_full_hash(self, machoc_hash, limit=0.8):
         """
-            Search a full machoc hash. In one word, diffs with other
-            samples in database.
+            Search a full machoc hash.
+            In one word, diffs with other samples in database.
         """
-        machoc_hash = machoc_hash.lower()
-        if not re.match("^([0-9a-f]{8})+$", machoc_hash):
-            return []
         hits = []
         s1_hashes = []
+        machoc_hash = machoc_hash.lower()
+
+        if not re.match("^([0-9a-f]{8})+$", machoc_hash):
+            return hits
         for i in re.findall("[0-9a-f]{8}", machoc_hash):
             s1_hashes.append(int(i, 16))
 
         for s in Sample.query.all():
-            s2_hashes = []
-            for f in s.functions:
-                if f.machoc_hash is not None and f.machoc_hash != -1:
-                    s2_hashes.append(f.machoc_hash)
+            s2_hashes = self.get_functions_hashes(s)
             if len(s2_hashes) > 0:
                 hitlvl = self.machoc_diff_hashes(s1_hashes, s2_hashes)
                 if hitlvl >= limit:
@@ -455,10 +453,8 @@ class SampleController(object):
         """
         if sample.functions.count() == 0:
             return True
-        for sample_2 in Sample.query.all():
-            if sample_2.id == sample.id:
-                continue
-            elif cls.query_matches(sample, sample_2, "machoc80"):
+        for sample_2 in Sample.query.filter(Sample.id != sample.id).all():
+            if cls.query_matches(sample, sample_2, "machoc80"):
                 continue
             elif cls.machoc_diff_samples(sample, sample_2) >= 0.8:
                 app.logger.debug("Add machoc match %d %d",
@@ -488,14 +484,13 @@ class SampleController(object):
         """
             Diff two samples using machoc.
         """
-        sample1_hashes = []
-        sample2_hashes = []
-        for f in sample1.functions:
-            if f.machoc_hash is not None and f.machoc_hash != -1:
-                sample1_hashes.append(f.machoc_hash)
-        for f in sample2.functions:
-            if f.machoc_hash is not None and f.machoc_hash != -1:
-                sample2_hashes.append(f.machoc_hash)
+
+        sample1_hashes = [f.machoc_hash for f in
+                          cls.get_functions_filtered(sample1.id)]
+
+        sample2_hashes = [f.machoc_hash for f in
+                          cls.get_functions_filtered(sample1.id)]
+
         rate = cls.machoc_diff_hashes(sample1_hashes, sample2_hashes)
         return rate
 
@@ -513,138 +508,113 @@ class SampleController(object):
         return rate
 
     @staticmethod
-    def extract_ngrams_from_machoc(funct_infos, ngrams_length):
+    def extract_ngrams_from_machoc(func_infos, ngrams_length=5):
         """
         Returns a list of n-grams from a list of function infos
-        TODO: implement
         """
-        pass
+        tmp2 = []
+        hashes = []
+        for f in func_infos:
+            tmp2.append(f.machoc_hash)
+            if len(tmp2) == ngrams_length:
+                hashes.append(tmp2)
+                tmp2 = tmp2[1:]
+        return hashes
 
-    @staticmethod
-    def machoc_get_similar_functions(sample_dst, sample_src):
+    @classmethod
+    def machoc_get_unique_match(cls, sample_src, sample_dst):
+        """
+            Get machoc similar functions
+
+            @arg: two samples
+            @return: A list of functions in sample `sample_dst`
+            that have the same machoc hash as a least one on `sample_src`
+        """
+        src_funcs = cls.get_functions_filtered(sample_src.id)
+
+        matches = []
+        for func in src_funcs:
+            match = FunctionInfo.query.filter_by(sample_id=sample_dst.id)
+            match = match.filter_by(machoc_hash=func.machoc_hash)
+            if match.count() > 1 or match.count() == 0:
+                # app.logger.debug("Got %d matches for same hash, don't match",
+                # match.count())
+                pass
+            else:
+                matches.append(match.first())
+        app.logger.debug("Got %d direct machoc matches" % len(matches))
+        return matches
+
+    @classmethod
+    def machoc_get_similar_functions(cls, sample_dst, sample_src):
         """
             Diff two sample in order to identify similar functions.
             This is performed by:
                 - getting unique machoc hashes;
                 - getting unique 5-grams machoc hashes.
 
-            We actually build the 5-grams, compare the hashes and then compare the
-            5-grams. The code is provided as-is and MUST BE IMPROVED.
+
+            n-grams are n-length tuples of machoc hashes.
+
+            We actually build the 5-grams, compare the hashes and then compare
+            the 5-grams. The code is provided as-is and MUST BE IMPROVED.
             We also have to add other functionalities:
                 - 3-grams comparison between single & 5-grams comparisons;
                 - 7-grams comparison with non-standard middle function.
         """
-        src_addresses_identified = []
-        dst_addresses_identified = []
-        src_hashes = []
-        src_ngrams_hashes = []
-        dst_hashes = []
-        dst_ngrams_hashes = []
-        dst_sorted_fcts = []
+
         ngrams_length = 5
         ngram_mid = 2
         retv = []
         start = time.time()
-        src_sorted_fcts = []
 
-        for i in sample_src.functions:
-            if i.machoc_hash == -1:
-                continue
-            src_hashes.append(i.machoc_hash)
-            src_sorted_fcts.append((i.address, i.machoc_hash, i))
-        src_sorted_fcts.sort()
+        # Get all the functions ordered by address, for both samples
+        src_funcs = FunctionInfo.query
+        src_funcs = src_funcs.filter_by(sample_id=sample_src.id)
+        src_funcs = src_funcs.order_by(FunctionInfo.address).all()
 
-        tmp2 = []
-        for i in src_sorted_fcts:
-            tmp2.append(i[1])
-            if len(tmp2) == ngrams_length:
-                src_ngrams_hashes.append(tmp2)
-                tmp2 = tmp2[1:]
+        dst_funcs = FunctionInfo.query
+        dst_funcs = dst_funcs.filter_by(sample_id=sample_dst.id)
+        dst_funcs = dst_funcs.order_by(FunctionInfo.address).all()
 
-        for i in sample_dst.functions:
-            if i.machoc_hash == -1:
-                continue
-            dst_hashes.append(i.machoc_hash)
-            dst_sorted_fcts.append((i.address, i.machoc_hash, i))
-        dst_sorted_fcts.sort()
+        # Extract machoc hashes and ngrams from these functions
+        src_hashes = [f.machoc_hash for f in src_funcs]
+        dst_hashes = [f.machoc_hash for f in dst_funcs]
+        src_ngrams_hashes = cls.extract_ngrams_from_machoc(src_funcs)
+        dst_ngrams_hashes = cls.extract_ngrams_from_machoc(dst_funcs)
 
-        tmp2 = []
-        for i in dst_sorted_fcts:
-            tmp2.append(i[1])
-            if len(tmp2) == ngrams_length:
-                dst_ngrams_hashes.append(tmp2)
-                tmp2 = tmp2[1:]
+        # Calculate 1 - 1 hits
+        unique_matches = cls.machoc_get_unique_match(sample_dst, sample_src)
 
-        # 1 - 1 hits
-        for i in sample_src.functions:
-            if i.machoc_hash == -1:
-                continue
-            if dst_hashes.count(i.machoc_hash) == 1 and src_hashes.count(
-                    i.machoc_hash) == 1:
-                for j in sample_dst.functions:
-                    if j.machoc_hash == i.machoc_hash:
-                        retv.append({"src": i, "dst": j})
-                        src_addresses_identified.append(i.address)
-                        dst_addresses_identified.append(j.address)
-                        break
+        for match in unique_matches:
+            src_func = cls.get_functions_machoc_filtered(
+                sample_dst.id, match.machoc_hash)
+            retv.append({"src": match, "dst": src_func})
 
         # n-grams hits
-        for i in src_ngrams_hashes:
-            if src_hashes.count(i[ngram_mid]) == 1 and dst_hashes.count(
-                    i[ngram_mid]) == 1:
+        for index, src_ngram in enumerate(src_ngrams_hashes):
+            # Avoid unique matches wich are already calculated
+            if src_hashes.count(
+                    src_ngram[ngram_mid]) == 1 and dst_hashes.count(
+                    src_ngram[ngram_mid]) == 1:
                 continue
-            if i in dst_ngrams_hashes:
-                if src_ngrams_hashes.count(
-                        i) == 1 and dst_ngrams_hashes.count(i) == 1:
-                    src_function = None
-                    dst_function = None
-                    tmp1 = []
-                    tmp2 = []
-                    for funcs in src_sorted_fcts:
-                        tmp1.append(funcs[2])
-                        tmp2.append(funcs[1])
-                        if tmp2 == i:
-                            src_function = tmp1[ngram_mid]
-                            break
-                        if len(tmp2) == len(i):
-                            tmp1 = tmp1[1:]
-                            tmp2 = tmp2[1:]
-                    tmp1 = []
-                    tmp2 = []
-                    for funcs in dst_sorted_fcts:
-                        tmp1.append(funcs[2])
-                        tmp2.append(funcs[1])
-                        if tmp2 == i:
-                            dst_function = tmp1[ngram_mid]
-                            break
-                        if len(tmp2) == len(i):
-                            tmp1 = tmp1[1:]
-                            tmp2 = tmp2[1:]
-                    if src_function and dst_function:
-                        retv.append({"src": src_function, "dst": dst_function})
-                        src_addresses_identified.append(src_function.address)
-                        dst_addresses_identified.append(dst_function.address)
-                    else:
-                        app.logger.error("NGram diff error")
+            # Is the ngram unique in the other sample
+            if dst_ngrams_hashes.count(src_ngram) == 1:
+                if src_ngrams_hashes.count(src_ngram) == 1:
+                    # If the ngram is a match, then the function is
+                    # shifted from the index in the array
+                    src_function = src_funcs[index + ngram_mid]
+                    dst_function = dst_funcs[dst_ngrams_hashes.index(
+                        src_ngram) + 2]
 
-        # Add the unmatched functions
-        src_cpt = 0
-        dst_cpt = 0
-        for func in sample_src.functions:
-            if func.machoc_hash == -1:
-                continue
-            if func.address not in src_addresses_identified:
-                retv.append({"src": func, "dst": None})
-                src_cpt += 1
-        for func in sample_dst.functions:
-            if func.machoc_hash == -1:
-                continue
-            if func.address not in dst_addresses_identified:
-                retv.append({"src": None, "dst": func})
-                dst_cpt += 1
+                    retv.append({"src": src_function, "dst": dst_function})
+
+        src_cpt = len(src_funcs) - len(retv)
+        dst_cpt = len(dst_funcs) - len(retv)
+
         app.logger.debug("USING " + str(ngrams_length) + "-GRAMS")
-        app.logger.debug("SRC sample not found count : " + str(src_cpt))
-        app.logger.debug("DST sample not found count : " + str(dst_cpt))
+        app.logger.debug("%d functions not found in source sample", src_cpt)
+        app.logger.debug("%d functions not found in dest sample", dst_cpt)
         app.logger.debug("TOOK " + str(time.time() - start) + " seconds")
         return retv
 
@@ -795,9 +765,29 @@ class SampleController(object):
         return functions
 
     @staticmethod
+    def get_functions_filtered(sample_id):
+        """
+            Get all functions from a sample
+            with a valid machoc
+        """
+        funcs = FunctionInfo.query.filter_by(sample_id=sample_id)
+        funcs = funcs.filter(FunctionInfo.machoc_hash != -1)
+        return funcs.all()
+
+    @staticmethod
+    def get_functions_machoc_filtered(sample_id, machoc):
+        """
+            Get the first function from a sample
+            with a given machoc
+        """
+        funcs = FunctionInfo.query.filter_by(sample_id=sample_id)
+        funcs = funcs.filter_by(machoc_hash=machoc)
+        return funcs.first()
+
+    @staticmethod
     def get_function_by_address(samp, address):
         """
-        Utility function
+            Get the first function at a given address for a sample
         """
         functions = FunctionInfo.query.filter_by(sample_id=samp.id)
         functions = functions.filter_by(address=address)
@@ -815,14 +805,12 @@ class SampleController(object):
         return machoc_hashes
 
     @staticmethod
-    def get_sample_function_by_address(sample, address):
-        if isinstance(address, str):
-            address = int(address, 16)
-        for functioninfo in sample.functions:
-            # TODO : there is a bug in here.
-            if int(functioninfo.address) == address:
-                return functioninfo
-        return None
+    def get_functions_by_machoc_hash(needle):
+        """
+            Return a list of functions matching a given machoc hash
+        """
+        funcs = FunctionInfo.query.filter_by(machoc_hash=needle).all()
+        return funcs
 
     @classmethod
     def get_proposed_funcnames(cls, sample):
@@ -833,7 +821,7 @@ class SampleController(object):
         funcs = [{"address": f.address,
                   "machoc_hash": f.machoc_hash,
                   "proposed_names": list()}
-                 for f in sample.functions]
+                 for f in cls.get_functions_filtered(sample.id)]
         app.logger.debug("Got %d funcs to compare for sample %d",
                          len(funcs),
                          sample.id)
@@ -862,18 +850,10 @@ class SampleController(object):
         db.session.commit()
         return True
 
-    @staticmethod
-    def get_functions_by_machoc_hash(needle):
-        """
-            Return a list of functions matching a given machoc hash
-        """
-        funcs = FunctionInfo.query.filter_by(machoc_hash=needle).all()
-        return funcs
-
     @classmethod
     def rename_func_from_action(cls, sid, address, name):
         sample = cls.get_by_id(sid)
-        func = cls.get_sample_function_by_address(sample, address)
+        func = cls.get_function_by_address(sample, address)
         if func is not None:
             app.logger.debug("Renaming func 0x%X as %s" % (address, name))
             cls.rename_function(func, name)
