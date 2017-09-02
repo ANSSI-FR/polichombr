@@ -30,7 +30,7 @@ matrix:
 
 install:
   - pip install -r requirements.txt
-  - pip install coverage
+  - pip install coverage==4.3
   - pip install codeclimate-test-reporter
 
 before_script:

@@ -13,6 +13,8 @@
 import zipfile
 from StringIO import StringIO
 
+from flask import abort, flash
+
 from poli import app, db
 
 from poli.models.models import TLPLevel
@@ -138,3 +140,45 @@ class APIControl(object):
             self.samplecontrol.add_idaaction(sample_dst.id, act)
         db.session.commit()
         return True
+
+    def get_elem_by_type(self, element_type, element_id):
+        """
+            Wrapper to get elements by ID in database.
+            @arg element_type string, "sample", "family",
+                 "checklist", "family_file", "detection_item", "yara"
+            @arg element_id integer the id to search
+            @return if found the element,
+                    abort 404 if not found,
+                    and abort 500 if the type is incorrect
+        """
+        elem_types = {"sample": self.samplecontrol.get_by_id,
+                      "family": self.familycontrol.get_by_id,
+                      "checklist": self.samplecontrol.get_checklist_by_id,
+                      "family_file": self.familycontrol.get_file_by_id,
+                      "detection_item": self.familycontrol.get_detection_item_by_id,
+                      "yara": self.yaracontrol.get_by_id}
+        try:
+            elem = elem_types[element_type](element_id)
+        except KeyError:
+            app.logger.exception("Element type unknown")
+            abort(500)
+
+        if elem is None:
+            flash(element_type + " not found...", "error")
+            abort(404)
+        return elem
+
+    def remove_user_from_element(self, element_type, element_id, user):
+        """
+            Remove a user from an element, be it a sample or a family
+        """
+        elem_types = {"family": self.familycontrol,
+                      "sample": self.samplecontrol}
+
+        elem = self.get_elem_by_type(element_type, element_id)
+
+        if user in elem.users:
+            elem_types[element_type].remove_user(user, elem)
+        else:
+            elem_types[element_type].add_user(user, elem)
+        return elem.id

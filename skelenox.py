@@ -203,7 +203,7 @@ class SkelConnection(object):
         data = res.read()
         try:
             result = json.loads(data)
-        except:
+        except BaseException:
             raise IOError
         return result
 
@@ -238,7 +238,10 @@ class SkelConnection(object):
         endpoint = self.prepare_endpoint('comments')
         res = self.poli_post(endpoint, data)
         if res["result"]:
-            g_logger.debug("Comment %s sent for address 0x%x", comment, address)
+            g_logger.debug(
+                "Comment %s sent for address 0x%x",
+                comment,
+                address)
         else:
             g_logger.error("Cannot send comment %s ( 0x%x )", comment, address)
         return res["result"]
@@ -281,7 +284,7 @@ class SkelConnection(object):
 
         method = "POST"
         boundary = "70f6e331562f4b8f98e5f9590e0ffb8e"
-        headers["Content-type"] = "multipart/form-data; boundary="+boundary
+        headers["Content-type"] = "multipart/form-data; boundary=" + boundary
         body = "--" + boundary
         body += "\r\n"
         body += "Content-Disposition: form-data; name=\"filename\"\r\n"
@@ -303,7 +306,7 @@ class SkelConnection(object):
         data = res.read()
         try:
             result = json.loads(data)
-        except:
+        except BaseException:
             g_logger.exception("Cannot load json data from server")
             result = None
         return result
@@ -321,7 +324,7 @@ class SkelConnection(object):
                 return data["sample_id"]
             else:
                 return False
-        except:  # 404?
+        except BaseException:  # 404?
             return False
 
     def init_sample_id(self):
@@ -399,14 +402,6 @@ class SkelConnection(object):
         sid = res["structs"][0]["id"]
         return sid
 
-    def create_struc_member(self, struct_id, start_offset):
-        """
-        XXX :
-            [ ] Get struct id from name
-        """
-        endpoint = self.prepare_endpoint('structs')
-        return False
-
     def prepare_endpoint(self, submodule):
         """
             Prepare a standard API endpoint
@@ -460,23 +455,7 @@ class SkelHooks(object):
 
         def postprocess(self):
             try:
-                if "MakeComment" in self.cmdname:
-                    if idc.Comment(self.addr) is not None:
-                        self.skel_conn.push_comment(
-                            self.addr, idc.Comment(self.addr))
-                    if idc.GetFunctionCmt(self.addr, 0) != "":
-                        self.skel_conn.push_comment(
-                            self.addr, idc.GetFunctionCmt(
-                                (self.addr), 0))
-                elif "MakeRptCmt" in self.cmdname:
-                    if idc.GetCommentEx(self.addr, 1) != "":
-                        self.skel_conn.push_comment(self.addr,
-                                                    idc.GetCommentEx(self.addr, 1))
-                    if idc.GetFunctionCmt(self.addr, 1) != "":
-                        self.skel_conn.push_comment(self.addr,
-                                                    idc.GetFunctionCmt(self.addr, 1))
-
-                elif self.cmdname == "MakeFunction":
+                if self.cmdname == "MakeFunction":
                     if idc.GetFunctionAttr(self.addr, 0) is not None:
                         # Push "MakeFunction" change
                         pass
@@ -487,13 +466,13 @@ class SkelHooks(object):
                     if newtype is None:
                         newtype = ""
                     else:
-                        newtype = SkelUtils.prepare_parse_type(newtype, self.addr)
+                        newtype = SkelUtils.prepare_parse_type(
+                            newtype, self.addr)
                         self.skel_conn.push_type(int(self.addr), newtype)
-                    # XXX IMPLEMENT
                 elif self.cmdname == "OpStructOffset":
                     g_logger.debug("A struct member is typed to struct offset")
             except KeyError:
-                pass
+                g_logger.debug("Got unimplemented ops %s", self.cmdname)
             return 0
 
     class SkelIDBHook(idaapi.IDB_Hooks):
@@ -505,6 +484,15 @@ class SkelHooks(object):
         def __init__(self, skel_conn):
             idaapi.IDB_Hooks.__init__(self)
             self.skel_conn = skel_conn
+
+        def area_cmt_changed(self, *args):
+            """
+                Function comments are Area comments
+            """
+            cb, area, cmt, rpt = args
+            self.skel_conn.push_comment(area.startEA, cmt)
+
+            return IDB_Hooks.area_cmt_changed(self, *args)
 
         def cmt_changed(self, *args):
             """
@@ -518,6 +506,17 @@ class SkelHooks(object):
             if not SkelUtils.filter_coms_blacklist(cmt):
                 self.skel_conn.push_comment(addr, cmt)
             return idaapi.IDB_Hooks.cmt_changed(self, *args)
+
+        def changing_cmt(self, *args):
+            ea, rpt, newcmt = args
+            g_logger.debug("Changing cmt at 0x%x for '%s' rpt is %d",
+                           ea, newcmt, rpt)
+            return idaapi.IDB_Hooks.changing_cmt(self, *args)
+
+        def gen_regvar_def(self, *args):
+            v = args
+            g_logger.debug(dir(v))
+            g_logger.debug(args(v))
 
         def struc_created(self, *args):
             """
@@ -551,8 +550,8 @@ class SkelHooks(object):
             """
             renaming_struc(self, id, oldname, newname) -> int
             """
-            #print "RENAMING STRUCT"
-            #print args
+            # print "RENAMING STRUCT"
+            # print args
             return idaapi.IDB_Hooks.renaming_struc(self, *args)
 
         def expanding_struc(self, *args):
@@ -578,34 +577,34 @@ class SkelHooks(object):
             renaming_struc_member(self, sptr, mptr, newname) -> int
             """
             # print "RENAMING STRUCT MEMBER"
-            #print args
+            # print args
             mystruct, mymember, newname = args
-            #print mymember
-            #print dir(mymember)
+            # print mymember
+            # print dir(mymember)
             return idaapi.IDB_Hooks.renaming_struc_member(self, *args)
 
         def changing_struc_member(self, *args):
             """
             changing_struc_member(self, sptr, mptr, flag, ti, nbytes) -> int
             """
-            #print "CHANGING STRUCT MEMBER"
-            #print args
+            # print "CHANGING STRUCT MEMBER"
+            # print args
             mystruct, mymember, flag, ti, nbytes = args
-            #print ti
-            #print dir(ti)
-            #print ti.cd
-            #print ti.ec
-            #print ti.ri
-            #print ti.tid
+            # print ti
+            # print dir(ti)
+            # print ti.cd
+            # print ti.ec
+            # print ti.ri
+            # print ti.tid
             return idaapi.IDB_Hooks.changing_struc_member(self, *args)
 
         def op_type_changed(self, *args):
-            #print args
+            # print args
             return idaapi.IDB_Hooks.op_type_changed(self, *args)
 
     class SkelIDPHook(idaapi.IDP_Hooks):
         """
-            Hook IDP that saves the database regularly
+            IDP hook
         """
         skel_conn = None
 
@@ -618,7 +617,7 @@ class SkelHooks(object):
             ea, new_name, is_local_name = args
             if ea >= idc.MinEA() and ea <= idc.MaxEA():
                 if is_local_name:
-                    # XXX push_new_local_name(ea, new_name)
+                    g_logger.warning("Local names are unimplemented")
                     pass
                 else:
                     if not SkelUtils.name_blacklist(new_name):
@@ -669,7 +668,7 @@ class SkelUtils(object):
         """
         default_values = ['sub_', "dword_", "unk_", "byte_", "word_", "loc_"]
         for value in default_values:
-            if value in name[:len(value)+1]:
+            if value in name[:len(value) + 1]:
                 return True
         return False
 
@@ -686,12 +685,10 @@ class SkelUtils(object):
         """
         if name is not None:
             default_values = ['sub_', 'nullsub', 'unknown', 'SEH_',
-                              '__imp', 'j_', '__IMP']
+                              '__imp', 'j_', '__IMP', '@', '?']
             for val in default_values:
-                if val in name[:len(val)+1]:
+                if name.startswith(val):
                     return True
-            if name[0] == "@" or name[0] == "?":
-                return True
         return False
 
     @staticmethod
@@ -700,40 +697,30 @@ class SkelUtils(object):
             idc.ParseType doesnt accept types without func / local name
             as exported by default GetType
             this is an ugly hack to fix it
-            FIXME : parsing usercall (@<XXX>)
         """
         lname = idc.GetTrueName(addr)
         if lname is None:
             lname = "Default"
 
         # func pointers
-        fpconventions = ["__cdecl *",
-                         "__stdcall *",
-                         "__fastcall *",
-                         #"__usercall *",
-                         #"__userpurge *",
-                         "__thiscall *"]
+        conventions = ["__cdecl *",
+                       "__stdcall *",
+                       "__fastcall *",
+                       # "__usercall *",
+                       # "__userpurge *",
+                       "__thiscall *",
+                       "__cdecl",
+                       "__stdcall",
+                       "__fastcall",
+                       # "__usercall",
+                       # "__userpurge",
+                       "__thiscall"]
 
-        cconventions = ["__cdecl",
-                        "__stdcall",
-                        "__fastcall",
-                        #"__usercall",
-                        #"__userpurge",
-                        "__thiscall"]
-
-        flag = False
         mtype = None
-        for conv in fpconventions:
+        for conv in conventions:
             if conv in typestr:
-                mtype = typestr.replace(conv, conv + lname)
-                flag = True
-
-        if not flag:
-            # replace prototype
-            for conv in cconventions:
-                if conv in typestr:
-                    mtype = typestr.replace(conv, conv + " " + lname)
-                    flag = True
+                mtype = typestr.replace(conv, conv + " " + lname)
+                break
         return mtype
 
     @staticmethod
@@ -750,7 +737,7 @@ class SkelUtils(object):
         print "Help:"
         print "see   https://www.github.com/anssi-fr/polichombr/docs/"
         print "-*" * 40
-        print "\tfile %IDB%_backup_preskel_ contains pre-critical ops IDB backup"
+        print "\tfile %IDB%_backup_preskel_ contains IDB backup before running"
         print "\tfile %IDB%_backup_ contains periodic IDB backups"
         return
 
@@ -764,13 +751,14 @@ class SkelUtils(object):
             return True
         black_list = [
             "size_t", "int", "LPSTR", "char", "char *", "lpString",
-            "dw", "lp", "Str", "Dest", "Src", "cch", "Dst", "jumptable", "switch ",
-            "unsigned int", "void *", "indirect table for switch statement", "Size"
-            "this", "jump table for", "switch jump", "nSize", "hInternet", "hObject",
+            "dw", "lp", "Str", "Dest", "Src", "cch", "Dst", "jumptable",
+            "switch ", "unsigned int", "void *", "Size",
+            "indirect table for switch statement", "this", "jump table for",
+            "switch jump", "nSize", "hInternet", "hObject",
             "SEH", "Exception handler", "Source", "Size", "Val", "Time",
-            "struct", "unsigned __int", "this", "__int32", "void (", "Memory",
+            "struct", "unsigned __int", "__int32", "void (", "Memory",
             "HINSTANCE", "jumptable"
-            ]
+        ]
         for elem in black_list:
             if cmt.lower().startswith(elem.lower()):
                 g_logger.debug("Comment %s has been blacklisted", cmt)
@@ -789,8 +777,12 @@ class SkelUtils(object):
                     'ascii',
                     'replace'))
         cmt = Comment(comment["address"])
-        if cmt != comment["data"] and RptCmt(comment["address"]) != comment["data"]:
-            g_logger.debug("[x] Adding comment %s @ 0x%x ", comment["data"], comment["address"])
+        if cmt != comment["data"] and RptCmt(
+                comment["address"]) != comment["data"]:
+            g_logger.debug(
+                "[x] Adding comment %s @ 0x%x ",
+                comment["data"],
+                comment["address"])
             return idaapi.execute_sync(make_rpt, idaapi.MFF_WRITE)
         else:
             pass
@@ -809,12 +801,15 @@ class SkelUtils(object):
             """
             def sync_ask_rename():
                 rename_flag = 0
-                if force or AskYN(rename_flag, "Replace %s by %s" % (get_name(), name["data"])) == 1:
+                if force or AskYN(rename_flag, "Replace %s by %s" %
+                                  (get_name(), name["data"])) == 1:
                     g_logger.debug("[x] renaming %s @ 0x%x as %s",
                                    get_name(),
                                    name["address"],
                                    name["data"])
-                    idc.MakeName(name["address"], name["data"].encode('ascii', 'ignore'))
+                    idc.MakeName(
+                        name["address"], name["data"].encode(
+                            'ascii', 'ignore'))
             return idaapi.execute_sync(
                 sync_ask_rename,
                 idaapi.MFF_FAST)
@@ -856,11 +851,19 @@ class SkelSyncAgent(threading.Thread):
         self.skel_conn = SkelConnection(self.skel_settings)
         self.skel_conn.get_online()
 
+    def update_timestamp(self, timestamp_str):
+        """
+            Converts the timestamp provided
+            and update the last update timestamp
+        """
+        format_ts = "%Y-%m-%dT%H:%M:%S.%f+00:00"
+        timestamp = datetime.datetime.strptime(timestamp_str, format_ts)
+        self.last_timestamp = max(self.timestamp, timestamp)
+
     def sync_names(self):
         """
             Get the remote comments and names
         """
-        format_ts = "%Y-%m-%dT%H:%M:%S.%f+00:00"
         if not self.skel_conn.is_online:
             g_logger.error("[!] Error, cannot sync while offline")
             return False
@@ -869,13 +872,11 @@ class SkelSyncAgent(threading.Thread):
         names = self.skel_conn.get_names(timestamp=self.last_timestamp)
         for comment in comments:
             SkelUtils.execute_comment(comment)
-            timestamp = datetime.datetime.strptime(comment["timestamp"], format_ts)
-            self.last_timestamp = max(timestamp, self.last_timestamp)
+            self.update_timestamp(comment[timestamp])
 
         for name in names:
             SkelUtils.execute_rename(name)
-            timestamp = datetime.datetime.strptime(name["timestamp"], format_ts)
-            self.last_timestamp = max(timestamp, self.last_timestamp)
+            self.update_timestamp(name[timestamp])
         return True
 
     def setup_timer(self):
@@ -977,9 +978,11 @@ class SkelNotePad(QtWidgets.QWidget):
         """
         self.counter += 1
         remote_text = self.skel_conn.get_abstract()
+        if remote_text is None:
+            remote_text = ""
         diff_len = len(self.editor.toPlainText())
         diff_len -= len(remote_text)
-        if diff_len not in range(self.counter+2):
+        if diff_len not in range(self.counter + 2):
             g_logger.warning("Many changes or remote changes, be aware!")
         if self.counter > 10:
             g_logger.debug("More than 10 changes, pushing abstract")
@@ -1042,10 +1045,10 @@ class SkelFunctionInfosList(QtWidgets.QTableWidget):
             func_name = GetTrueName(func["address"])
             for name in func["proposed_names"]:
                 item = self.SkelFuncListItem(
-                        hex(func["address"]),
-                        func_name,
-                        hex(func["machoc_hash"]),
-                        name)
+                    hex(func["address"]),
+                    func_name,
+                    hex(func["machoc_hash"]),
+                    name)
                 items.append(item)
         self.setRowCount(len(items))
 
@@ -1093,6 +1096,7 @@ class SkelUI(PluginForm):
     """
         Skelenox UI is contained in a new tab widget.
     """
+
     def __init__(self, settings_filename):
         super(SkelUI, self).__init__()
         self.parent = None
@@ -1164,7 +1168,8 @@ class SkelCore(object):
 
         atexit.register(self.end_skelenox)
 
-        g_logger.info("Backuping IDB before any intervention (_backup_preskel_)")
+        g_logger.info(
+            "Backuping IDB before any intervention (_backup_preskel_)")
         SaveBase(self.crit_backup_file, idaapi.DBFL_TEMP)
         g_logger.info("Creating regular backup file IDB (_backup_)")
         SaveBase(self.backup_file, idaapi.DBFL_TEMP)
@@ -1208,19 +1213,18 @@ class SkelCore(object):
         """
             Initial sync of comments
         """
+        cmt_types = [Comment, RptCmt]  # Maybe GetFunctionCmt also?
         for head in Heads():
-            com = Comment(head)
-            rpt_com = RptCmt(head)
-            send_com = ""
-            if com and not SkelUtils.filter_coms_blacklist(com):
-                send_com += com
-
-            if rpt_com and not SkelUtils.filter_coms_blacklist(rpt_com):
-                send_com += " " + rpt_com
-
-            if len(send_com) > 0:
+            send_cmt = ""
+            for cmt_type in cmt_types:
+                cmt = None
+                cmt = cmt_type(head)
+                if cmt and not SkelUtils.filter_coms_blacklist(cmt):
+                    if cmt not in send_cmt:
+                        send_cmt += cmt
+            if len(send_cmt) > 0:
                 try:
-                    self.skel_conn.push_comment(head, send_com)
+                    self.skel_conn.push_comment(head, send_cmt)
                 except Exception as e:
                     g_logger.exception(e)
 
@@ -1231,10 +1235,12 @@ class SkelCore(object):
         idaapi.disable_script_timeout()
         if self.skel_settings.initial_sync:
             init_sync = 0
-            if AskYN(init_sync, "Do you want to synchronize already defined names?") == 1:
+            if AskYN(init_sync,
+                     "Do you want to synchronize already defined names?") == 1:
                 self.send_names()
 
-            if AskYN(init_sync, "Do you want to synchronize already defined comments?") == 1:
+            if AskYN(
+                    init_sync, "Do you want to synchronize already defined comments?") == 1:
                 self.send_comments()
 
         self.skel_ui.Show()
