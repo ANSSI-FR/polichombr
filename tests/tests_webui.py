@@ -12,12 +12,12 @@ import json
 import poli
 from poli.controllers.api import APIControl
 
-from poli.models.sample import StringsItem
 from zipfile import ZipFile
 
-class WebUITestCase(unittest.TestCase):
+
+class WebUIBaseClass(unittest.TestCase):
     """
-        Tests the functionalities exposed by the web interface
+        Implement the utility functions inherited by the tests cases
     """
     def setUp(self):
         self.db_fd, self.fname = tempfile.mkstemp()
@@ -45,6 +45,10 @@ class WebUITestCase(unittest.TestCase):
                                  password=password),
                              follow_redirects=True)
 
+    def logout(self):
+        return self.app.get("/logout/",
+                            follow_redirects=True)
+
     def create_family(self, fname="TOTO", level=1, parent_family=0):
         return self.app.post('/families/',
                              data=dict(familyname=fname,
@@ -66,7 +70,7 @@ class WebUITestCase(unittest.TestCase):
     def set_family_tlp(self, fid, level=1):
         data = dict(level=level, item_id=None)
         retval = self.app.post("/family/" + str(fid) + "/", data=data,
-                                follow_redirects=True)
+                               follow_redirects=True)
         return retval
 
     def set_sample_abstract(self, sid=1, abstract="TEST ABSTRACT"):
@@ -125,98 +129,11 @@ class WebUITestCase(unittest.TestCase):
                                follow_redirects=True)
         return retval
 
+
+class WebUIBaseTests(WebUIBaseClass):
     def test_create_sample(self):
         retval = self.create_sample()
         self.assertTrue(retval)
-
-    def logout(self):
-        return self.app.get("/logout/",
-                            follow_redirects=True)
-
-    def test_login_func(self):
-        # Test correct login
-        retval = self.login("john", "password")
-        self.assertNotIn("error", retval.data)
-        self.assertNotIn("href=\"/login\"", retval.data)
-
-    def test_logout(self):
-        # Test logout
-        retval = self.login("john", "password")
-        retval = self.logout()
-        self.assertNotIn("error", retval.data)
-        self.assertIn("href=\"/login/\"", retval.data)
-
-    def test_wrong_login(self):
-        # test wrong login
-        retval = self.login("IncorrectUser", "password1")
-        self.assertIn("href=\"/login/\"", retval.data)
-
-        retval = self.login("john", "password1")
-        self.assertIn("href=\"/login/\"", retval.data)
-
-    def test_register(self):
-        retval = self.register_user("SomeUserName", "password2")
-        self.assertEqual(retval.status_code, 200)
-
-        # the new user is not activated, so it cannot login
-        retval = self.login("john", "password")
-        retval = self.app.post("/user/2/activate", follow_redirects=True)
-        self.assertEqual(retval.status_code, 200)
-        self.logout()
-        retval = self.login("SomeUserName", "password2")
-        self.assertIn("logout", retval.data)
-
-    def test_admin(self):
-        # test normal user registration
-        retval = self.register_user("notadmin", "password")
-        self.assertEqual(retval.status_code, 200)
-
-        # test admin panel access
-        retval = self.login("john", "password")
-        self.assertIn("href=\"/admin\"", retval.data)
-
-        # test the availability of user management
-        retval = self.app.get("/admin/", follow_redirects=True)
-        self.assertEqual(retval.status_code, 200)
-        self.assertIn("notadmin", retval.data)
-        # don't forget to activate user 2
-        retval = self.app.post("/user/2/activate", follow_redirects=True)
-
-        self.logout()
-
-        # test that normal user cannot access admin
-        retval = self.login("notadmin", "password")
-        self.assertNotIn("href=\"/admin\"", retval.data)
-
-        retval = self.app.get("/admin/", follow_redirects=True)
-        self.assertNotIn("Admin", retval.data)
-
-    def test_user_password(self):
-        retval = self.login("john", "password")
-
-        retval = self.app.get("/user/1/")
-        self.assertEqual(retval.status_code, 200)
-        self.assertIn('<div class="form-group  required"><label class="control-label" for="password">New password</label>', retval.data)
-
-        data = {"oldpass":"password", "password":"newpassword", "rpt_pass":"newpassword"}
-
-        retval = self.app.post("/user/1/",data = data)
-        self.assertEqual(retval.status_code, 200)
-        self.assertIn("Changed user password", retval.data)
-
-        self.logout()
-
-        # Login with the new password
-        retval = self.login("john", "newpassword")
-        self.assertNotIn("error", retval.data)
-        self.assertNotIn("href=\"/login\"", retval.data)
-
-        self.logout()
-
-        # Login with the old password, should fail
-        retval = self.login("john", "password")
-        self.assertIn("Cannot login...", retval.data)
-        self.assertIn("href=\"/login", retval.data)
 
     def test_running(self):
         retval = self.app.get('/')
@@ -224,6 +141,66 @@ class WebUITestCase(unittest.TestCase):
         self.assertIn("<body>", retval.data)
         self.assertIn("</body>", retval.data)
 
+    def test_download_skelenox(self):
+        self.login("john", "password")
+        retval = self.app.get("/skelenox/")
+        self.assertEqual(retval.status_code, 200)
+        data = io.BytesIO(retval.data)
+
+        toto = ZipFile(data)
+        self.assertEqual("skelenox.py", toto.namelist()[0])
+        self.assertEqual("skelsettings.json", toto.namelist()[1])
+
+        skel_config = toto.open("skelsettings.json")
+        skel_config = json.loads(skel_config.read())
+
+        self.assertEqual("localhost", skel_config["poli_server"])
+        # XXX activate after 08c1dfa0ea4d6f783a452777fca64e65ec0b4c11
+        #self.assertEqual('5000', skel_config["poli_port"])
+        #self.assertEqual('/api/1.0/', skel_config["poli_remote_path"])
+
+    def test_yara_rule_forms(self):
+        """
+            Try to create, rename and change TLP level of a yara rule
+        """
+        self.login("john", "password")
+        self.create_sample()
+        rule_text = """rule toto{
+            strings:
+                $1 = {4D 5A}
+            condition:
+                $1 at 0
+        }"""
+
+        data = dict(yara_name="TEST_YARA",
+                    yara_raw=rule_text,
+                    yara_tlp=1)
+        retval = self.app.post("/signatures/", data=data)
+
+        self.assertEqual(retval.status_code, 200)
+        self.assertIn("<h3 class=\"panel-title\">TEST_YARA</h3>", retval.data)
+        self.assertIn("$1 = {4D 5A}", retval.data)
+
+        # test tlp change for the rule
+        data = dict(item_id=1,
+                    level=4)
+        retval = self.app.post("/signatures/", data=data)
+        self.assertEqual(retval.status_code, 200)
+        self.assertIn("<span class=\"text-danger\">TLP RED", retval.data)
+
+        # test rule renaming
+        data = dict(item_id=1,
+                    newname="TEST_YARA_RENAMED")
+        retval = self.app.post("/signatures/", data=data)
+        self.assertEqual(retval.status_code, 200)
+        self.assertIn(
+            "<h3 class=\"panel-title\">TEST_YARA_RENAMED</h3>", retval.data)
+
+
+class WebUIFamilyTestCase(WebUIBaseClass):
+    """
+        Tests functionatities related to families
+    """
     def test_family_creation(self):
         self.login("john", "password")
         retval = self.create_family()
@@ -294,8 +271,6 @@ class WebUITestCase(unittest.TestCase):
         # Is the user flashed about family deletion?
         self.assertIn("Deleted family", retval.data)
 
-
-
     def test_family_sample(self):
         self.login("john", "password")
         self.create_family(fname="TEST FAMILY FOR SAMPLE")
@@ -334,6 +309,104 @@ class WebUITestCase(unittest.TestCase):
         retval = self.get_family(2)
         self.assertIn('0f6f0c6b818f072a7a6f02441d00ac69', retval.data)
 
+
+class WebUIUserManagementTestCase(WebUIBaseClass):
+    """
+        User registration, admin functions,
+        login and logout tests
+    """
+    def test_login_func(self):
+        # Test correct login
+        retval = self.login("john", "password")
+        self.assertNotIn("error", retval.data)
+        self.assertNotIn("href=\"/login\"", retval.data)
+
+    def test_logout(self):
+        # Test logout
+        retval = self.login("john", "password")
+        retval = self.logout()
+        self.assertNotIn("error", retval.data)
+        self.assertIn("href=\"/login/\"", retval.data)
+
+    def test_wrong_login(self):
+        # test wrong login
+        retval = self.login("IncorrectUser", "password1")
+        self.assertIn("href=\"/login/\"", retval.data)
+
+        retval = self.login("john", "password1")
+        self.assertIn("href=\"/login/\"", retval.data)
+
+    def test_register(self):
+        retval = self.register_user("SomeUserName", "password2")
+        self.assertEqual(retval.status_code, 200)
+
+        # the new user is not activated, so it cannot login
+        retval = self.login("john", "password")
+        retval = self.app.post("/user/2/activate", follow_redirects=True)
+        self.assertEqual(retval.status_code, 200)
+        self.logout()
+        retval = self.login("SomeUserName", "password2")
+        self.assertIn("logout", retval.data)
+
+    def test_admin(self):
+        # test normal user registration
+        retval = self.register_user("notadmin", "password")
+        self.assertEqual(retval.status_code, 200)
+
+        # test admin panel access
+        retval = self.login("john", "password")
+        self.assertIn("href=\"/admin\"", retval.data)
+
+        # test the availability of user management
+        retval = self.app.get("/admin/", follow_redirects=True)
+        self.assertEqual(retval.status_code, 200)
+        self.assertIn("notadmin", retval.data)
+        # don't forget to activate user 2
+        retval = self.app.post("/user/2/activate", follow_redirects=True)
+
+        self.logout()
+
+        # test that normal user cannot access admin
+        retval = self.login("notadmin", "password")
+        self.assertNotIn("href=\"/admin\"", retval.data)
+
+        retval = self.app.get("/admin/", follow_redirects=True)
+        self.assertNotIn("Admin", retval.data)
+
+    def test_user_password(self):
+        retval = self.login("john", "password")
+
+        retval = self.app.get("/user/1/")
+        self.assertEqual(retval.status_code, 200)
+        self.assertIn('<div class="form-group  required"><label class="control-label" for="password">New password</label>', retval.data)
+
+        data = {"oldpass": "password",
+                "password": "newpassword",
+                "rpt_pass": "newpassword"}
+
+        retval = self.app.post("/user/1/", data=data)
+        self.assertEqual(retval.status_code, 200)
+        self.assertIn("Changed user password", retval.data)
+
+        self.logout()
+
+        # Login with the new password
+        retval = self.login("john", "newpassword")
+        self.assertNotIn("error", retval.data)
+        self.assertNotIn("href=\"/login\"", retval.data)
+
+        self.logout()
+
+        # Login with the old password, should fail
+        retval = self.login("john", "password")
+        self.assertIn("Cannot login...", retval.data)
+        self.assertIn("href=\"/login", retval.data)
+
+
+class WebUISampleManagementTests(WebUIBaseClass):
+    """
+        Sample tests
+    """
     def test_sample_hashes(self):
         self.login("john", "password")
         self.create_sample()
@@ -490,61 +563,6 @@ class WebUITestCase(unittest.TestCase):
         self.assertEqual(retval.status_code, 302)
         self.assertIn("/api/1.0/samples/1/download/",
                       retval.headers["Location"])
-
-    def test_yara_rule_forms(self):
-        """
-            Try to create, rename and change TLP level of a yara rule
-        """
-        self.login("john", "password")
-        self.create_sample()
-        rule_text = """rule toto{
-            strings:
-                $1 = {4D 5A}
-            condition:
-                $1 at 0
-        }"""
-
-        data = dict(yara_name="TEST_YARA",
-                    yara_raw=rule_text,
-                    yara_tlp=1)
-        retval = self.app.post("/signatures/", data=data)
-
-        self.assertEqual(retval.status_code, 200)
-        self.assertIn("<h3 class=\"panel-title\">TEST_YARA</h3>", retval.data)
-        self.assertIn("$1 = {4D 5A}", retval.data)
-
-        # test tlp change for the rule
-        data = dict(item_id=1,
-                    level=4)
-        retval = self.app.post("/signatures/", data=data)
-        self.assertEqual(retval.status_code, 200)
-        self.assertIn("<span class=\"text-danger\">TLP RED", retval.data)
-
-        # test rule renaming
-        data = dict(item_id=1,
-                    newname="TEST_YARA_RENAMED")
-        retval = self.app.post("/signatures/", data=data)
-        self.assertEqual(retval.status_code, 200)
-        self.assertIn(
-            "<h3 class=\"panel-title\">TEST_YARA_RENAMED</h3>", retval.data)
-
-    def test_download_skelenox(self):
-        self.login("john", "password")
-        retval = self.app.get("/skelenox/")
-        self.assertEqual(retval.status_code, 200)
-        data = io.BytesIO(retval.data)
-
-        toto = ZipFile(data)
-        self.assertEqual("skelenox.py", toto.namelist()[0])
-        self.assertEqual("skelsettings.json", toto.namelist()[1])
-
-        skel_config = toto.open("skelsettings.json")
-        skel_config = json.loads(skel_config.read())
-
-        self.assertEqual("localhost", skel_config["poli_server"])
-        # XXX activate after 08c1dfa0ea4d6f783a452777fca64e65ec0b4c11
-        #self.assertEqual('5000', skel_config["poli_port"])
-        #self.assertEqual('/api/1.0/', skel_config["poli_remote_path"])
 
 
 if __name__ == '__main__':
