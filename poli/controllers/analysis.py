@@ -19,6 +19,7 @@ from poli.controllers.jobpool import JobPool
 
 
 class AnalysisFactory(object):
+
     """
         Dynamically loads tasks from directory
     """
@@ -92,6 +93,7 @@ class AnalysisFactory(object):
 
 
 class AnalysisController(object):
+
     """
     Manages the creation, dispatch and management of analysis tasks
     """
@@ -149,6 +151,7 @@ class AnalysisController(object):
 
 
 class Analysis(object):
+
     """
     Analysis object, contains tasks, and manages samples status.
     """

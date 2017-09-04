@@ -56,6 +56,7 @@ class Role(db.Model, RoleMixin):
 
 
 class User(db.Model, UserMixin):
+
     """
     User model.
     """
@@ -98,6 +99,7 @@ class User(db.Model, UserMixin):
 
 
 class UserSchema(ma.ModelSchema):
+
     """
     Schema representation.
     """

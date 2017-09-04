@@ -16,6 +16,7 @@ from poli.models.models import CustomEnum, TLPLevel
 
 
 class DetectionElement(db.Model):
+
     """
     Detection element: provided by users, can be any of the DetectionType
     values.
@@ -30,6 +31,7 @@ class DetectionElement(db.Model):
 
 
 class DetectionType(CustomEnum):
+
     """
     Custom family-related detection types.
     """
@@ -41,6 +43,7 @@ class DetectionType(CustomEnum):
 
 
 class FamilyDataFile(db.Model):
+
     """
     Family data file. Whatever you want, script, report, etc.
     """
@@ -54,6 +57,7 @@ class FamilyDataFile(db.Model):
 
 
 class FamilyStatus(CustomEnum):
+
     """
         Is the family analysis complete or not?
     """
@@ -81,6 +85,7 @@ familytosample = db.Table('familytosample',
 
 
 class Family(db.Model):
+
     """
     Family model.
     """
@@ -122,6 +127,7 @@ class Family(db.Model):
 
 
 class FamilySchema(ma.ModelSchema):
+
     """
     Schema for exporting by marshalling in JSON.
     """

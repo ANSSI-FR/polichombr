@@ -18,6 +18,7 @@ from poli.controllers.sample import SampleController
 
 
 class task_yara(Task):
+
     """
     Runs YARA signatures on the sample. This task is provided by default.
     """

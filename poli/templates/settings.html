@@ -8,7 +8,7 @@
     <div class="row">
         <div class="panel panel-primary">
             <div class="panel-heading">
-                <h3 class="panel-title">CheckLists</h3>
+                <h3 class="panel-title">Checklists</h3>
             </div>
         <div class="panel-body">
             {{wtf.quick_form(addchecklistform)}}
@@ -17,7 +17,10 @@
                <div class="panel panel-default">
                    <div class="panel-heading">
                         <h3 class="panel-title">
-                            <a href="/settings/deletechecklist/{{c.id}}" onclick="javascript: return confirm('Delete checklist item?')" class="btn btn-danger btn-xs">delete</a> <a href="" class="btn btn-default btn-xs">edit</a>&nbsp;
+                            <a href="/settings/deletechecklist/{{c.id}}"
+								onclick="javascript: return confirm('Delete checklist item?')"
+								class="btn btn-danger btn-xs">delete</a>
+							<a href="" class="btn btn-default btn-xs">edit</a>&nbsp;
                             {{c.title}}
                         </h3>
                    </div>

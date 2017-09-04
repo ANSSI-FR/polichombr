@@ -12,8 +12,8 @@
 }
 </script>
 
-{% if g.user.theme %}
-    {% if g.user.theme == "dark" %}
+{% if current_user.theme %}
+    {% if current_user.theme == "dark" %}
         <link rel="stylesheet" href="{{url_for('.static', filename='poli.css')}}"> 
     {% endif %}
 {% endif %}
@@ -33,32 +33,32 @@
 	    <ul class="nav navbar-nav">
 	      <li><a href="/">Home</a></li>
 
-	{% if g.user.id %}
+	{% if current_user.id %}
 	      <li><a href="/search">Search</a></li>
 	      <li><a href="/families">Families</a></li>
 	      <li><a href="/signatures">Signatures</a></li>
 	      <li><a href="/skelenox">Skelenox</a> </li>
 	      <li><a href="/settings">Settings</a> </li>
 	{% endif %}
-	{% if "admin" in g.user.roles %}
+	{% if "admin" in current_user.roles %}
 	      <li><a href="/admin">Admin</a> </li>
 	{% endif %}
 	    </ul>
 
 		<ul class="nav navbar-nav navbar-right">
-			{% if g.user.id %}
+			{% if current_user.id %}
 				<li class="dropdown">
-					<a class="dropdown-toggle" data-toggle="dropdown" href='#'>{{g.user.nickname}}
+					<a class="dropdown-toggle" data-toggle="dropdown" href='#'>{{current_user.nickname}}
 
 					<ul class="dropdown-menu">
 						<li><a href="{{ url_for('logout') }}"> <span class="glyphicon glyphicon-log-out"></span>  Logout</a> </li>
-						<li><a href="/user/{{g.user.id}}"><span class="glyphicon glyphicon-log-in"></span> View Profile</a></li>
+						<li><a href="/user/{{current_user.id}}"><span class="glyphicon glyphicon-log-in"></span> View Profile</a></li>
 					</ul>
 				</li>
                 {#
-				{% if g.user.poke_id != None %}
+				{% if current_user.poke_id != None %}
 					<li>
-						<img src={{url_for('.static', filename='poke/'+ "%.03d"|format(g.user.poke_id) +'.gif')}} class="img-rounded" alt="POKE" width="50" height="50">
+						<img src={{url_for('.static', filename='poke/'+ "%.03d"|format(current_user.poke_id) +'.gif')}} class="img-rounded" alt="POKE" width="50" height="50">
 						</img>
 					</li>
 				{% endif %}

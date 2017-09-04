@@ -19,6 +19,7 @@ from poli.controllers.sample import SampleController
 
 
 class task_peinfo(Task):
+
     """
     Extract basic metadata from pefile.
 

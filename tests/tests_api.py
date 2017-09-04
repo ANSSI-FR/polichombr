@@ -505,6 +505,12 @@ class ApiIDAActionsTests(ApiTestCase):
                                content_type="application/json")
         return retval
 
+    def _rename_struct(self, sid=1, struct_id=1, name=None):
+        retval = self.app.patch("/api/1.0/samples/" + str(sid) + "/structs/" + str(struct_id) + "/",
+                                data=json.dumps(dict(name=name)),
+                                content_type="application/json")
+        return retval
+
     def _create_struct_member(self, sid=1, struct_id=None, mname=None, size=0, offset=0):
         url = '/api/1.0/samples/' + str(sid)
         url += '/structs/' + str(struct_id)
@@ -591,6 +597,50 @@ class ApiIDAActionsTests(ApiTestCase):
         offset = datetime.datetime.now() + datetime.timedelta(days=1)
         offset = datetime.datetime.strftime(offset, '%Y-%m-%dT%H:%M:%S.%f')
         return offset
+
+    def test_get_all(self):
+        """
+            Get all informations about a sample
+        """
+        self._push_comment(address=0xDEADBEEF, comment="TESTCOMMENT1")
+        self._push_name(address=0xDEADBEEF, name="TESTNAME")
+        self._push_name(address=0xC0FFEE, name="NAME @ C0FFEE")
+        self._push_comment(address=0xBADF00D, comment="TESTCOMMENT2")
+        self._create_struct(name="ThisIsAStruct")
+        retval = self.app.get("/api/1.0/samples/1/idaactions/")
+        self.assertEqual(retval.status_code, 200)
+        actions = json.loads(retval.data)
+
+        # {"timestamp": , "idaactions":}
+        self.assertEqual(len(actions), 2)
+        self.assertIn("timestamp", actions.keys())
+        self.assertIn("idaactions", actions.keys())
+        self.assertEqual(len(actions["idaactions"]), 5)
+        for action in actions["idaactions"]:
+            self.assertIn("timestamp", action.keys())
+            self.assertIn("type", action.keys())
+            self.assertIn("data", action.keys())
+            self.assertIn("address", action.keys())
+
+        self.assertIn(actions["idaactions"][0]["type"], "idacomments")
+        self.assertEqual(actions["idaactions"][0]["address"], 0xDEADBEEF)
+        self.assertIn(actions["idaactions"][0]["data"], "TESTCOMMENT1")
+
+        self.assertIn(actions["idaactions"][1]["type"], "idanames")
+        self.assertEqual(actions["idaactions"][1]["address"], 0xDEADBEEF)
+        self.assertIn(actions["idaactions"][1]["data"], "TESTNAME")
+
+        self.assertIn(actions["idaactions"][2]["type"], "idanames")
+        self.assertEqual(actions["idaactions"][2]["address"], 0xC0FFEE)
+        self.assertIn(actions["idaactions"][2]["data"], "NAME @ C0FFEE")
+
+        self.assertIn(actions["idaactions"][3]["type"], "idacomments")
+        self.assertEqual(actions["idaactions"][3]["address"], 0xBADF00D)
+        self.assertIn(actions["idaactions"][3]["data"], "TESTCOMMENT2")
+
+        self.assertIn(actions["idaactions"][4]["type"], "idastructs")
+        self.assertEqual(actions["idaactions"][4]["address"], None)
+        self.assertIn(actions["idaactions"][4]["data"], "ThisIsAStruct")
 
     def test_push_comments(self):
         """
@@ -729,6 +779,40 @@ class ApiIDAActionsTests(ApiTestCase):
         self.assertIn("StructName1", struct["name"])
         self.assertEqual(0, struct["size"])
 
+    def test_rename_struct(self):
+        self._create_struct(sid=1, name="StructName1")
+        retval = self._rename_struct(sid=1, struct_id=1, name="NewStructName")
+        self.assertEqual(retval.status_code, 200)
+
+        retval = self._get_all_structs()
+        data = json.loads(retval.data)
+        self.assertNotIn("StructName1", data["structs"][0]["name"])
+        self.assertIn("NewStructName", data["structs"][0]["name"])
+
+    def test_get_struct_by_name(self):
+        self._create_struct(sid=1, name="StructName1")
+
+        retval = self._get_all_structs(sid=1)
+        retval = self.app.get("/api/1.0/samples/1/structs/StructName1/")
+        self.assertEqual(retval.status_code, 200)
+        data = json.loads(retval.data)
+        self.assertIn(data["structs"]["name"], "StructName1")
+        retval = self.app.get("/api/1.0/samples/1/structs/XXX/")
+        data = json.loads(retval.data)
+        self.assertEqual(len(data["structs"].keys()), 0)
+
+    def test_delete_struct(self):
+        self._create_struct(sid=1, name="StructName1")
+        self._create_struct(sid=1, name="StructName2")
+
+        retval = self.app.delete("/api/1.0/samples/1/structs/1/")
+        self.assertEqual(retval.status_code, 200)
+
+        retval = self._get_all_structs()
+        data = json.loads(retval.data)
+        self.assertEqual(len(data["structs"]), 1)
+        self.assertNotIn("StructName1", data["structs"][0]["name"])
+
     def test_create_multiple_structs(self):
         """
             This will test if we can access multiple structs for one sample
@@ -782,6 +866,33 @@ class ApiIDAActionsTests(ApiTestCase):
         self.assertIn("MemberName1", member["name"])
         self.assertEqual(4, member["size"])
         self.assertEqual(0, member["offset"])
+
+    def test_create_members_multistruct(self):
+        """
+            Triggers a bug showing that members are
+            affected to all structures off a sample?
+        """
+        self._create_struct(sid=1, name="StructName1")
+        self._create_struct(sid=1, name="StructName2")
+
+        self._create_struct_member(struct_id=1,
+                                   mname="Struct1.MemberName1",
+                                   size=4,
+                                   offset=0)
+        self._create_struct_member(struct_id=1,
+                                   mname="Struct1.MemberName2",
+                                   size=4,
+                                   offset=8)
+        self._create_struct_member(struct_id=2,
+                                   mname="Struct2.MemberName1",
+                                   size=4,
+                                   offset=0)
+
+        retval = self._get_all_structs()
+        data = json.loads(retval.data)
+
+        self.assertEqual(len(data["structs"][0]["members"]), 2)
+        self.assertEqual(len(data["structs"][1]["members"]), 1)
 
     def test_create_struct_members(self):
         """

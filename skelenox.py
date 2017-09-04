@@ -18,12 +18,12 @@ import datetime
 from StringIO import StringIO
 from string import lower
 
-from idaapi import *
-from idautils import *
-from idc import *
+import idaapi
+import idautils
+import idc
 
-from PyQt5 import QtCore, QtGui, QtWidgets
-from PyQt5.QtWidgets import QWidget, QVBoxLayout
+from PyQt5 import QtWidgets
+from PyQt5.QtWidgets import QVBoxLayout
 
 
 g_logger = logging.getLogger()
@@ -196,6 +196,9 @@ class SkelConnection(object):
 
         if res.status != 200:
             g_logger.error("The %s request didn't go as expected", method)
+            g_logger.debug("Status code was %d and content was %s",
+                           res.status, res.read())
+            return None
         content_type = res.getheader("Content-Encoding")
         if content_type == "gzip":
             buf = StringIO(res.read())
@@ -316,7 +319,7 @@ class SkelConnection(object):
             Query the server for the sample ID
         """
         endpoint = "/api/1.0/samples/"
-        endpoint += lower(GetInputMD5())
+        endpoint += lower(idc.GetInputMD5())
         endpoint += "/"
         try:
             data = self.poli_get(endpoint)
@@ -402,6 +405,67 @@ class SkelConnection(object):
         sid = res["structs"][0]["id"]
         return sid
 
+    def get_struct_by_name(self, name):
+        """
+            Return the remote struct id given a name
+        """
+        endpoint = self.prepare_endpoint("structs/"+name)
+        res = self.poli_get(endpoint)
+        if "name" in res["structs"].keys():
+            return res["structs"]["id"]
+        else:
+            return None
+
+    def get_member_by_name(self, sid, name):
+        """
+            Should probably be implemented server side
+        """
+        endpoint = self.prepare_endpoint("structs/"+str(sid))
+        res = self.poli_get(endpoint)
+        if "members" in res["structs"].keys():
+            for member in res["structs"]["members"]:
+                if member["name"] == name:
+                    return member["id"]
+        return None
+
+    def rename_struct(self, struct_id, new_name):
+        """
+            Rename a struct
+        """
+        endpoint = self.prepare_endpoint("structs/"+str(struct_id))
+        data = dict(name=new_name)
+        res = self.poli_patch(endpoint, data)
+        return res
+
+    def delete_struct(self, struct_id):
+        endpoint = self.prepare_endpoint("structs/"+str(struct_id))
+        res = self.poli_delete(endpoint)
+        return res
+
+    def create_struct_member(self, sid, name, start_offset):
+        """
+            Create a new member for a struct.
+        """
+        endpoint = self.prepare_endpoint("structs/"+str(sid)+"/members")
+        data = dict(name=name, size=1, offset=start_offset)
+        res = self.poli_post(endpoint, data=data)
+        return res
+
+    def resize_struct_member(self, sid, mid, size):
+        """
+            Sets a new size for a struct member
+        """
+        raise NotImplementedError
+
+    def rename_struct_member(self, sid, mid, name):
+        """
+            Rename a struct member
+        """
+        endpoint = self.prepare_endpoint("structs/"+str(sid)+"/members")
+        data = dict(mid=mid, newname=name)
+        res = self.poli_patch(endpoint, data=data)
+        return res
+
     def prepare_endpoint(self, submodule):
         """
             Prepare a standard API endpoint
@@ -450,9 +514,6 @@ class SkelHooks(object):
             self.addr = idc.here()
             return 0
 
-        def term(self):
-            end_skelenox()
-
         def postprocess(self):
             try:
                 if self.cmdname == "MakeFunction":
@@ -492,7 +553,7 @@ class SkelHooks(object):
             cb, area, cmt, rpt = args
             self.skel_conn.push_comment(area.startEA, cmt)
 
-            return IDB_Hooks.area_cmt_changed(self, *args)
+            return idaapi.IDB_Hooks.area_cmt_changed(self, *args)
 
         def cmt_changed(self, *args):
             """
@@ -500,9 +561,9 @@ class SkelHooks(object):
             """
             addr, rpt = args
             if rpt:
-                cmt = RptCmt(addr)
+                cmt = idc.RptCmt(addr)
             else:
-                cmt = Comment(addr)
+                cmt = idc.Comment(addr)
             if not SkelUtils.filter_coms_blacklist(cmt):
                 self.skel_conn.push_comment(addr, cmt)
             return idaapi.IDB_Hooks.cmt_changed(self, *args)
@@ -516,7 +577,7 @@ class SkelHooks(object):
         def gen_regvar_def(self, *args):
             v = args
             g_logger.debug(dir(v))
-            g_logger.debug(args(v))
+            g_logger.debug(vars(v))
 
         def struc_created(self, *args):
             """
@@ -534,8 +595,19 @@ class SkelHooks(object):
                 struc_member_created(self, sptr, mptr) -> int
             """
             sptr, mptr = args
+            g_logger.debug("New member for structure %s",
+                           idaapi.get_struc_name(sptr.id))
+
             m_start_offset = mptr.soff
-            m_end_offset = mptr.eoff
+            # g_logger.debug("Member start offset 0x%x", m_start_offset)
+            # g_logger.debug("Member end offset 0x%x", m_end_offset)
+            struct_name = idaapi.get_struc_name(sptr.id)
+            struct_id = self.skel_conn.get_struct_by_name(struct_name)
+            mname = idaapi.get_member_name2(mptr.id)
+
+            self.skel_conn.create_struct_member(struct_id,
+                                                mname,
+                                                m_start_offset)
 
             return idaapi.IDB_Hooks.struc_member_created(self, *args)
 
@@ -543,15 +615,21 @@ class SkelHooks(object):
             """
             deleting_struc(self, sptr) -> int
             """
-            # print "DELETING STRUCT"
+            sptr, = args
+            name = idaapi.get_struc_name(sptr.id)
+            struc_id = self.skel_conn.get_struct_by_name(name)
+            self.skel_conn.delete_struct(struc_id)
             return idaapi.IDB_Hooks.deleting_struc(self, *args)
 
         def renaming_struc(self, *args):
             """
             renaming_struc(self, id, oldname, newname) -> int
             """
-            # print "RENAMING STRUCT"
-            # print args
+            sid, oldname, newname = args
+            g_logger.debug("Renaming struc %d %s to %s",
+                           sid, oldname, newname)
+            struct_id = self.skel_conn.get_struct_by_name(oldname)
+            self.skel_conn.rename_struct(struct_id, newname)
             return idaapi.IDB_Hooks.renaming_struc(self, *args)
 
         def expanding_struc(self, *args):
@@ -576,19 +654,31 @@ class SkelHooks(object):
             """
             renaming_struc_member(self, sptr, mptr, newname) -> int
             """
-            # print "RENAMING STRUCT MEMBER"
-            # print args
-            mystruct, mymember, newname = args
-            # print mymember
-            # print dir(mymember)
+            sptr, mptr, newname = args
+            g_logger.debug("Renaming struct member %s of struct %s",
+                           mptr.id, sptr.id)
+            sname = idaapi.get_struc_name(sptr.id)
+            oldname = idaapi.get_member_name2(mptr.id)
+            struct_id = self.skel_conn.get_struct_by_name(sname)
+            mid = self.skel_conn.get_member_by_name(struct_id, oldname)
+            self.skel_conn.rename_struct_member(struct_id, mid, newname)
+
             return idaapi.IDB_Hooks.renaming_struc_member(self, *args)
+
+        def changing_struc(self, *args):
+            """
+                changing_struc(self, sptr) -> int
+            """
+            sptr, = args
+            g_logger.debug("Changing structure %s",
+                           idaapi.get_struc_name(sptr.id))
+            return idaapi.IDB_Hooks.changing_struc(args)
 
         def changing_struc_member(self, *args):
             """
             changing_struc_member(self, sptr, mptr, flag, ti, nbytes) -> int
             """
-            # print "CHANGING STRUCT MEMBER"
-            # print args
+            g_logger.debug("Changing struct member")
             mystruct, mymember, flag, ti, nbytes = args
             # print ti
             # print dir(ti)
@@ -599,7 +689,6 @@ class SkelHooks(object):
             return idaapi.IDB_Hooks.changing_struc_member(self, *args)
 
         def op_type_changed(self, *args):
-            # print args
             return idaapi.IDB_Hooks.op_type_changed(self, *args)
 
     class SkelIDPHook(idaapi.IDP_Hooks):
@@ -728,17 +817,17 @@ class SkelUtils(object):
         """
             help!
         """
-        print "-*" * 40
-        print "                 SKELENOX "
-        print "        This plugin is part of Polichombr"
-        print "             (c) ANSSI-FR 2016"
-        print "-" * 80
-        print "\t Collaborative reverse engineering framework"
-        print "Help:"
-        print "see   https://www.github.com/anssi-fr/polichombr/docs/"
-        print "-*" * 40
-        print "\tfile %IDB%_backup_preskel_ contains IDB backup before running"
-        print "\tfile %IDB%_backup_ contains periodic IDB backups"
+        print("-*" * 40)
+        print("                 SKELENOX ")
+        print("        This plugin is part of Polichombr")
+        print("             (c) ANSSI-FR 2017")
+        print("-" * 80)
+        print("\t Collaborative reverse engineering framework")
+        print("Help:")
+        print("see   https://www.github.com/anssi-fr/polichombr/docs/")
+        print("-*" * 40)
+        print("\tfile %IDB%_backup_preskel contains IDB backup before running")
+        print("\tfile %IDB%_backup_ contains periodic IDB backups")
         return
 
     @staticmethod
@@ -776,8 +865,8 @@ class SkelUtils(object):
                 comment["data"].encode(
                     'ascii',
                     'replace'))
-        cmt = Comment(comment["address"])
-        if cmt != comment["data"] and RptCmt(
+        cmt = idc.Comment(comment["address"])
+        if cmt != comment["data"] and idc.RptCmt(
                 comment["address"]) != comment["data"]:
             g_logger.debug(
                 "[x] Adding comment %s @ 0x%x ",
@@ -801,8 +890,8 @@ class SkelUtils(object):
             """
             def sync_ask_rename():
                 rename_flag = 0
-                if force or AskYN(rename_flag, "Replace %s by %s" %
-                                  (get_name(), name["data"])) == 1:
+                if force or idc.AskYN(rename_flag, "Replace %s by %s" %
+                                      (get_name(), name["data"])) == 1:
                     g_logger.debug("[x] renaming %s @ 0x%x as %s",
                                    get_name(),
                                    name["address"],
@@ -858,7 +947,7 @@ class SkelSyncAgent(threading.Thread):
         """
         format_ts = "%Y-%m-%dT%H:%M:%S.%f+00:00"
         timestamp = datetime.datetime.strptime(timestamp_str, format_ts)
-        self.last_timestamp = max(self.timestamp, timestamp)
+        self.last_timestamp = max(self.last_timestamp, timestamp)
 
     def sync_names(self):
         """
@@ -872,11 +961,11 @@ class SkelSyncAgent(threading.Thread):
         names = self.skel_conn.get_names(timestamp=self.last_timestamp)
         for comment in comments:
             SkelUtils.execute_comment(comment)
-            self.update_timestamp(comment[timestamp])
+            self.update_timestamp(comment["timestamp"])
 
         for name in names:
             SkelUtils.execute_rename(name)
-            self.update_timestamp(name[timestamp])
+            self.update_timestamp(name["timestamp"])
         return True
 
     def setup_timer(self):
@@ -955,7 +1044,7 @@ class SkelNotePad(QtWidgets.QWidget):
     def PopulateForm(self):
         layout = QVBoxLayout()
         label = QtWidgets.QLabel()
-        label.setText("Notes about sample %s" % GetInputMD5())
+        label.setText("Notes about sample %s" % idc.GetInputMD5())
 
         self.editor = QtWidgets.QTextEdit()
 
@@ -1023,6 +1112,8 @@ class SkelFunctionInfosList(QtWidgets.QTableWidget):
         self.skel_conn = SkelConnection(self.config)
         self.skel_conn.get_online()
 
+    def showEvent(self, event):
+        super(SkelFunctionInfosList, self).showEvent(event)
         self.init_table()
         self.populate_table()
 
@@ -1042,7 +1133,7 @@ class SkelFunctionInfosList(QtWidgets.QTableWidget):
         functions = self.skel_conn.get_proposed_names()
         items = []
         for func in functions:
-            func_name = GetTrueName(func["address"])
+            func_name = idc.GetTrueName(func["address"])
             for name in func["proposed_names"]:
                 item = self.SkelFuncListItem(
                     hex(func["address"]),
@@ -1083,7 +1174,8 @@ class SkelFunctionInfos(QtWidgets.QWidget):
     def PopulateForm(self):
         layout = QVBoxLayout()
         label = QtWidgets.QLabel()
-        label.setText("Proposed function names for sample %s" % GetInputMD5())
+        label.setText("Proposed function names for sample %s" %
+                      idc.GetInputMD5())
 
         self.funcinfos = SkelFunctionInfosList(self.settings_filename)
 
@@ -1092,7 +1184,7 @@ class SkelFunctionInfos(QtWidgets.QWidget):
         self.setLayout(layout)
 
 
-class SkelUI(PluginForm):
+class SkelUI(idaapi.PluginForm):
     """
         Skelenox UI is contained in a new tab widget.
     """
@@ -1111,8 +1203,10 @@ class SkelUI(PluginForm):
         self.PopulateForm()
 
     def Show(self):
-        options = PluginForm.FORM_CLOSE_LATER | PluginForm.FORM_RESTORE | PluginForm.FORM_SAVE
-        return PluginForm.Show(self, "Skelenox UI", options=options)
+        options = idaapi.PluginForm.FORM_CLOSE_LATER
+        options = options | idaapi.PluginForm.FORM_RESTORE
+        options = options | idaapi.PluginForm.FORM_SAVE
+        return idaapi.PluginForm.Show(self, "Skelenox UI", options=options)
 
     def PopulateForm(self):
         self.tabs = QtWidgets.QTabWidget()
@@ -1130,7 +1224,7 @@ class SkelUI(PluginForm):
     def OnClose(self, form):
         g_logger.debug("UI is terminating")
 
-    def Close(self, options=PluginForm.FORM_SAVE):
+    def Close(self, options=idaapi.PluginForm.FORM_SAVE):
         super(SkelUI, self).Close(options)
 
 
@@ -1163,16 +1257,16 @@ class SkelCore(object):
         self.skel_conn = SkelConnection(self.skel_settings)
 
         # If having 3 idbs in your current path bother you, change this
-        self.crit_backup_file = GetIdbPath()[:-4] + "_backup_preskel_.idb"
-        self.backup_file = GetIdbPath()[:-4] + "_backup_.idb"
+        self.crit_backup_file = idc.GetIdbPath()[:-4] + "_backup_preskel_.idb"
+        self.backup_file = idc.GetIdbPath()[:-4] + "_backup_.idb"
 
         atexit.register(self.end_skelenox)
 
         g_logger.info(
             "Backuping IDB before any intervention (_backup_preskel_)")
-        SaveBase(self.crit_backup_file, idaapi.DBFL_TEMP)
+        idc.SaveBase(self.crit_backup_file, idaapi.DBFL_TEMP)
         g_logger.info("Creating regular backup file IDB (_backup_)")
-        SaveBase(self.backup_file, idaapi.DBFL_TEMP)
+        idc.SaveBase(self.backup_file, idaapi.DBFL_TEMP)
         self.last_saved = time.time()
 
         if self.skel_hooks is not None:
@@ -1204,17 +1298,16 @@ class SkelCore(object):
         """
         for head in idautils.Names():
             if not SkelUtils.func_name_blacklist(head[1]):
-                mtype = GetType(head[0])
+                mtype = idc.GetType(head[0])
                 if mtype and not mtype.lower().startswith("char["):
-                    print head[1]
                     self.skel_conn.push_name(head[0], head[1])
 
     def send_comments(self):
         """
             Initial sync of comments
         """
-        cmt_types = [Comment, RptCmt]  # Maybe GetFunctionCmt also?
-        for head in Heads():
+        cmt_types = [idc.Comment, idc.RptCmt]  # Maybe GetFunctionCmt also?
+        for head in idautils.Heads():
             send_cmt = ""
             for cmt_type in cmt_types:
                 cmt = None
@@ -1235,12 +1328,12 @@ class SkelCore(object):
         idaapi.disable_script_timeout()
         if self.skel_settings.initial_sync:
             init_sync = 0
-            if AskYN(init_sync,
-                     "Do you want to synchronize already defined names?") == 1:
+            if idc.AskYN(init_sync,
+                         "Do you want to synchronize defined names?") == 1:
                 self.send_names()
 
-            if AskYN(
-                    init_sync, "Do you want to synchronize already defined comments?") == 1:
+            if idc.AskYN(init_sync,
+                         "Do you want to synchronize defined comments?") == 1:
                 self.send_comments()
 
         self.skel_ui.Show()
@@ -1289,7 +1382,7 @@ def PLUGIN_ENTRY():
     """
         IDAPython plugin wrapper
     """
-    Wait()
+    idc.Wait()
     return SkelenoxPlugin()
 
 

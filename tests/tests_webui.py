@@ -196,6 +196,37 @@ class WebUIBaseTests(WebUIBaseClass):
         self.assertIn(
             "<h3 class=\"panel-title\">TEST_YARA_RENAMED</h3>", retval.data)
 
+        # test wrong yara format
+
+        data = dict(yara_name="WRONG YARA",
+                    yara_raw=rule_text.replace("strings", "wrong_string"),
+                    yara_tlp=1)
+        retval = self.app.post("/signatures/", data=data)
+        self.assertEqual(retval.status_code, 200)
+        self.assertIn("Error during yara creation", retval.data)
+
+    def test_delete_yara(self):
+        self.login("john", "password")
+        self.create_sample()
+        rule_text = """rule toto{
+            strings:
+                $1 = {4D 5A}
+            condition:
+                $1 at 0
+        }"""
+
+        data = dict(yara_name="TEST_YARA",
+                    yara_raw=rule_text,
+                    yara_tlp=1)
+        retval = self.app.post("/signatures/", data=data)
+
+        retval = self.app.get("/signatures/delete/"+"1")
+        self.assertEqual(retval.status_code, 302)
+
+        retval = self.app.get("/signatures/")
+        self.assertIn("alert alert-success alert-dismissible", retval.data)
+        self.assertIn("Deleted rule TEST_YARA", retval.data)
+
 
 class WebUIFamilyTestCase(WebUIBaseClass):
     """
