@@ -416,6 +416,18 @@ class SkelConnection(object):
         else:
             return None
 
+    def get_member_by_name(self, sid, name):
+        """
+            Should probably be implemented server side
+        """
+        endpoint = self.prepare_endpoint("structs/"+str(sid))
+        res = self.poli_get(endpoint)
+        if "members" in res["structs"].keys():
+            for member in res["structs"]["members"]:
+                if member["name"] == name:
+                    return member["id"]
+        return None
+
     def rename_struct(self, struct_id, new_name):
         """
             Rename a struct
@@ -430,23 +442,29 @@ class SkelConnection(object):
         res = self.poli_delete(endpoint)
         return res
 
-    def create_struct_member(self, sid, name):
+    def create_struct_member(self, sid, name, start_offset):
         """
             Create a new member for a struct.
         """
-        pass
+        endpoint = self.prepare_endpoint("structs/"+str(sid)+"/members")
+        data = dict(name=name, size=1, offset=start_offset)
+        res = self.poli_post(endpoint, data=data)
+        return res
 
     def resize_struct_member(self, sid, mid, size):
         """
             Sets a new size for a struct member
         """
-        pass
+        raise NotImplementedError
 
     def rename_struct_member(self, sid, mid, name):
         """
             Rename a struct member
         """
-        pass
+        endpoint = self.prepare_endpoint("structs/"+str(sid)+"/members")
+        data = dict(mid=mid, newname=name)
+        res = self.poli_patch(endpoint, data=data)
+        return res
 
     def prepare_endpoint(self, submodule):
         """
@@ -581,9 +599,15 @@ class SkelHooks(object):
                            idaapi.get_struc_name(sptr.id))
 
             m_start_offset = mptr.soff
-            m_end_offset = mptr.eoff
-            g_logger.debug("Member start offset 0x%x", m_start_offset)
-            g_logger.debug("Member end offset 0x%x", m_end_offset)
+            # g_logger.debug("Member start offset 0x%x", m_start_offset)
+            # g_logger.debug("Member end offset 0x%x", m_end_offset)
+            struct_name = idaapi.get_struc_name(sptr.id)
+            struct_id = self.skel_conn.get_struct_by_name(struct_name)
+            mname = idaapi.get_member_name2(mptr.id)
+
+            self.skel_conn.create_struct_member(struct_id,
+                                                mname,
+                                                m_start_offset)
 
             return idaapi.IDB_Hooks.struc_member_created(self, *args)
 
@@ -602,8 +626,8 @@ class SkelHooks(object):
             renaming_struc(self, id, oldname, newname) -> int
             """
             sid, oldname, newname = args
-            g_logger.debug("Renaming struc %s to %s",
-                           oldname, newname)
+            g_logger.debug("Renaming struc %d %s to %s",
+                           sid, oldname, newname)
             struct_id = self.skel_conn.get_struct_by_name(oldname)
             self.skel_conn.rename_struct(struct_id, newname)
             return idaapi.IDB_Hooks.renaming_struc(self, *args)
@@ -630,9 +654,15 @@ class SkelHooks(object):
             """
             renaming_struc_member(self, sptr, mptr, newname) -> int
             """
-            mystruct, mymember, newname = args
+            sptr, mptr, newname = args
             g_logger.debug("Renaming struct member %s of struct %s",
-                           mymember, mystruct)
+                           mptr.id, sptr.id)
+            sname = idaapi.get_struc_name(sptr.id)
+            oldname = idaapi.get_member_name2(mptr.id)
+            struct_id = self.skel_conn.get_struct_by_name(sname)
+            mid = self.skel_conn.get_member_by_name(struct_id, oldname)
+            self.skel_conn.rename_struct_member(struct_id, mid, newname)
+
             return idaapi.IDB_Hooks.renaming_struc_member(self, *args)
 
         def changing_struc(self, *args):
