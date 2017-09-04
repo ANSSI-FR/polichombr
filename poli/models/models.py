@@ -10,6 +10,7 @@
 
 
 class CustomEnum(object):
+
     """
         Utility class to implement a int/str enum
     """
@@ -26,6 +27,7 @@ class CustomEnum(object):
 
 
 class TLPLevel(CustomEnum):
+
     """
     TLP sensibility level. https://www.us-cert.gov/tlp
     BLACK level: "Keep the information private", should not be exported.

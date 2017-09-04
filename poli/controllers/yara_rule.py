@@ -64,6 +64,7 @@ def run_extended_yara(raw_rule, sample):
 
 
 class YaraSingleTask:
+
     """
     Yara task. Used in the yara job pool. We use this task to
     define a yara rule which must be ran on a sample.

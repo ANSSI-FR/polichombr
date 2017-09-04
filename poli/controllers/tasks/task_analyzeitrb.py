@@ -20,6 +20,7 @@ from poli.controllers.idaactions import IDAActionsController
 
 
 class task_analyzeitrb(Task):
+
     """
     This is a wrapper class for the AnalyzeIt.rb script.
     """

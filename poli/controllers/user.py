@@ -19,6 +19,7 @@ from poli import user_datastore
 
 
 class UserController(object):
+
     """
         Operates on the User model
     """
@@ -48,8 +49,8 @@ class UserController(object):
 
         # the first user is active and admin
         if User.query.count() == 1:
-            role = user_datastore.find_or_create_role("admin",
-                                                      description="Administrator")
+            role = user_datastore.find_or_create_role(
+                "admin", description="Administrator")
             if role is not None:
                 user_datastore.add_role_to_user(myuser, role)
             else:

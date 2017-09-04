@@ -896,5 +896,7 @@ def ui_delete_yara(sig_id):
     Delete YARA rule.
     """
     yar = api.get_elem_by_type("yara", sig_id)
+    name = yar.name
     api.yaracontrol.delete(yar)
+    flash("Deleted rule " + name, "success")
     return redirect(url_for('ui_yara'))

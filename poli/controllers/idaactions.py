@@ -1,7 +1,7 @@
 """
     This file is part of Polichombr.
 
-    (c) 2016 ANSSI-FR
+    (c) 2017 ANSSI-FR
 
 
     Description:
@@ -20,6 +20,7 @@ from poli.models.sample import Sample
 
 
 class IDAActionsController(object):
+
     """
         Manage the recorded actions for IDA Pro.
     """
@@ -151,54 +152,51 @@ class IDAActionsController(object):
         return member.id
 
     @staticmethod
-    def add_member_to_struct(struct_id=None, mid=None):
+    def filter_member_id(struct_id, mid):
         """
-
+        Utility to get a struct and a struct member from their ID
         """
         struct = IDAStruct.query.get(struct_id)
         member = IDAStructMember.query.get(mid)
         if struct is None or member is None:
-            result = False
-        else:
-            struct.members.append(member)
-            # struct is updated, so we must update the timestamp
-            struct.timestamp = datetime.datetime.now()
-            if member.offset >= struct.size:
-                struct.size += (member.offset - struct.size)
-            struct.size += member.size
-            db.session.commit()
-            result = True
+            return False
+
+        return struct, member
+
+    @classmethod
+    def add_member_to_struct(cls, struct_id=None, mid=None):
+        """
+            Add a new member at the member offset of the struct
+        """
+        struct, member = cls.filter_member_id(struct_id, mid)
+
+        struct.members.append(member)
+        # struct is updated, so we must update the timestamp
+        struct.timestamp = datetime.datetime.now()
+        if member.offset >= struct.size:
+            struct.size += (member.offset - struct.size)
+        struct.size += member.size
+        db.session.commit()
+        result = True
         return result
 
-    @staticmethod
-    def change_struct_member_name(struct_id, mid, new_name):
-        struct = IDAStruct.query.get(struct_id)
-        member = None
-        if struct is None:
-            return False
-        for m in struct.members:
-            if m.id == mid:
-                member = m
-                break
-        if member is None:
-            return False
+    @classmethod
+    def change_struct_member_name(cls, struct_id, mid, new_name):
+        """
+            Rename a struct member, and update struct timestamp
+        """
+        struct, member = cls.filter_member_id(struct_id, mid)
         member.name = new_name
         struct.timestamp = datetime.datetime.now()
         db.session.commit()
         return True
 
-    @staticmethod
-    def change_struct_member_size(struct_id, mid, new_size):
-        struct = IDAStruct.query.get(struct_id)
-        member = None
-        if struct is None:
-            return False
-        for m in struct.members:
-            if m.id == mid:
-                member = m
-                break
-        if member is None:
-            return False
+    @classmethod
+    def change_struct_member_size(cls, struct_id, mid, new_size):
+        """
+            Resize struct member
+        """
+        struct, member = cls.filter_member_id(struct_id, mid)
 
         if member.offset + member.size == struct.size:
             struct.size = struct.size - (member.size - new_size)

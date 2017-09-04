@@ -14,6 +14,7 @@ from poli import db, ma
 
 
 class IDAAction(db.Model):
+
     """
         Abstract class for implementing IDA actions.
         This mirrors actions done by the analyst on his database
@@ -42,6 +43,7 @@ class IDAAction(db.Model):
 
 
 class IDACommentAction(IDAAction):
+
     """
         Implement comments
     """
@@ -55,6 +57,7 @@ class IDACommentAction(IDAAction):
 
 
 class IDANameAction(IDAAction):
+
     """
         This represents global names in IDA.
     """
@@ -67,6 +70,7 @@ class IDANameAction(IDAAction):
 
 
 class IDATypeAction(IDAAction):
+
     """
     This represents the types as applied by
     the shortcut 'Y' in IDA Pro
@@ -90,6 +94,7 @@ class IDAApplyStructs(IDAAction):
 
 
 class IDAStruct(IDAAction):
+
     """
         Structures are a particular type of
         actions, as the address and will always be null,
@@ -133,6 +138,7 @@ class IDAActionSchema(ma.ModelSchema):
 
 
 class IDAStructMemberSchema(ma.ModelSchema):
+
     class Meta:
         fields = (
             "id",

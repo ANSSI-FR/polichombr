@@ -19,6 +19,7 @@ from poli.controllers.sample import SampleController
 
 
 class task_strings(Task):
+
     """
     Extract wide/ascii strings metadata form file using regexps.
     """

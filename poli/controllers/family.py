@@ -24,6 +24,7 @@ from poli.models.models import TLPLevel
 
 
 class FamilyController(object):
+
     """
         Family object controller.
     """
@@ -280,7 +281,8 @@ class FamilyController(object):
         for item in family.detection_items:
             if item.TLP_sensibility <= tlp_level:
                 if item.item_type == DetectionType.SNORT:
-                    generated_output += "# rule internal name: " + item.name + "\n"
+                    generated_output += "# rule internal name: " + \
+                        item.name + "\n"
                     generated_output += "# rule TLP sensibility: " + \
                         TLPLevel.tostring(item.TLP_sensibility) + "\n"
                     generated_output += item.abstract + "\n\n"
@@ -291,7 +293,8 @@ class FamilyController(object):
         """
             Exports the yara detection CUSTOM items.
         """
-        generated_output = "Custom detection items for family " + family.name + "\n\n"
+        generated_output = "Custom detection items for family " + \
+            family.name + "\n\n"
         for item in family.detection_items:
             if item.TLP_sensibility <= tlp_level:
                 if item.item_type == DetectionType.CUSTOM:
@@ -325,11 +328,14 @@ class FamilyController(object):
                 generated_output += '<IndicatorItem id="' + \
                     str(c) + '" condition="is">\n'
                 generated_output += '<Context document="FileItem" search="FileItem/Md5sum" type="mir" />\n'
-                generated_output += '<Content type="md5">' + sample.md5 + '</Content>\n'
+                generated_output += '<Content type="md5">' + \
+                    sample.md5 + '</Content>\n'
                 generated_output += '<Context document="FileItem" search="FileItem/Sha1sum" type="mir" />\n'
-                generated_output += '<Content type="sha1">' + sample.sha1 + '</Content>\n'
+                generated_output += '<Content type="sha1">' + \
+                    sample.sha1 + '</Content>\n'
                 generated_output += '<Context document="FileItem" search="FileItem/Sha256sum" type="mir" />\n'
-                generated_output += '<Content type="sha256">' + sample.sha256 + '</Content>\n'
+                generated_output += '<Content type="sha256">' + \
+                    sample.sha256 + '</Content>\n'
                 generated_output += '</IndicatorItem>\n'
                 c = c + 1
         generated_output += '</Indicator>\n'

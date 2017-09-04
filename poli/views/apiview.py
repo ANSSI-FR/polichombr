@@ -460,8 +460,11 @@ def api_get_idaactions_updates(sid):
 
     actions = api.idacontrol.get_all(sid=sid, timestamp=timestamp)
 
+    form = "%Y-%m-%dT%H:%M:%S.%f"
+    str_time = datetime.datetime.strftime(timestamp, form)
+
     return jsonify({'idaactions': actions,
-                    'timestamp': datetime.datetime.now()})
+                    'timestamp': str_time})
 
 
 @apiview.route('/samples/<int:sid>/functions/', methods=['GET'])

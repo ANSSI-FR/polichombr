@@ -12,6 +12,7 @@ from poli import db, ma
 
 
 class AnalysisResult(db.Model):
+
     """
         Containing all PE analysis data.
     """
@@ -26,6 +27,7 @@ class AnalysisResult(db.Model):
 
 
 class AnalysisResultSchema(ma.ModelSchema):
+
     """
     Export schema.
     """

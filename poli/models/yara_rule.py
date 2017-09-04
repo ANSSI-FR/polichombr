@@ -14,6 +14,7 @@ from poli import db, ma
 
 
 class YaraRule(db.Model):
+
     """
         Yara rule model.
     """
@@ -39,6 +40,7 @@ class YaraRule(db.Model):
 
 
 class YaraSchema(ma.ModelSchema):
+
     class Meta(object):
         fields = ('id',
                   'name',
