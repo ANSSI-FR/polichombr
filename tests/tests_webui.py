@@ -616,6 +616,36 @@ class WebUISampleManagementTests(WebUIBaseClass):
 
         self.assertEqual(retval.status_code, 200)
 
+    def test_checklists(self):
+        self.login("john", "password")
+        retval = self.app.get("/settings/")
+        self.assertEqual(retval.status_code, 200)
+
+        data = dict(title="Test checklist", description="Test Checklist content")
+
+        retval = self.app.post("/settings/", data=data)
+        self.assertEqual(retval.status_code, 200)
+
+        self.create_sample()
+        retval = self.app.get("/sample/1/")
+
+        self.assertIn("Test Checklist content", retval.data)
+        self.assertIn('panel-danger"', retval.data)
+        self.assertIn('href="/sample/1/checkfield/1">toggle</a>', retval.data)
+
+        retval = self.app.get("/sample/1/checkfield/1/")
+        self.assertEqual(retval.status_code, 302)
+
+        retval = self.app.get("/sample/1/")
+        self.assertNotIn('panel-danger"', retval.data)
+        self.assertIn('href="/sample/1/checkfield/1">toggle</a>', retval.data)
+
+        retval = self.app.get("/settings/deletechecklist/1/")
+
+        self.assertEqual(retval.status_code, 302)
+        retval = self.app.get("/settings/")
+        self.assertNotIn("Test Checklist content", retval.data)
+
 
 if __name__ == '__main__':
     unittest.main()
