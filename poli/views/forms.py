@@ -111,7 +111,7 @@ class CreateCheckListForm(FlaskForm):
     Create new checklist item.
     """
     title = StringField("Title", validators=[DataRequired()])
-    description = TextAreaField("Title", validators=[DataRequired()])
+    description = TextAreaField("Content", validators=[DataRequired()])
     changepoke = SubmitField(u'Submit')
 
 

@@ -20,7 +20,7 @@ from flask_security import login_user, logout_user, current_user
 from flask_security import login_required, roles_required
 from werkzeug import secure_filename
 
-from poli import app, api
+from poli import app, api, security
 
 from poli.models.user import User
 from poli.models.family import Family
@@ -114,6 +114,7 @@ def login():
             return redirect(url_for('login'))
         if api.usercontrol.check_user_pass(user, login_form.password.data):
             login_user(user, remember=True)
+            security.datastore.commit()
             flash("Logged in!", "success")
             return redirect(url_for("index"))
         else:
@@ -213,7 +214,7 @@ def admin_page():
 @login_required
 def ui_settings():
     """
-        Manage per user settings forms
+        Manage application settings (checklist for the moment)
     """
     addchecklistform = CreateCheckListForm()
     if addchecklistform.validate_on_submit():

@@ -139,6 +139,41 @@ class IDAActionsController(object):
         schema = IDAStructSchema()
         return schema.dump(data).data
 
+    @classmethod
+    def get_struct_by_name(cls, sample_id, name):
+        """
+            Filter structs by sid, then by name
+        """
+        query = IDAStruct.query
+        query = query.filter(IDAStruct.samples.any(Sample.id == sample_id))
+        query = query.filter_by(name=name)
+        data = query.first()
+
+        schema = IDAStructSchema()
+        return schema.dump(data).data
+
+    @staticmethod
+    def rename_struct(struct_id, name):
+        """
+            Update a struct's name and timestamp
+        """
+        mstruct = IDAStruct.query.get_or_404(struct_id)
+        mstruct.name = name
+        mstruct.timestamp = datetime.datetime.now()
+        db.session.commit()
+        return True
+
+    @staticmethod
+    def delete_struct(struct_id):
+        """
+
+        """
+        mstruct = IDAStruct.query.get(struct_id)
+        app.logger.debug("Deleting struct %s", mstruct.name)
+        db.session.delete(mstruct)
+        db.session.commit()
+        return True
+
     @staticmethod
     def create_struct_member(name=None, size=None, offset=None):
         member = IDAStructMember()

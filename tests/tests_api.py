@@ -505,6 +505,12 @@ class ApiIDAActionsTests(ApiTestCase):
                                content_type="application/json")
         return retval
 
+    def _rename_struct(self, sid=1, struct_id=1, name=None):
+        retval = self.app.patch("/api/1.0/samples/" + str(sid) + "/structs/" + str(struct_id) + "/",
+                                data=json.dumps(dict(name=name)),
+                                content_type="application/json")
+        return retval
+
     def _create_struct_member(self, sid=1, struct_id=None, mname=None, size=0, offset=0):
         url = '/api/1.0/samples/' + str(sid)
         url += '/structs/' + str(struct_id)
@@ -772,6 +778,40 @@ class ApiIDAActionsTests(ApiTestCase):
         struct = data["structs"]
         self.assertIn("StructName1", struct["name"])
         self.assertEqual(0, struct["size"])
+
+    def test_rename_struct(self):
+        self._create_struct(sid=1, name="StructName1")
+        retval = self._rename_struct(sid=1, struct_id=1, name="NewStructName")
+        self.assertEqual(retval.status_code, 200)
+
+        retval = self._get_all_structs()
+        data = json.loads(retval.data)
+        self.assertNotIn("StructName1", data["structs"][0]["name"])
+        self.assertIn("NewStructName", data["structs"][0]["name"])
+
+    def test_get_struct_by_name(self):
+        self._create_struct(sid=1, name="StructName1")
+
+        retval = self._get_all_structs(sid=1)
+        retval = self.app.get("/api/1.0/samples/1/structs/StructName1/")
+        self.assertEqual(retval.status_code, 200)
+        data = json.loads(retval.data)
+        self.assertIn(data["structs"]["name"], "StructName1")
+        retval = self.app.get("/api/1.0/samples/1/structs/XXX/")
+        data = json.loads(retval.data)
+        self.assertEqual(len(data["structs"].keys()), 0)
+
+    def test_delete_struct(self):
+        self._create_struct(sid=1, name="StructName1")
+        self._create_struct(sid=1, name="StructName2")
+
+        retval = self.app.delete("/api/1.0/samples/1/structs/1/")
+        self.assertEqual(retval.status_code, 200)
+
+        retval = self._get_all_structs()
+        data = json.loads(retval.data)
+        self.assertEqual(len(data["structs"]), 1)
+        self.assertNotIn("StructName1", data["structs"][0]["name"])
 
     def test_create_multiple_structs(self):
         """

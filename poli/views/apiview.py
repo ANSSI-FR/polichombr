@@ -644,6 +644,39 @@ def api_create_struct_member(sid, struct_id):
     return jsonify({'result': result})
 
 
+@apiview.route('/samples/<int:sid>/structs/<string:struct_name>/')
+def api_get_struct_by_name(sid, struct_name):
+    """
+        Get structure data from a name
+    """
+    result = api.idacontrol.get_struct_by_name(sid, struct_name)
+    return jsonify({'structs': result})
+
+
+@apiview.route('/samples/<int:sid>/structs/<int:struct_id>/',
+               methods=["PATCH"])
+def api_rename_struct(sid, struct_id):
+    """
+        Rename a struct
+    """
+    data = request.json
+    if data is None:
+        abort(400, "Missing JSON data")
+    name = data["name"]
+    result = api.idacontrol.rename_struct(struct_id, name)
+    return jsonify({'result': result})
+
+
+@apiview.route('/samples/<int:sid>/structs/<int:struct_id>/',
+               methods=["DELETE"])
+def api_delete_struct(sid, struct_id):
+    """
+        Completely delete a struct from database
+    """
+    result = api.idacontrol.delete_struct(struct_id)
+    return jsonify({"result": result})
+
+
 @apiview.route('/samples/<int:sid>/structs/<int:struct_id>/members/',
                methods=['PATCH'])
 def api_update_struct_member(sid, struct_id):
