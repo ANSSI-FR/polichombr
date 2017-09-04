@@ -867,6 +867,33 @@ class ApiIDAActionsTests(ApiTestCase):
         self.assertEqual(4, member["size"])
         self.assertEqual(0, member["offset"])
 
+    def test_create_members_multistruct(self):
+        """
+            Triggers a bug showing that members are
+            affected to all structures off a sample?
+        """
+        self._create_struct(sid=1, name="StructName1")
+        self._create_struct(sid=1, name="StructName2")
+
+        self._create_struct_member(struct_id=1,
+                                   mname="Struct1.MemberName1",
+                                   size=4,
+                                   offset=0)
+        self._create_struct_member(struct_id=1,
+                                   mname="Struct1.MemberName2",
+                                   size=4,
+                                   offset=8)
+        self._create_struct_member(struct_id=2,
+                                   mname="Struct2.MemberName1",
+                                   size=4,
+                                   offset=0)
+
+        retval = self._get_all_structs()
+        data = json.loads(retval.data)
+
+        self.assertEqual(len(data["structs"][0]["members"]), 2)
+        self.assertEqual(len(data["structs"][1]["members"]), 1)
+
     def test_create_struct_members(self):
         """
             Test for multiples members

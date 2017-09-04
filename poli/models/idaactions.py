@@ -110,7 +110,7 @@ class IDAStruct(IDAAction):
     size = db.Column(db.Integer())
     members = db.relationship("IDAStructMember",
                               backref=db.backref("struct"),
-                              remote_side=[id])
+                              )
 
     __mapper_args__ = {
         "polymorphic_identity": "idastructs"}
@@ -127,26 +127,22 @@ class IDAStructMember(db.Model):
 
 
 class IDAActionSchema(ma.ModelSchema):
-
     class Meta:
         fields = (
             "timestamp",
             "address",
             "data",
-            "type",
-        )
+            "type")
 
 
 class IDAStructMemberSchema(ma.ModelSchema):
-
     class Meta:
         fields = (
             "id",
             "name",
             "offset",
             "size",
-            "mtype"
-        )
+            "mtype")
 
 
 class IDAStructSchema(ma.ModelSchema):

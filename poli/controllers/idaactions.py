@@ -194,7 +194,7 @@ class IDAActionsController(object):
         struct = IDAStruct.query.get(struct_id)
         member = IDAStructMember.query.get(mid)
         if struct is None or member is None:
-            return False
+            return None
 
         return struct, member
 
@@ -204,7 +204,6 @@ class IDAActionsController(object):
             Add a new member at the member offset of the struct
         """
         struct, member = cls.filter_member_id(struct_id, mid)
-
         struct.members.append(member)
         # struct is updated, so we must update the timestamp
         struct.timestamp = datetime.datetime.now()

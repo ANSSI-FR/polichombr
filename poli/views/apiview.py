@@ -686,10 +686,10 @@ def api_update_struct_member(sid, struct_id):
     mid = data["mid"]
     result = False
     if 'newname' in data.keys():
-        result = api.idacontrol.change_struct_member_name(sid, mid,
+        result = api.idacontrol.change_struct_member_name(struct_id, mid,
                                                           data["newname"])
     if 'newsize' in data.keys():
-        result = api.idacontrol.change_struct_member_size(sid, mid,
+        result = api.idacontrol.change_struct_member_size(struct_id, mid,
                                                           data["newsize"])
     return jsonify({'result': result})
 
