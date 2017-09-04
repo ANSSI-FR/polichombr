@@ -592,6 +592,50 @@ class ApiIDAActionsTests(ApiTestCase):
         offset = datetime.datetime.strftime(offset, '%Y-%m-%dT%H:%M:%S.%f')
         return offset
 
+    def test_get_all(self):
+        """
+            Get all informations about a sample
+        """
+        self._push_comment(address=0xDEADBEEF, comment="TESTCOMMENT1")
+        self._push_name(address=0xDEADBEEF, name="TESTNAME")
+        self._push_name(address=0xC0FFEE, name="NAME @ C0FFEE")
+        self._push_comment(address=0xBADF00D, comment="TESTCOMMENT2")
+        self._create_struct(name="ThisIsAStruct")
+        retval = self.app.get("/api/1.0/samples/1/idaactions/")
+        self.assertEqual(retval.status_code, 200)
+        actions = json.loads(retval.data)
+
+        # {"timestamp": , "idaactions":}
+        self.assertEqual(len(actions), 2)
+        self.assertIn("timestamp", actions.keys())
+        self.assertIn("idaactions", actions.keys())
+        self.assertEqual(len(actions["idaactions"]), 5)
+        for action in actions["idaactions"]:
+            self.assertIn("timestamp", action.keys())
+            self.assertIn("type", action.keys())
+            self.assertIn("data", action.keys())
+            self.assertIn("address", action.keys())
+
+        self.assertIn(actions["idaactions"][0]["type"], "idacomments")
+        self.assertEqual(actions["idaactions"][0]["address"], 0xDEADBEEF)
+        self.assertIn(actions["idaactions"][0]["data"], "TESTCOMMENT1")
+
+        self.assertIn(actions["idaactions"][1]["type"], "idanames")
+        self.assertEqual(actions["idaactions"][1]["address"], 0xDEADBEEF)
+        self.assertIn(actions["idaactions"][1]["data"], "TESTNAME")
+
+        self.assertIn(actions["idaactions"][2]["type"], "idanames")
+        self.assertEqual(actions["idaactions"][2]["address"], 0xC0FFEE)
+        self.assertIn(actions["idaactions"][2]["data"], "NAME @ C0FFEE")
+
+        self.assertIn(actions["idaactions"][3]["type"], "idacomments")
+        self.assertEqual(actions["idaactions"][3]["address"], 0xBADF00D)
+        self.assertIn(actions["idaactions"][3]["data"], "TESTCOMMENT2")
+
+        self.assertIn(actions["idaactions"][4]["type"], "idastructs")
+        self.assertEqual(actions["idaactions"][4]["address"], None)
+        self.assertIn(actions["idaactions"][4]["data"], "ThisIsAStruct")
+
     def test_push_comments(self):
         """
             Can we push comments for a sample?
