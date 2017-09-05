@@ -226,7 +226,7 @@ def ui_settings():
                            users=api.usercontrol.get_all())
 
 
-@app.route('/settings/deletechecklist/<int:checklist_id>', methods=['GET'])
+@app.route('/settings/deletechecklist/<int:checklist_id>/', methods=['GET'])
 @login_required
 def deletechecklist(checklist_id):
     """
@@ -235,6 +235,7 @@ def deletechecklist(checklist_id):
     checklist_item = api.samplecontrol.get_checklist_by_id(checklist_id)
     if not checklist_item:
         abort(404)
+    app.logger.debug("deleting checklist %s", checklist_item.title)
     api.samplecontrol.delete_checklist(checklist_item)
     return redirect(url_for('ui_settings'))
 
@@ -669,16 +670,15 @@ def ui_disassemble_sample(sid, address):
     return gen_sample_view(sid, graph=svg_data, fctaddr=hex(integer_address))
 
 
-@app.route('/machexport/', methods=['POST'])
+@app.route('/samples/<int:sample_id>/machexport/', methods=['POST'])
 @login_required
-def machexport():
+def machexport(sample_id):
     """
     Machex export form handling.
     """
     machex_export_form = ExportMachexForm()
+    sample = api.get_elem_by_type("sample", sample_id)
     if machex_export_form.validate_on_submit():
-        sample_id = machex_export_form.sampleid.data
-        sample = api.get_elem_by_type("sample", sample_id)
         fnamexp = False
         fmachexp = False
         fstringexp = False
@@ -746,7 +746,7 @@ def diff_samples(sample_id, sample2_id):
                            sdiff=sdiff)
 
 
-@app.route("/sample/<int:sample_id>/checkfield/<int:checklist_id>")
+@app.route("/sample/<int:sample_id>/checkfield/<int:checklist_id>/")
 @login_required
 def check_field(sample_id, checklist_id):
     """

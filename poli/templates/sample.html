@@ -195,7 +195,19 @@
             <br />
 			<div class="well">
                 Select the information you want to share:<br />
-				{{wtf.quick_form(expform,method='POST', action='/machexport/')}}
+				<form class="form form-horizontal" method="post" action="/samples/{{sample.id}}/machexport/" role="form">
+				  {{ expform.hidden_tag() }}
+				  {{ wtf.form_errors(expform, hiddens="only") }}
+
+				  {{ wtf.form_field(expform.machocfull) }}
+				  {{ wtf.form_field(expform.fmachoc) }}
+				  {{ wtf.form_field(expform.fnames) }}
+				  {{ wtf.form_field(expform.analysis_data) }}
+				  {{ wtf.form_field(expform.abstracts) }}
+				  {{ wtf.form_field(expform.metadata) }}
+				  {{ wtf.form_field(expform.estrings) }}
+				  {{ wtf.form_field(expform.export) }}
+				</form>
 			</div>
 		</div>
 

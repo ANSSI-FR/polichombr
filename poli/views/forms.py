@@ -352,11 +352,6 @@ class ExportMachexForm(FlaskForm):
     abstracts = BooleanField(u'Abstract')
     metadata = BooleanField(u'File metadata (PE, ELF...)')
     estrings = BooleanField(u'Strings')
-    sampleid = HiddenField(
-        u'sampleid',
-        default="1",
-        validators=[
-            InputRequired()])
     export = SubmitField(u'Submit')
 
 
