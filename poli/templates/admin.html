@@ -8,9 +8,23 @@
 		</div>
 		<div class="panel-body">
 			<table class="table">
+				<thead>
+					<tr>
+						<th>Nickname</th>
+						<th>Last login date</th>
+						<th>Last login IP</th>
+						<th>Login count</th>
+						<th>Activation</th>
+						<th>Admin status</th>
+					</tr>
+				</thead>
+				<tbody>
 				{% for u in users %}
 					<tr>
 						<td>{{u.nickname}} </td>
+						<td>{{u.last_login_at}}</td>
+						<td>{{u.last_login_ip}}</td>
+						<td>{{u.login_count}}</td>
 						<td>
 							{% if u.is_active %}
 								<a href="/user/{{u.id}}/deactivate" class="btn btn-danger">
@@ -22,8 +36,11 @@
 								</a>
 							{% endif %}
 						</td>
+						<td></td>
+
 					</tr>
 				{% endfor %}
+				</tbody>
 			</table>
 		</div>
 	</div>
