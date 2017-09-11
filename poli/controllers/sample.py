@@ -489,7 +489,7 @@ class SampleController(object):
                           cls.get_functions_filtered(sample1.id)]
 
         sample2_hashes = [f.machoc_hash for f in
-                          cls.get_functions_filtered(sample1.id)]
+                          cls.get_functions_filtered(sample2.id)]
 
         rate = cls.machoc_diff_hashes(sample1_hashes, sample2_hashes)
         return rate
