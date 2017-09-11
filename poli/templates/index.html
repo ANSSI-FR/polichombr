@@ -36,7 +36,7 @@
 		<h1> Welcome to Polichombr </h1>
 	</div>
 
-	{% if g.user.id %}
+	{% if current_user.id %}
         <a data-toggle="modal" data-target="#uploadnewfile" class="btn btn-default">Upload sample</a>
         <a data-toggle="modal" data-target="#uploadmachex" class="btn btn-default">Machex import</a>
         <br />
@@ -76,7 +76,7 @@
 			        <h3 class="panel-title">Your last samples</h3>
                 </div>
 	            <div class="panel-body">
-			  {% for sample in g.user.samples[:15]%}
+			  {% for sample in current_user.samples[:15]%}
                 {{printsample(sample)}}<br />
 			  {% endfor %}
                 </div>

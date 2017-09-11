@@ -123,17 +123,19 @@ class SampleController(object):
         """
         if os.path.exists(sample.storage_file):
             os.remove(sample.storage_file)
-        for act in sample.filenames:
-            db.session.delete(act)
-        for act in sample.functions:
-            db.session.delete(act)
-        for act in sample.actions:
-            db.session.delete(act)
-        for analysis in sample.analysis_data:
-            db.session.delete(analysis)
+
         strings = StringsItem.query.filter_by(sample_id=sample.id).all()
-        for sample_string in strings:
-            db.session.delete(sample_string)
+
+        attributes = [sample.filenames,
+                      sample.functions,
+                      sample.actions,
+                      sample.analysis_data,
+                      strings]
+
+        for attribute in attributes:
+            for item in attribute:
+                db.session.delete(item)
+
         cls.flush_matches(sample)
         db.session.delete(sample)
         db.session.commit()
@@ -489,7 +491,7 @@ class SampleController(object):
                           cls.get_functions_filtered(sample1.id)]
 
         sample2_hashes = [f.machoc_hash for f in
-                          cls.get_functions_filtered(sample1.id)]
+                          cls.get_functions_filtered(sample2.id)]
 
         rate = cls.machoc_diff_hashes(sample1_hashes, sample2_hashes)
         return rate

@@ -24,6 +24,7 @@ from poli.models.models import TLPLevelChoices
 
 
 class ChgThemeForm(FlaskForm):
+
     """
     Change user's theme.
     """
@@ -37,6 +38,7 @@ class ChgThemeForm(FlaskForm):
 
 
 class ChgNickForm(FlaskForm):
+
     """
     Change user's nickname (login).
     """
@@ -45,6 +47,7 @@ class ChgNickForm(FlaskForm):
 
 
 class ChgNameForm(FlaskForm):
+
     """
     Change user's full name.
     """
@@ -53,6 +56,7 @@ class ChgNameForm(FlaskForm):
 
 
 class ChgPassForm(FlaskForm):
+
     """
     Change user's password.
     """
@@ -68,6 +72,7 @@ class ChgPassForm(FlaskForm):
 
 
 class LoginForm(FlaskForm):
+
     """
     User login.
     """
@@ -77,6 +82,7 @@ class LoginForm(FlaskForm):
 
 
 class UserRegistrationForm(FlaskForm):
+
     """
     User registration.
     """
@@ -100,11 +106,12 @@ class UserRegistrationForm(FlaskForm):
 
 
 class CreateCheckListForm(FlaskForm):
+
     """
     Create new checklist item.
     """
     title = StringField("Title", validators=[DataRequired()])
-    description = TextAreaField("Title", validators=[DataRequired()])
+    description = TextAreaField("Content", validators=[DataRequired()])
     changepoke = SubmitField(u'Submit')
 
 
@@ -116,6 +123,7 @@ class CreateCheckListForm(FlaskForm):
 
 
 class YaraForm(FlaskForm):
+
     """
     Create yara.
     """
@@ -134,6 +142,7 @@ class YaraForm(FlaskForm):
 
 
 class FamilyForm(FlaskForm):
+
     """
     Create family.
     """
@@ -142,6 +151,7 @@ class FamilyForm(FlaskForm):
 
 
 class AddSubFamilyForm(FlaskForm):
+
     """
     Create sub-family.
     """
@@ -150,6 +160,7 @@ class AddSubFamilyForm(FlaskForm):
 
 
 class UploadFamilyFileForm(FlaskForm):
+
     """
     Add family file.
     """
@@ -161,6 +172,7 @@ class UploadFamilyFileForm(FlaskForm):
 
 
 class CreateDetectionItemForm(FlaskForm):
+
     """
     Add detection item.
     """
@@ -188,6 +200,7 @@ class CreateDetectionItemForm(FlaskForm):
 
 
 class ChangeTLPForm(FlaskForm):
+
     """
     Change TLP level.
     """
@@ -198,6 +211,7 @@ class ChangeTLPForm(FlaskForm):
 
 
 class ChangeStatusForm(FlaskForm):
+
     """
     Change analysis status.
     """
@@ -216,6 +230,7 @@ class ChangeStatusForm(FlaskForm):
 
 
 class AddYaraToFamilyForm(FlaskForm):
+
     """
     Add yara rule.
     """
@@ -228,6 +243,7 @@ class AddYaraToFamilyForm(FlaskForm):
 
 
 class RenameForm(FlaskForm):
+
     """
     Rename.
     """
@@ -237,6 +253,7 @@ class RenameForm(FlaskForm):
 
 
 class FamilyAbstractForm(FlaskForm):
+
     """
     Edit abstract.
     """
@@ -249,6 +266,7 @@ class FamilyAbstractForm(FlaskForm):
 
 
 class ExportFamilyForm(FlaskForm):
+
     """
     Export family data.
     """
@@ -275,6 +293,7 @@ class ExportFamilyForm(FlaskForm):
 
 
 class UploadSampleForm(FlaskForm):
+
     """
     Upload sample.
     """
@@ -287,6 +306,7 @@ class UploadSampleForm(FlaskForm):
 
 
 class AddSampleToFamilyForm(FlaskForm):
+
     """
     Add sample to family.
     """
@@ -299,6 +319,7 @@ class AddSampleToFamilyForm(FlaskForm):
 
 
 class SampleAbstractForm(FlaskForm):
+
     """
     Edit abstract.
     """
@@ -310,6 +331,7 @@ class SampleAbstractForm(FlaskForm):
 
 
 class CompareMachocForm(FlaskForm):
+
     """
     Compare to other samples.
     """
@@ -319,6 +341,7 @@ class CompareMachocForm(FlaskForm):
 
 
 class ExportMachexForm(FlaskForm):
+
     """
     Export MACHEX data.
     """
@@ -329,15 +352,11 @@ class ExportMachexForm(FlaskForm):
     abstracts = BooleanField(u'Abstract')
     metadata = BooleanField(u'File metadata (PE, ELF...)')
     estrings = BooleanField(u'Strings')
-    sampleid = HiddenField(
-        u'sampleid',
-        default="1",
-        validators=[
-            InputRequired()])
     export = SubmitField(u'Submit')
 
 
 class ImportForm(FlaskForm):
+
     """
     Import MACHEX data.
     """
@@ -348,6 +367,7 @@ class ImportForm(FlaskForm):
 
 
 class FullTextSearchForm(FlaskForm):
+
     """
     Full-text search.
     """
@@ -356,6 +376,7 @@ class FullTextSearchForm(FlaskForm):
 
 
 class MachocHashSearchForm(FlaskForm):
+
     """
     Full machoc hash search.
     """
@@ -366,6 +387,7 @@ class MachocHashSearchForm(FlaskForm):
 
 
 class HashSearchForm(FlaskForm):
+
     """
     Hash search.
     """

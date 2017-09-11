@@ -1,6 +1,6 @@
 """
     This file is part of Polichombr
-    (c) 2016 Tristan Pourcelot <tristan.pourcelot@ssi.gouv.fr>
+    (c) 2017 ANSSI-FR
     Published without any garantee under CeCill v2 license.
 
     This file contains the module to use the external polichombr REST API.

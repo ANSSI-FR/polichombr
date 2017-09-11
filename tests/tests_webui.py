@@ -196,6 +196,37 @@ class WebUIBaseTests(WebUIBaseClass):
         self.assertIn(
             "<h3 class=\"panel-title\">TEST_YARA_RENAMED</h3>", retval.data)
 
+        # test wrong yara format
+
+        data = dict(yara_name="WRONG YARA",
+                    yara_raw=rule_text.replace("strings", "wrong_string"),
+                    yara_tlp=1)
+        retval = self.app.post("/signatures/", data=data)
+        self.assertEqual(retval.status_code, 200)
+        self.assertIn("Error during yara creation", retval.data)
+
+    def test_delete_yara(self):
+        self.login("john", "password")
+        self.create_sample()
+        rule_text = """rule toto{
+            strings:
+                $1 = {4D 5A}
+            condition:
+                $1 at 0
+        }"""
+
+        data = dict(yara_name="TEST_YARA",
+                    yara_raw=rule_text,
+                    yara_tlp=1)
+        retval = self.app.post("/signatures/", data=data)
+
+        retval = self.app.get("/signatures/delete/"+"1")
+        self.assertEqual(retval.status_code, 302)
+
+        retval = self.app.get("/signatures/")
+        self.assertIn("alert alert-success alert-dismissible", retval.data)
+        self.assertIn("Deleted rule TEST_YARA", retval.data)
+
 
 class WebUIFamilyTestCase(WebUIBaseClass):
     """
@@ -524,6 +555,27 @@ class WebUISampleManagementTests(WebUIBaseClass):
         # retval = self.create_sample_from_machex()
         # self.assertEqual(retval.status_code, 200)
 
+    def test_machex_export(self):
+        self.login("john", "password")
+        self.create_sample()
+
+        data = dict(machocfull=True,
+                    fmachoc=True,
+                    fnames=True,
+                    analysis_data=True,
+                    abstracts=True,
+                    metadata=True,
+                    estrings=True)
+
+        retval = self.app.post("/samples/1/machexport/", data=data)
+        self.assertEqual(retval.status_code, 200)
+
+        data = json.loads(retval.data)
+
+        self.assertIn("0f6f0c6b818f072a7a6f02441d00ac69", data["md5"])
+        self.assertEqual(12361, data["size"])
+        self.assertEqual(len(data["filenames"]), 1)
+
     def test_remove_sample_from_family(self):
         self.login("john", "password")
         self.create_sample()
@@ -584,6 +636,36 @@ class WebUISampleManagementTests(WebUIBaseClass):
         retval = self.app.get("/machocdiff/1/2/")
 
         self.assertEqual(retval.status_code, 200)
+
+    def test_checklists(self):
+        self.login("john", "password")
+        retval = self.app.get("/settings/")
+        self.assertEqual(retval.status_code, 200)
+
+        data = dict(title="Test checklist", description="Test Checklist content")
+
+        retval = self.app.post("/settings/", data=data)
+        self.assertEqual(retval.status_code, 200)
+
+        self.create_sample()
+        retval = self.app.get("/sample/1/")
+
+        self.assertIn("Test Checklist content", retval.data)
+        self.assertIn('panel-danger"', retval.data)
+        self.assertIn('href="/sample/1/checkfield/1">toggle</a>', retval.data)
+
+        retval = self.app.get("/sample/1/checkfield/1/")
+        self.assertEqual(retval.status_code, 302)
+
+        retval = self.app.get("/sample/1/")
+        self.assertNotIn('panel-danger"', retval.data)
+        self.assertIn('href="/sample/1/checkfield/1">toggle</a>', retval.data)
+
+        retval = self.app.get("/settings/deletechecklist/1/")
+
+        self.assertEqual(retval.status_code, 302)
+        retval = self.app.get("/settings/")
+        self.assertNotIn("Test Checklist content", retval.data)
 
 
 if __name__ == '__main__':

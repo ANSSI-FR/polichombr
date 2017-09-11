@@ -1,8 +1,7 @@
 """
     This file is part of Polichombr.
 
-    (c) 2016 ANSSI-FR
-
+    (c) 2017 ANSSI-FR
 
     Description:
         Managers for editing and running yara rules
@@ -12,14 +11,48 @@
 import re
 import yara
 
+from sqlalchemy import or_
+
 from poli import app, db
 
 from poli.models.yara_rule import YaraRule
 from poli.models.sample import Sample
 from poli.models.models import TLPLevel
+from poli.models.sample import FunctionInfo
 
 from poli.controllers.jobpool import YaraJobPool
 from poli.controllers.family import FamilyController
+
+
+def run_simple_yara(raw_rule, sample):
+    """
+        Compile and run a yara rule on a given sample
+    """
+    matches = {}
+    if sample.storage_file is None or sample.storage_file == "":
+        return False
+    sample_filepath = sample.storage_file
+
+    try:
+        yara_obj = yara.compile(source=raw_rule)
+        matches = yara_obj.match(data=open(sample_filepath, "rb").read())
+    except Exception as e:
+        app.logger.exception("YARA RULE FAILED: %s" % (e))
+    if len(matches) != 0:
+        return True
+
+
+def filter_funcs_infos(sid, hashes):
+    """
+        Return a query wich filters the func infos
+        from a sample with given machoc hashes
+    """
+    filters = [int(m_hash[8:], 16) for m_hash in hashes]
+    filters = FunctionInfo.machoc_hash.in_(filters)
+    funcs = FunctionInfo.query.filter_by(sample_id=sid)
+    funcs = funcs.filter(or_(filters))
+
+    return funcs
 
 
 def run_extended_yara(raw_rule, sample):
@@ -32,38 +65,22 @@ def run_extended_yara(raw_rule, sample):
         Machoc hashes must have been set in the sample, obviously.
 
     '''
-    matches = {}
-    if sample.storage_file is None or sample.storage_file == "":
-        return False
-    sample_filepath = sample.storage_file
     machoc_prematchs = re.findall("machoc==[0-9a-fA-F]{8}", raw_rule)
     machoc_noprematchs = re.findall("machoc!=[0-9a-fA-F]{8}", raw_rule)
     if len(machoc_noprematchs) != 0:
-        for m_hash in machoc_noprematchs:
-            for s_function in sample.functions:
-                if s_function.machoc_hash == m_hash[8:]:
-                    return False
+        funcs = filter_funcs_infos(sample.id, machoc_noprematchs)
+        if funcs.count() > 0:
+            return False
+
     if len(machoc_prematchs) != 0:
-        for m_hash in machoc_prematchs:
-            flag = 1
-            for s_function in sample.functions:
-                if s_function.machoc_hash == m_hash[8:]:
-                    flag = 0
-                    break
-            if flag == 1:
-                return False
-    try:
-        yara_obj = yara.compile(source=raw_rule)
-        matches = yara_obj.match(data=open(sample_filepath, "rb").read())
-    except Exception as e:
-        app.logger.exception("YARA RULE FAILED: %s" % (e))
-        pass
-    if len(matches) != 0:
-        return True
-    return False
+        funcs = filter_funcs_infos(sample.id, machoc_prematchs)
+        if funcs.count() == 0:
+            return False
+    return run_simple_yara(raw_rule, sample)
 
 
-class YaraSingleTask:
+class YaraSingleTask(object):
+
     """
     Yara task. Used in the yara job pool. We use this task to
     define a yara rule which must be ran on a sample.
@@ -108,7 +125,6 @@ class YaraController(object):
 
     """
         Yara object controller.
-        TODO: rename methods.
     """
 
     jobpool = None
@@ -119,7 +135,8 @@ class YaraController(object):
         """
         self.jobpool = YaraJobPool()
 
-    def get_all(self):
+    @staticmethod
+    def get_all():
         """
         Get all yara rules.
         """
@@ -174,19 +191,33 @@ class YaraController(object):
         return yar.first()
 
     @staticmethod
-    def add_to_sample(sample, yar):
+    def add_to_item(item, yar):
+        """
+            Add a yara to a family or a sample
+        """
+        if yar in item.yaras:
+            return True
+        item.yaras.append(yar)
+
+    @classmethod
+    def add_to_sample(cls, sample, yar):
         """
         Adds yara to a sample. Checks before add. Commits also the yara's
         attached families.
         """
-        if yar in sample.yaras:
-            return True
-        sample.yaras.append(yar)
-        for fam in yar.families:
-            if fam not in sample.families:
-                FamilyController().add_sample(sample, fam)
+        cls.add_to_item(sample, yar)
+        cls.propagate_family(sample, yar)
         db.session.commit()
         return True
+
+    @staticmethod
+    def propagate_family(sample, yar):
+        """
+            Dispatch families from a rule to a sample
+        """
+        for fam in yar.families:
+            if fam not in sample.families:
+                FamilyController.add_sample(sample, fam)
 
     @staticmethod
     def remove_from_family(fam, yar):
@@ -198,19 +229,16 @@ class YaraController(object):
             db.session.commit()
         return True
 
-    @staticmethod
-    def add_to_family(fam, yar):
+    @classmethod
+    def add_to_family(cls, fam, yar):
         """
         Adds a yara rule to a family. Also adds the samples. Sensibility
         is NOT propagated as a generic yara rule may be used to identify
         multiple families.
         """
-        if yar in fam.yaras:
-            return True
-        fam.yaras.append(yar)
+        cls.add_to_item(fam, yar)
         for sample in yar.samples:
-            if fam not in sample.families:
-                FamilyController().add_sample(sample, fam)
+            cls.propagate_family(sample, yar)
         db.session.commit()
         return True
 

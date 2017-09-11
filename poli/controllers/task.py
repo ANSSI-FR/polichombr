@@ -13,6 +13,7 @@ from poli import app
 
 
 class Task(object):
+
     """
         Abstract class to define a task to execute.
     """

@@ -67,6 +67,7 @@ def execute_yara_task(mqueue):
 
 
 class JobPool(object):
+
     """
     Pool container.
     """
@@ -94,6 +95,7 @@ class JobPool(object):
 
 
 class YaraJobPool(object):
+
     """
     Yara pool container.
     """

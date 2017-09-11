@@ -29,6 +29,7 @@ from poli.models.sample import FunctionInfo
 
 
 class APIControl(object):
+
     """
         Object used as a global API.
         Data controllers are used for direct data manipulation.
@@ -151,12 +152,13 @@ class APIControl(object):
                     abort 404 if not found,
                     and abort 500 if the type is incorrect
         """
-        elem_types = {"sample": self.samplecontrol.get_by_id,
-                      "family": self.familycontrol.get_by_id,
-                      "checklist": self.samplecontrol.get_checklist_by_id,
-                      "family_file": self.familycontrol.get_file_by_id,
-                      "detection_item": self.familycontrol.get_detection_item_by_id,
-                      "yara": self.yaracontrol.get_by_id}
+        elem_types = {
+            "sample": self.samplecontrol.get_by_id,
+            "family": self.familycontrol.get_by_id,
+            "checklist": self.samplecontrol.get_checklist_by_id,
+            "family_file": self.familycontrol.get_file_by_id,
+            "detection_item": self.familycontrol.get_detection_item_by_id,
+            "yara": self.yaracontrol.get_by_id}
         try:
             elem = elem_types[element_type](element_id)
         except KeyError:
