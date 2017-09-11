@@ -33,7 +33,7 @@ for h in g_logger.handlers:
 g_logger.setLevel(logging.DEBUG)
 handler = logging.StreamHandler()
 format_str = '[%(asctime)s] [%(levelname)s] [%(threadName)s]: %(message)s'
-formatter = logging.Formatter(format_str, datefmt='%d/%m/%Y %I:%M')
+formatter = logging.Formatter(format_str, datefmt='%d/%m/%Y %I:%M:%S')
 handler.setFormatter(formatter)
 g_logger.addHandler(handler)
 
@@ -1011,10 +1011,9 @@ class SkelSyncAgent(threading.Thread):
             try:
                 self.update_event.wait()
                 self.update_event.clear()
-                timeout = self.skel_settings.sync_frequency
-                if self.kill_event.wait(timeout):
-                    return 0
                 # if we are up, sync names
+                if self.kill_event.wait(float(self.delay)/1000):
+                    return 0
                 self.sync_names()
             except Exception as mye:
                 g_logger.exception(mye)
@@ -1278,7 +1277,6 @@ class SkelCore(object):
         # Synchronize the sample
         self.skel_sync_agent = SkelSyncAgent()
         self.skel_sync_agent.setup_config(settings_filename)
-        self.skel_sync_agent.setup_timer()
 
         # setup hooks
         self.skel_hooks = SkelHooks(self.skel_conn)
@@ -1382,7 +1380,7 @@ def PLUGIN_ENTRY():
     """
         IDAPython plugin wrapper
     """
-    idc.Wait()
+    idaapi.autoWait()
     return SkelenoxPlugin()
 
 
@@ -1415,4 +1413,5 @@ class SkelenoxPlugin(idaapi.plugin_t):
 
 if __name__ == '__main__':
     # RUN !
+    idaapi.autoWait()
     skel = launch_skelenox()
