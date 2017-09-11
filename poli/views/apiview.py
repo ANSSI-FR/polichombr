@@ -255,7 +255,6 @@ def api_post_family(fam_name):
 
 
 @apiview.route('/family/<int:family_id>/attachment/<int:file_id>/')
-@login_required
 def download_family_file(family_id, file_id):
     """
     Family attachment download endpoint.
