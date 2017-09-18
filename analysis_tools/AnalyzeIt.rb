@@ -436,6 +436,13 @@ end
     "GetTokenInformation"=>{'args'=>[nil,'TIC'],'tags'=>['Token_']},
     "AdjustTokenPrivileges"=>{'args'=>[],'tags'=>['Token_']},
     "LookupPrivilegeValueW"=>{'args'=>['PWSTR','PWSTR'],'tags'=>['Priv_']},
+	"FindResourceW"=>{'args'=>['nil', 'PWSTR', 'PWSTR'], 'tags'=>['RESOURCE_']},
+	"FindResourceA"=>{'args'=>['nil', 'PSTR', 'PSTR'], 'tags'=>['RESOURCE_']},
+	"WaitNamedPipeW"=>{'args'=>['PWSTR','UINT'], 'tags'=>['PIPE_']},
+	"WaitNamedPipeA"=>{'args'=>['PSTR','UINT'], 'tags'=>['PIPE_']},
+	"CreateNamedPipeW"=>{'args'=>["PWSTR",'UINT', 'UINT', 'UINT', 'UINT', 'UINT', 'UINT', 'UINT', 'UINT'], 'tags'=>["PIPE_"]},
+	"CreateNamedPipeA"=>{'args'=>["PSTR",'UINT', 'UINT', 'UINT', 'UINT', 'UINT', 'UINT', 'UINT', 'UINT'], 'tags'=>["PIPE_"]},
+	"ConnectNamedPipe"=>{'args'=>[nil, nil], 'tags'=>["PIPE_"]},
 }
 
 def checkCall(strFunc, xrefCall)
@@ -978,7 +985,7 @@ strings = strings.sort.uniq
 @strAntiAV = []
 tmpstrings = []
 
-
+# Get rebuilded strings
 movebpstack = []
 dasm.decoded.each{|addr, di|
     if (di.instruction.to_s =~ /^mov .*\[ebp-[0-9a-f]*h{0,1}\], [0-9a-f]*h{0,1}$/n)
@@ -1325,9 +1332,7 @@ end
     @IDAscript += "idc.MakeRptCmt::0x#{addr.to_s(16)}::#{cComment}\n"
 }
 
-if not File.exist?("#{target}.idacmd")
-    File.open("#{target}.idacmd", 'wb') { |file| file.write("#{@IDAscript}nop() # Polichombr 1337 - Skelenox 1337 too ;]") }
-end
+File.open("#{target}.idacmd", 'wb') { |file| file.write("#{@IDAscript}nop() # Polichombr 1337 - Skelenox 1337 too ;]") }
 
 @file.write("\n")
 @file.close
