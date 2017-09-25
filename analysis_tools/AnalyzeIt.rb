@@ -221,7 +221,6 @@ class PoliUtils
 	def self.poliLinkAddr(address)
 		"[0x#{address.to_s(16)}](./disassemble/#{address.to_s(16)})"
 	end
-
 end
 
 def AddTagFunction(funcaddr, tagname)
@@ -665,7 +664,7 @@ def printSubCallTree(fromaddr, toaddr,indent,cnt)
                 log("    [...]")
             end
             return if @glinestree < 1
-            log(space1+"       +- #{PoliUtils.poliLinkAddr(tdi_addr)}")
+            log(space1+"       +- 0x#{tdi_addr.to_s(16)}")
             if i == cnt
                 tindent << [indent.length,false]
             else
@@ -697,7 +696,7 @@ def printCallTree(fromaddr, toaddr)
             end
             log("\n") if @glinestree < 1
             return if @glinestree < 1
-            log("       +- #{PoliUtils.poliLinkAddr(tdi_addr)}")
+			log("       +- 0x#{tdi_addr.to_s(16)}")
             if i == countSubCallTree(fromaddr, toaddr)
                 printSubCallTree(tdi_addr, toaddr, [[0,false]],countSubCallTree(tdi_addr, toaddr))
             else
@@ -752,7 +751,18 @@ dasm.disassemble_fast_deep(*entrypoints)
 
 puts "  [*] Crawling uncovered code..." if defined?($VERBOSEOPT)
 
-codePatterns = ["\x8b\xff", "\x55\x8b\xec", "\x55\x89\xe5", "\xff\x25", "\xff\x15", /\x68....\xe8/n,"\x48\x83\xec", "\x48\x89\x5c\x24"]
+codePatterns = ["\x8b\xff",
+				"\x55\x8b\xec",
+				"\x55\x89\xe5",
+				"\xff\x25",
+				"\xff\x15",
+				/\x68....\xe8/n,
+				"\x48\x83\xec",
+				"\x48\x89\x5c\x24",
+				"\x55\x48\x8B\xec", # push rbp; mov rbp, rsp;
+				#"\x40\x55\x41\x54\x41\x55", # push    rbp;push    r12;push   r13
+				"\x40\x55", #push    rbp
+]
 
 @treefuncs = []
 
@@ -1046,7 +1056,6 @@ dasm.decoded.each{|addr, di|
     end
     movebpstack = [] if ((di.opcode.props[:setip] == true) or (di.opcode.props[:stopexec] == true))
 }
-
 strings.each{|addr, str|
     tmpstrings << [addr, str]
 }
@@ -1096,7 +1105,7 @@ tmpstrings.each{|addr, str|
 }
 
 if (@instrAntiDBG.length > 0)
-    log("\nListe instructions suceptible de detecter la presence d'un debugger :")
+    log("\nDebugger detection instructions :")
     log ("")
     @instrAntiDBG.each{|di|
         log("  * #{PoliUtils.poliLinkAddr(di.address)} '#{di.instruction.to_s}'")
