@@ -5,38 +5,24 @@ require './metasm/metasm'
 include Metasm
 
 require 'pp'
-require 'digest/md5'
 require 'date'
 require 'optparse'
 
-opts = {}
 OptionParser.new { |opt|
 	opt.banner = 'Usage: AnalyzeIt.rb [-f] <executable>'
 	opt.on('-f', '--fast', 'use fast disassemble') { $FASTDISAS = true }
 	opt.on('-v', '--verbose', 'use fast disassemble') { $VERBOSEOPT = true }
-	opt.on('-g', '--gui', 'show GUI at end of script') { $SHOWGUI = true }
-	opt.on('-p', '--peid', 'Use PEiD database') { $SHOWGUI = true }
-	opt.on('-u', '--update', 'update sql') { $UPDATE_SQL = true }
-	opt.on('-s', '--simple', 'simple output (no sql / not verbose)') { $SIMPLE = true }
 }.parse!(ARGV)
 
 Encoding.default_internal = Encoding.find('ASCII-8BIT')
 Encoding.default_external = Encoding.find('ASCII-8BIT')
 
-@sqlrapport = ""
 @IDAscript = ""
-
-@sectionsInfos = {}
-
-ori_renamed_functions = {}
-ori_comments = {}
-knownCfg = {}
 
 @tbFuncName = {}
 @tbComments = {}
 
 # $VERBOSE = true
-# $SHOWGUI = 1
 
 cryptoPatterns = [["AES_forward_box",["\x63\x7c\x77\x7b\xf2\x6b\x6f\xc5\x30\x01\x67\x2b\xfe\xd7\xab\x76","\xca\x82\xc9\x7d\xfa\x59\x47\xf0\xad\xd4\xa2\xaf\x9c\xa4\x72\xc0","\xb7\xfd\x93\x26\x36\x3f\xf7\xcc\x34\xa5\xe5\xf1\x71\xd8\x31\x15","\x04\xc7\x23\xc3\x18\x96\x05\x9a\x07\x12\x80\xe2\xeb\x27\xb2\x75","\x09\x83\x2c\x1a\x1b\x6e\x5a\xa0\x52\x3b\xd6\xb3\x29\xe3\x2f\x84","\x53\xd1\x00\xed\x20\xfc\xb1\x5b\x6a\xcb\xbe\x39\x4a\x4c\x58\xcf","\xd0\xef\xaa\xfb\x43\x4d\x33\x85\x45\xf9\x02\x7f\x50\x3c\x9f\xa8","\x51\xa3\x40\x8f\x92\x9d\x38\xf5\xbc\xb6\xda\x21\x10\xff\xf3\xd2","\xcd\x0c\x13\xec\x5f\x97\x44\x17\xc4\xa7\x7e\x3d\x64\x5d\x19\x73","\x60\x81\x4f\xdc\x22\x2a\x90\x88\x46\xee\xb8\x14\xde\x5e\x0b\xdb","\xe0\x32\x3a\x0a\x49\x06\x24\x5c\xc2\xd3\xac\x62\x91\x95\xe4\x79","\xe7\xc8\x37\x6d\x8d\xd5\x4e\xa9\x6c\x56\xf4\xea\x65\x7a\xae\x08","\xba\x78\x25\x2e\x1c\xa6\xb4\xc6\xe8\xdd\x74\x1f\x4b\xbd\x8b\x8a","\x70\x3e\xb5\x66\x48\x03\xf6\x0e\x61\x35\x57\xb9\x86\xc1\x1d\x9e","\xe1\xf8\x98\x11\x69\xd9\x8e\x94\x9b\x1e\x87\xe9\xce\x55\x28\xdf","\x8c\xa1\x89\x0d\xbf\xe6\x42\x68\x41\x99\x2d\x0f\xb0\x54\xbb\x16"]],
 ["AES_inverse_box",["\x52\x09\x6a\xd5\x30\x36\xa5\x38\xbf\x40\xa3\x9e\x81\xf3\xd7\xfb","\x7c\xe3\x39\x82\x9b\x2f\xff\x87\x34\x8e\x43\x44\xc4\xde\xe9\xcb","\x54\x7b\x94\x32\xa6\xc2\x23\x3d\xee\x4c\x95\x0b\x42\xfa\xc3\x4e","\x08\x2e\xa1\x66\x28\xd9\x24\xb2\x76\x5b\xa2\x49\x6d\x8b\xd1\x25","\x72\xf8\xf6\x64\x86\x68\x98\x16\xd4\xa4\x5c\xcc\x5d\x65\xb6\x92","\x6c\x70\x48\x50\xfd\xed\xb9\xda\x5e\x15\x46\x57\xa7\x8d\x9d\x84","\x90\xd8\xab\x00\x8c\xbc\xd3\x0a\xf7\xe4\x58\x05\xb8\xb3\x45\x06","\xd0\x2c\x1e\x8f\xca\x3f\x0f\x02\xc1\xaf\xbd\x03\x01\x13\x8a\x6b","\x3a\x91\x11\x41\x4f\x67\xdc\xea\x97\xf2\xcf\xce\xf0\xb4\xe6\x73","\x96\xac\x74\x22\xe7\xad\x35\x85\xe2\xf9\x37\xe8\x1c\x75\xdf\x6e","\x47\xf1\x1a\x71\x1d\x29\xc5\x89\x6f\xb7\x62\x0e\xaa\x18\xbe\x1b","\xfc\x56\x3e\x4b\xc6\xd2\x79\x20\x9a\xdb\xc0\xfe\x78\xcd\x5a\xf4","\x1f\xdd\xa8\x33\x88\x07\xc7\x31\xb1\x12\x10\x59\x27\x80\xec\x5f","\x60\x51\x7f\xa9\x19\xb5\x4a\x0d\x2d\xe5\x7a\x9f\x93\xc9\x9c\xef","\xa0\xe0\x3b\x4d\xae\x2a\xf5\xb0\xc8\xeb\xbb\x3c\x83\x53\x99\x61","\x17\x2b\x04\x7e\xba\x77\xd6\x26\xe1\x69\x14\x63\x55\x21\x0c\x7d"]],
@@ -140,173 +126,254 @@ cryptoPatterns = [["AES_forward_box",["\x63\x7c\x77\x7b\xf2\x6b\x6f\xc5\x30\x01\
 ["MT19937 coefficient (Mersenne Twister)",["\x65\x89\x07\x6C","\x80\x56\x2C\x9D","\x00\x00\x6C\xEF","\xDF\xB0\x08\x99"]],
 ["RC5/RC6 magic",["\x63\x51\xe1\xb7","\x62\x51\xe1\xb7","\x6b\x2a\xed\x8a","\xb9\x79\x37\x9e","\x15\x7c\x4a\x7f"]]]
 
-MASK32 = 0xffffffff
-def murmur3_32_rotl(x, r)
-  ((x << r) | (x >> (32 - r))) & MASK32
+class MurmurHash
+	MASK32 = 0xffffffff
+	def self.murmur3_32_rotl(x, r)
+	  ((x << r) | (x >> (32 - r))) & MASK32
+	end
+
+
+	def self.murmur3_32_fmix(h)
+	  h &= MASK32
+	  h ^= h >> 16
+	  h = (h * 0x85ebca6b) & MASK32
+	  h ^= h >> 13
+	  h = (h * 0xc2b2ae35) & MASK32
+	  h ^ (h >> 16)
+	end
+
+	def self.murmur3_32__mmix(k1)
+	  k1 = (k1 * 0xcc9e2d51) & MASK32
+	  k1 = murmur3_32_rotl(k1, 15)
+	  (k1 * 0x1b873593) & MASK32
+	end
+
+	def self.murmur3_32_str_hash(str, seed=0)
+	  h1 = seed
+	  numbers = str.unpack('V*C*')
+	  tailn = str.bytesize % 4
+	  tail = numbers.slice!(numbers.size - tailn, tailn)
+	  for k1 in numbers
+		h1 ^= murmur3_32__mmix(k1)
+		h1 = murmur3_32_rotl(h1, 13)
+		h1 = (h1*5 + 0xe6546b64) & MASK32
+	  end
+	  unless tail.empty?
+		k1 = 0
+		tail.reverse_each do |c1|
+		  k1 = (k1 << 8) | c1
+		end
+		h1 ^= murmur3_32__mmix(k1)
+	  end
+
+	  h1 ^= str.bytesize
+	  murmur3_32_fmix(h1)
+	end
 end
 
-
-def murmur3_32_fmix(h)
-  h &= MASK32
-  h ^= h >> 16
-  h = (h * 0x85ebca6b) & MASK32
-  h ^= h >> 13
-  h = (h * 0xc2b2ae35) & MASK32
-  h ^ (h >> 16)
+class MachocHash
+	# Class implementing the machoc hash calculation
+	def self.calculate_machoc_hash(dasm)
+		@fullFuncSign = ""
+		@fullHashSign = ""
+		@listoffunct = []
+		dasm.function.each{|addr, symb|
+			@listoffunct << addr if addr.to_s =~ /^[0-9]+$/
+		}
+		@listoffunct = @listoffunct.sort
+		@listoffunct .each{|addr|
+			if addr.to_s =~ /^[0-9]+$/
+				i = 1
+				currFunc = ""
+				@treefunc = dasm.each_function_block(addr)
+				@treefunc = @treefunc.sort
+				@treetbfunc = []
+				@treefunc.each{|b|
+					@treetbfunc << b
+				}
+				@treefunc.each{|bloc|
+					currFunc += "#{i.to_s()}:"
+					dasm.di_at(bloc[0]).block.list.each{|di|
+						currFunc += "," if di.opcode.name == 'call' and currFunc[-1] == 'c'
+						currFunc += "c" if di.opcode.name == 'call'
+					}
+					refs = bloc[1]
+					refs = refs.sort
+					refs.each{|to_ref|
+						for y in 0..@treetbfunc.length
+							next if @treetbfunc[y] == nil
+							currFunc += "," if to_ref == @treetbfunc[y][0] and currFunc[-1] != ',' and currFunc[-1] != ':'
+							currFunc += "#{(y+1).to_s()}" if to_ref == @treetbfunc[y][0]
+						end
+					}
+					i += 1
+					currFunc += ";"
+				}
+				@fullFuncSign += currFunc
+				@fullHashSign += ("%08x" % MurmurHash.murmur3_32_str_hash(currFunc))+":#{addr.to_s(16)};"
+			end
+		}
+		return @fullHashSign
+	end
 end
 
-def murmur3_32__mmix(k1)
-  k1 = (k1 * 0xcc9e2d51) & MASK32
-  k1 = murmur3_32_rotl(k1, 15)
-  (k1 * 0x1b873593) & MASK32
-end
-
-def murmur3_32_str_hash(str, seed=0)
-  h1 = seed
-  numbers = str.unpack('V*C*')
-  tailn = str.bytesize % 4
-  tail = numbers.slice!(numbers.size - tailn, tailn)
-  for k1 in numbers
-    h1 ^= murmur3_32__mmix(k1)
-    h1 = murmur3_32_rotl(h1, 13)
-    h1 = (h1*5 + 0xe6546b64) & MASK32
-  end
-  
-  
-  unless tail.empty?
-    k1 = 0
-    tail.reverse_each do |c1|
-      k1 = (k1 << 8) | c1
-    end
-    h1 ^= murmur3_32__mmix(k1)
-  end
-
-  h1 ^= str.bytesize
-  murmur3_32_fmix(h1)
-end
-
-def poliLinkAddr(address)
-    "[0x#{address.to_s(16)}](./disassemble/#{address.to_s(16)})"
+class PoliUtils
+	def self.poliLinkAddr(address)
+		"[0x#{address.to_s(16)}](./disassemble/#{address.to_s(16)})"
+	end
 end
 
 def AddTagFunction(funcaddr, tagname)
-    if @tbFuncName[funcaddr] == nil
-        @tbFuncName[funcaddr] = tagname+"sub_#{funcaddr.to_s(16).upcase}"
-    else
-        @tbFuncName[funcaddr] = tagname+@tbFuncName[funcaddr] if not @tbFuncName[funcaddr].include?(tagname)
-    end
+	if @tbFuncName[funcaddr] == nil
+		@tbFuncName[funcaddr] = tagname+"sub_#{funcaddr.to_s(16).upcase}"
+	else
+		@tbFuncName[funcaddr] = tagname+@tbFuncName[funcaddr] if not @tbFuncName[funcaddr].include?(tagname)
+	end
 end
 
-def is_linked_block(di, start_address)
-    result = false
-    @loopcount += 1
-    return false if @loopcount > 500
-    return result if not defined?(di.block)
-    return result if di.block.to_normal == nil
-    di.block.to_normal.each{|tdi_addr|
-        tdi = $gdasm.di_at(tdi_addr)
-        next if not defined?(tdi.block)
-        return true if tdi.block.address == start_address
-        next if @blocks_done.include? tdi.address
-        @blocks_done << tdi.block.address
-        return true if is_linked_block(tdi, start_address)
-    }
-    result
-end
+class MetasmUtils
 
-def is_looping(di)
-    @blocks_done = []
-    @loopcount = 0
-    result = false
+	def self.is_linked_block(di, start_address)
+		result = false
+		@loopcount += 1
+		return false if @loopcount > 500
+		return result if not defined?(di.block)
+		return result if di.block.to_normal == nil
+		di.block.to_normal.each{|tdi_addr|
+			tdi = $gdasm.di_at(tdi_addr)
+			next if not defined?(tdi.block)
+			return true if tdi.block.address == start_address
+			next if @blocks_done.include? tdi.address
+			@blocks_done << tdi.block.address
+			return true if self.is_linked_block(tdi, start_address)
+		}
+		result
+	end
 
-    return result if not defined?(di.block)
-    return result if di.block.to_normal == nil
-    start_address = di.block.address
+	def self.is_looping(di)
+		@blocks_done = []
+		@loopcount = 0
+		result = false
 
-    di.block.to_normal.each{|tdi_addr|
-        tdi = $gdasm.di_at(tdi_addr)
-        next if not defined?(tdi.block)
-        return true if tdi.block.address == start_address
-        next if @blocks_done.include? di.address
-        @blocks_done << tdi.block.address
-        return true if is_linked_block(tdi, start_address)
-    }
-    result
-end
+		return result if not defined?(di.block)
+		return result if di.block.to_normal == nil
+		start_address = di.block.address
 
+		di.block.to_normal.each{|tdi_addr|
+			tdi = $gdasm.di_at(tdi_addr)
+			next if not defined?(tdi.block)
+			return true if tdi.block.address == start_address
+			next if @blocks_done.include? di.address
+			@blocks_done << tdi.block.address
+			return true if self.is_linked_block(tdi, start_address)
+		}
+		result
+	end
 
-def getArg(addrori,arg)
-    di = $gdasm.di_at(addrori)
-    return nil if not defined?(di.opcode)
-    
-    carg = 0
-    esp = 4*arg
-    if di.opcode.name == "call"
-        i = di.block.list.length
-        while i > 0
-            if di.block.list[i-1].address == addrori
-                i -= 1
-                while i > 0
-                    if di.block.list[i-1].opcode.name == 'push'
-                        if carg == arg
-                            return $gdasm.normalize(di.block.list[i-1].instruction.args.first)
-                        end
-                        carg += 1
-                        esp -= 4
-                    end
-                    if (di.block.list[i-1].opcode.name == 'mov') and ((di.block.list[i-1].instruction.args.first.to_s == "dword ptr [esp+0#{arg.to_s(16)}h]") or (((di.block.list[i-1].instruction.args.first.to_s == "dword ptr [esp]") and (esp == 0))))
-                        return $gdasm.normalize(di.block.list[i-1].instruction.args.last)
-                    end
-                    
-                    if di.block.list[i-1].opcode.name == 'call'
-                        return nil
-                    end
-                    i -= 1
-                end
-            end
-            i -= 1
-        end
-    end
-    if di.opcode.name == "mov"
-        creg = di.instruction.args.first
-        i = 0
-        carg = 0
-        while i < di.block.list.length
-            if di.block.list[i].address == addrori
-                while i < di.block.list.length
-                    if di.block.list[i].opcode.name == 'call' and di.block.list[i].instruction.args.first == creg
-                        i -= 1
-                        while i >= 0
-                            if di.block.list[i].opcode.name == 'push'
-                                if carg == arg
-                                    return $gdasm.normalize(di.block.list[i].instruction.args.first)
-                                end
-                                carg += 1
-                                esp -= 4
-                            end
-                            if di.block.list[i].opcode.name == 'mov' and ((di.block.list[i].instruction.args.first.to_s == "[esp+0#{(arg).to_s(16)}h]" or ((di.block.list[i].instruction.args.first.to_s == "dword ptr [esp]") and esp == 0)))
-                                return di.block.list[i].instruction.args.last
-                            end
-                            
-                            if di.block.list[i].opcode.name == 'call'
-                                return nil
-                            end
-                            i -= 1
-                        end
-                        return nil
-                    end
-                    i += 1
-                end
-            end
-            i += 1
-        end
-    end
+	def self.getArg(addrori,arg)
+		di = $gdasm.di_at(addrori)
+		return nil if not defined?(di.opcode)
+
+		carg = 0
+		esp = 4*arg
+		if di.opcode.name == "call"
+			i = di.block.list.length
+			while i > 0
+				if di.block.list[i-1].address == addrori
+					i -= 1
+					while i > 0
+						if di.block.list[i-1].opcode.name == 'push'
+							if carg == arg
+								return $gdasm.normalize(di.block.list[i-1].instruction.args.first)
+							end
+							carg += 1
+							esp -= 4
+						end
+						if (di.block.list[i-1].opcode.name == 'mov') and ((di.block.list[i-1].instruction.args.first.to_s == "dword ptr [esp+0#{arg.to_s(16)}h]") or (((di.block.list[i-1].instruction.args.first.to_s == "dword ptr [esp]") and (esp == 0))))
+							return $gdasm.normalize(di.block.list[i-1].instruction.args.last)
+						end
+
+						if di.block.list[i-1].opcode.name == 'call'
+							return nil
+						end
+						i -= 1
+					end
+				end
+				i -= 1
+			end
+		end
+		if di.opcode.name == "mov"
+			creg = di.instruction.args.first
+			i = 0
+			carg = 0
+			while i < di.block.list.length
+				if di.block.list[i].address == addrori
+					while i < di.block.list.length
+						if di.block.list[i].opcode.name == 'call' and di.block.list[i].instruction.args.first == creg
+							i -= 1
+							while i >= 0
+								if di.block.list[i].opcode.name == 'push'
+									if carg == arg
+										return $gdasm.normalize(di.block.list[i].instruction.args.first)
+									end
+									carg += 1
+									esp -= 4
+								end
+								if di.block.list[i].opcode.name == 'mov' and ((di.block.list[i].instruction.args.first.to_s == "[esp+0#{(arg).to_s(16)}h]" or ((di.block.list[i].instruction.args.first.to_s == "dword ptr [esp]") and esp == 0)))
+									return di.block.list[i].instruction.args.last
+								end
+
+								if di.block.list[i].opcode.name == 'call'
+									return nil
+								end
+								i -= 1
+							end
+							return nil
+						end
+						i += 1
+					end
+				end
+				i += 1
+			end
+		end
+	end
+
+	# is_modrm : ensure that arg is a modrm : [esp+4], etc.
+	def self.is_modrm(arg)
+		return (arg and arg.kind_of? Ia32::ModRM)
+	end
+
+	def self.find_start_of_function(address)
+		blocks = []
+		di = $gdasm.di_at(address)
+		return nil if not defined?(di.instruction)
+		return nil if not defined?(di.block)
+		while (defined?(di.block.from_normal.length) and di.block.from_normal.length > 0) or (defined?(di.block.from_subfuncret.length) and di.block.from_subfuncret.length > 0)
+			if defined?(di.block.from_normal.length)
+				i = 0
+				while blocks.include? di.block.from_normal[i] and i < di.block.from_normal.length
+					i+=1
+				end
+			end
+
+			if di.block.list[0].block.from_normal == nil and di.block.list[0].block.from_subfuncret != nil and di.block.list[0].block.from_subfuncret.length == 1
+				blocks << di.address
+				di = $gdasm.di_at(di.block.list[0].block.from_subfuncret[0])
+			elsif
+				blocks << di.address
+				di.block.list[0].block.from_normal != nil
+				di = $gdasm.di_at(di.block.from_normal[i])
+			end
+			return nil if not defined?(di.block)
+			return di.block.list[0].address if $gdasm.function[di.block.list[0].address]
+		end
+		return di.block.list[0].address if $gdasm.function[di.block.list[0].address]
+		return nil
+	end
 end
 
 @functionsDecoders = {
     "IsDebuggerPresent"=>{'args'=>[],'tags'=>[]},
-    "OpenSCManagerW"=>{'args'=>['PWSTR','PWSTR'],'tags'=>[]},
-    "OpenSCManagerA"=>{'args'=>['PSTR','PSTR'],'tags'=>[]},
     "CreateProcessW"=>{'args'=>['PWSTR','PWSTR'],'tags'=>['Proc_']},
     "CreateServiceA"=>{'args'=>[nil,'PSTR','PSTR'],'tags'=>['Serv_']},
     "WinExec"=>{'args'=>['PSTR'],'tags'=>['Proc_']},
@@ -368,27 +435,34 @@ end
     "GetTokenInformation"=>{'args'=>[nil,'TIC'],'tags'=>['Token_']},
     "AdjustTokenPrivileges"=>{'args'=>[],'tags'=>['Token_']},
     "LookupPrivilegeValueW"=>{'args'=>['PWSTR','PWSTR'],'tags'=>['Priv_']},
+	"FindResourceW"=>{'args'=>['nil', 'PWSTR', 'PWSTR'], 'tags'=>['RESOURCE_']},
+	"FindResourceA"=>{'args'=>['nil', 'PSTR', 'PSTR'], 'tags'=>['RESOURCE_']},
+	"WaitNamedPipeW"=>{'args'=>['PWSTR','UINT'], 'tags'=>['PIPE_']},
+	"WaitNamedPipeA"=>{'args'=>['PSTR','UINT'], 'tags'=>['PIPE_']},
+	"CreateNamedPipeW"=>{'args'=>["PWSTR",'UINT', 'UINT', 'UINT', 'UINT', 'UINT', 'UINT', 'UINT', 'UINT'], 'tags'=>["PIPE_"]},
+	"CreateNamedPipeA"=>{'args'=>["PSTR",'UINT', 'UINT', 'UINT', 'UINT', 'UINT', 'UINT', 'UINT', 'UINT'], 'tags'=>["PIPE_"]},
+	"ConnectNamedPipe"=>{'args'=>[nil, nil], 'tags'=>["PIPE_"]},
 }
 
 def checkCall(strFunc, xrefCall)
-    basefunc = find_start_of_function(xrefCall)
+    basefunc = MetasmUtils.find_start_of_function(xrefCall)
     if basefunc != nil
         log("")
-        log("Top of function : #{poliLinkAddr(basefunc)} ; Top of block : #{poliLinkAddr($gdasm.di_at(xrefCall).block.list[0].address)}")
+        log("Top of function : #{PoliUtils.poliLinkAddr(basefunc)} ; Top of block : #{PoliUtils.poliLinkAddr($gdasm.di_at(xrefCall).block.list[0].address)}")
         log("")
     end
-    
+
     cfunctionDecoder = @functionsDecoders[strFunc]
     return if cfunctionDecoder == nil
-    
-    printString = "  *   #{poliLinkAddr(xrefCall)} -> #{strFunc}("
+
+    printString = "  *   #{PoliUtils.poliLinkAddr(xrefCall)} -> #{strFunc}("
     decoded_arg = false
     decoded_arg = true if cfunctionDecoder['args'].length == 0
     for i in 0...cfunctionDecoder['args'].length
         decodeType = cfunctionDecoder['args'][i]
         next if decodeType == nil
         strArg = nil
-        carg = getArg(xrefCall,i)
+        carg = MetasmUtils.getArg(xrefCall,i)
         case decodeType
             when 'PSTR'
                 if $gdasm.decode_strz(carg)
@@ -465,81 +539,21 @@ def checkCall(strFunc, xrefCall)
                 strArg = '' if strArg == nil
         end
         decoded_arg = true if strArg != nil and strArg != ''
-        
+
         printString += ',' if printString[-1] != '('
-        
+
         if strArg != nil
             printString += strArg
         end
     end
     printString += ')'
-    
+
     cfunctionDecoder['tags'].each{|ctag|
         AddTagFunction(basefunc, ctag) if basefunc != nil
     }
-    
-    
     if decoded_arg == true
         log(printString)
     end
-    
-end
-
-# is_modrm : ensure that arg is a modrm : [esp+4], etc.
-def is_modrm(arg)
-    return (arg and arg.kind_of? Ia32::ModRM)
-end
-
-def find_start_of_function(address)
-    blocks = []
-    di = $gdasm.di_at(address)
-    return nil if not defined?(di.instruction)
-    return nil if not defined?(di.block)
-    while (defined?(di.block.from_normal.length) and di.block.from_normal.length > 0) or (defined?(di.block.from_subfuncret.length) and di.block.from_subfuncret.length > 0)
-        if defined?(di.block.from_normal.length)
-            max = di.block.from_normal.length
-            i = 0
-            while blocks.include? di.block.from_normal[i] and i < di.block.from_normal.length
-                i+=1
-            end
-        end
-        
-        if di.block.list[0].block.from_normal == nil and di.block.list[0].block.from_subfuncret != nil and di.block.list[0].block.from_subfuncret.length == 1
-            blocks << di.address
-            di = $gdasm.di_at(di.block.list[0].block.from_subfuncret[0])
-        elsif
-            blocks << di.address
-            di.block.list[0].block.from_normal != nil
-            di = $gdasm.di_at(di.block.from_normal[i])
-        end
-        return nil if not defined?(di.block)
-        return di.block.list[0].address if $gdasm.function[di.block.list[0].address]
-    end
-    return di.block.list[0].address if $gdasm.function[di.block.list[0].address]
-    return nil
-end
-
-def getBranch(list, value)
-    currlist = []
-    return false if defined?(list.length) and list.length == 0
-    if not defined?(list.length)
-        return value if list == value
-        return false
-    end
-    i = 0
-    while i < list.length
-        if list[i] == value
-            currlist << list[i]
-            i += 2
-            next
-        end
-        if getBranch(list[i+1], value) != false
-            currlist << list[i]
-        end
-        i += 2
-    end
-    return false if currlist == []
-    return currlist
 end
 
 def getFromFunc(addressFunc)
@@ -549,7 +563,7 @@ def getFromFunc(addressFunc)
 end
 
 def getToFunc(addressFunc)
-    a = @treefuncs.each{|funcaddr,to_normal,from_normal|
+    @treefuncs.each{|funcaddr,to_normal,from_normal|
         return to_normal if funcaddr == addressFunc
     }
 end
@@ -602,7 +616,7 @@ def calculateSizeSubCallTree(fromaddr, toaddr,indent,cnt)
                 tindent << [indent.length,false]
             else
                 tindent << [indent.length,true]
-            end 
+            end
             total += calculateSizeSubCallTree(tdi_addr, toaddr, tindent,countSubCallTree(tdi_addr, toaddr))
         end
     }
@@ -650,12 +664,12 @@ def printSubCallTree(fromaddr, toaddr,indent,cnt)
                 log("    [...]")
             end
             return if @glinestree < 1
-            log(space1+"       +- #{poliLinkAddr(tdi_addr)}")
+            log(space1+"       +- 0x#{tdi_addr.to_s(16)}")
             if i == cnt
                 tindent << [indent.length,false]
             else
                 tindent << [indent.length,true]
-            end 
+            end
             printSubCallTree(tdi_addr, toaddr, tindent,countSubCallTree(tdi_addr, toaddr))
         end
     }
@@ -672,7 +686,7 @@ def printCallTree(fromaddr, toaddr)
     if calculateSizeSubCallTree(fromaddr, toaddr, [[0,false]],countSubCallTree(fromaddr, toaddr)) > 20
         @glinestree = 40
     end
-    log("    - #{poliLinkAddr(fromaddr)} (entrypoint/EAT/TLS)")
+    log("    - #{PoliUtils.poliLinkAddr(fromaddr)} (entrypoint/EAT/TLS)")
     getToFunc(fromaddr).each{|tdi_addr|
         if isFuncTreeLink(tdi_addr, toaddr)
             i += 1
@@ -682,7 +696,7 @@ def printCallTree(fromaddr, toaddr)
             end
             log("\n") if @glinestree < 1
             return if @glinestree < 1
-            log("       +- #{poliLinkAddr(tdi_addr)}")
+			log("       +- 0x#{tdi_addr.to_s(16)}")
             if i == countSubCallTree(fromaddr, toaddr)
                 printSubCallTree(tdi_addr, toaddr, [[0,false]],countSubCallTree(tdi_addr, toaddr))
             else
@@ -709,23 +723,14 @@ def repareIatLinks()
 end
 
 def log(stringtolog)
-    if defined?($SIMPLE)
-        print(stringtolog+"\n")
-    else
-        @file.write(stringtolog+"\n")
-    end
+	@file.write(stringtolog+"\n")
 end
 
 
 # the filename of our target binary
 target = ARGV.shift || 'bla.exe'
 
-md5sum = Digest::MD5.file(target).hexdigest
-sha1sum = Digest::SHA1.file(target).hexdigest
-sha256sum = Digest::SHA256.file(target).hexdigest
-filesize = File.stat(target).size 
-
-@file = File.open("#{target}.txt", "w") if not defined?($SIMPLE)
+@file = File.open("#{target}.txt", "w")
 
 title = "Static analyze of binary"
 title += "\n"+("="*title.length)+"\n\n"
@@ -744,12 +749,22 @@ $gdasm = dasm
 puts "  [*] Fast disassemble of binary..." if defined?($VERBOSEOPT)
 dasm.disassemble_fast_deep(*entrypoints)
 
-puts "  [*] Crawlling uncovered code..." if defined?($VERBOSEOPT)
-# $DEBUG = 1
-codePatterns = ["\x8b\xff", "\x55\x8b\xec", "\x55\x89\xe5", "\xff\x25", "\xff\x15", /\x68....\xe8/n,"\x48\x83\xec", "\x48\x89\x5c\x24"]
+puts "  [*] Crawling uncovered code..." if defined?($VERBOSEOPT)
+
+codePatterns = ["\x8b\xff",
+				"\x55\x8b\xec",
+				"\x55\x89\xe5",
+				"\xff\x25",
+				"\xff\x15",
+				/\x68....\xe8/n,
+				"\x48\x83\xec",
+				"\x48\x89\x5c\x24",
+				"\x55\x48\x8B\xec", # push rbp; mov rbp, rsp;
+				#"\x40\x55\x41\x54\x41\x55", # push    rbp;push    r12;push   r13
+				"\x40\x55", #push    rbp
+]
 
 @treefuncs = []
-@listoffunct = []
 
 dasm.sections.each{|secAddr, secDatas|
     next if dasm.decoded.first == nil
@@ -761,13 +776,8 @@ dasm.sections.each{|secAddr, secDatas|
                 pattAddr = secDatas.data[i..-1].index(pattern)
                 if pattAddr != nil
                     if dasm.di_at(secAddr+i+pattAddr) == nil
-                        if defined?($FASTDISAS)
-                            puts "    [+] Pattern found at 0x#{(secAddr+i+pattAddr).to_s(16)} fast disassembling in process..." if defined?($VERBOSEOPT)
-                            dasm.disassemble_fast_deep(secAddr+i+pattAddr)
-                        else
-                            puts "    [+] Pattern found at 0x#{(secAddr+i+pattAddr).to_s(16)} fast disassembling in process..." if defined?($VERBOSEOPT)
-                            dasm.disassemble_fast_deep(secAddr+i+pattAddr)
-                        end
+						puts "    [+] Pattern found at 0x#{(secAddr+i+pattAddr).to_s(16)} fast disassembling in process..." if defined?($VERBOSEOPT)
+						dasm.disassemble_fast_deep(secAddr+i+pattAddr)
                     end
                     if dasm.function[secAddr+i+pattAddr] == nil
                         if dasm.di_at(secAddr+i+pattAddr).block.from_subfuncret == nil and dasm.di_at(secAddr+i+pattAddr).block.from_normal == nil
@@ -853,11 +863,10 @@ log("---------------------------")
 dasm.xrefs.each{|addr, info|
     funcname = addr.to_s
     funcname = $gdasm.get_label_at(addr).gsub('iat_','') if defined?($gdasm.get_label_at(addr)) and $gdasm.get_label_at(addr) =~ /^iat_/
-    
+
     if funcname =~ /^[0-9]+$/
         next
         dasm.each_xref(addr){|a|
-            next
             di = dasm.di_at(a.origin)
             pp di if defined?(di.opcode) and di.opcode.name == "jmp"
             next
@@ -873,7 +882,7 @@ dasm.xrefs.each{|addr, info|
                 if defined?(di.opcode) and di.opcode.name == "jmp"
                     dasm.each_xref(di.address){|diprev|
                         checkCall(funcname, diprev.origin)
-                        orifunc = find_start_of_function(diprev.origin)
+                        orifunc = MetasmUtils.find_start_of_function(diprev.origin)
                         if orifunc
                             entrypoints.each{|ep|
                                 printCallTree(dasm.normalize(ep),orifunc) if isFuncTreeLink(dasm.normalize(ep),orifunc)
@@ -882,7 +891,7 @@ dasm.xrefs.each{|addr, info|
                     }
                 elsif defined?(di.opcode) and di.opcode.name == "call"
                     checkCall(funcname, xaddr)
-                    orifunc = find_start_of_function(xaddr)
+                    orifunc = MetasmUtils.find_start_of_function(xaddr)
                     if orifunc
                         entrypoints.each{|ep|
                             printCallTree(dasm.normalize(ep),orifunc) if isFuncTreeLink(dasm.normalize(ep),orifunc)
@@ -890,7 +899,7 @@ dasm.xrefs.each{|addr, info|
                     end
                 else
                     checkCall(funcname, xaddr)
-                    orifunc = find_start_of_function(xaddr)
+                    orifunc = MetasmUtils.find_start_of_function(xaddr)
                     if orifunc
                         entrypoints.each{|ep|
                             printCallTree(dasm.normalize(ep),orifunc) if isFuncTreeLink(dasm.normalize(ep),orifunc)
@@ -913,8 +922,8 @@ dasm.decoded.each{|addr, di|
     if (di.instruction.to_s =~ /(IsDebuggerPresent|cmp .*, 0CCh|pop ss|SeDebugPrivilege|IsBadWritePtr)/ or di.opcode.name == 'rtdsc')
         @instrAntiDBG << di
     end
-    
-    if di.opcode.name == 'push' and is_modrm(di.instruction.args.first)
+
+    if di.opcode.name == 'push' and MetasmUtils.is_modrm(di.instruction.args.first)
         if di.instruction.args.first.symbolic.target.bind.reduce.to_s =~ /^[0-9]+$/
             dest = di.instruction.args.first.symbolic.target.bind.reduce
             argStr = dasm.decode_strz(dest)
@@ -943,7 +952,7 @@ dasm.decoded.each{|addr, di|
             next
         end
     end
-    if di.opcode.name == 'mov' and is_modrm(di.instruction.args.last) and di.instruction.args.last.to_s =~ /dword ptr \[e.*\]/
+    if di.opcode.name == 'mov' and MetasmUtils.is_modrm(di.instruction.args.last) and di.instruction.args.last.to_s =~ /dword ptr \[e.*\]/
         if di.instruction.args.last.symbolic.target.bind.reduce.to_s =~ /^[0-9]+$/
             dest = di.instruction.args.last.symbolic.target.bind.reduce
             argStr = dasm.decode_strz(dest)
@@ -986,7 +995,7 @@ strings = strings.sort.uniq
 @strAntiAV = []
 tmpstrings = []
 
-
+# Get rebuilded strings
 movebpstack = []
 dasm.decoded.each{|addr, di|
     if (di.instruction.to_s =~ /^mov .*\[ebp-[0-9a-f]*h{0,1}\], [0-9a-f]*h{0,1}$/n)
@@ -1000,10 +1009,10 @@ dasm.decoded.each{|addr, di|
             sizeMin = cptr if sizeMin > cptr
             sizeMax = cptr if sizeMax < cptr
         }
-        
+
         sizeTb = sizeMax-sizeMin
         ctb = "\x00"*(sizeTb)
-        
+
         movebpstack.each{|tdi|
             ctb[sizeMax, tdi.instruction.args.first.sz/8]
             i=0
@@ -1017,7 +1026,7 @@ dasm.decoded.each{|addr, di|
         }
         ctb += "\x00"
         tbstrings = []
-        
+
         ctbptr = 1
         debstr = 0
         while ctbptr < ctb.length
@@ -1033,13 +1042,13 @@ dasm.decoded.each{|addr, di|
             debstr = ctbptr if (ctb[ctbptr] != "\x00") and (ctb[ctbptr-1] == "\x00")
             ctbptr += 1
         end
-        
+
         if tbstrings.length > 0
             log("### Rebuilded strings :")
             log("")
             tbstrings.each{|caddr,cstring|
                 strings << [caddr, cstring]
-                log("  *   #{poliLinkAddr(caddr)} : \"#{cstring}\"")
+                log("  *   #{PoliUtils.poliLinkAddr(caddr)} : \"#{cstring}\"")
                 @tbComments[caddr] = "Builded string : \\\"#{cstring.gsub("\n","\\n")}\\\""
             }
             log("")
@@ -1047,7 +1056,6 @@ dasm.decoded.each{|addr, di|
     end
     movebpstack = [] if ((di.opcode.props[:setip] == true) or (di.opcode.props[:stopexec] == true))
 }
-
 strings.each{|addr, str|
     tmpstrings << [addr, str]
 }
@@ -1097,10 +1105,10 @@ tmpstrings.each{|addr, str|
 }
 
 if (@instrAntiDBG.length > 0)
-    log("\nListe instructions suceptible de detecter la presence d'un debugger :")
+    log("\nDebugger detection instructions :")
     log ("")
     @instrAntiDBG.each{|di|
-        log("  * #{poliLinkAddr(di.address)} '#{di.instruction.to_s}'")
+        log("  * #{PoliUtils.poliLinkAddr(di.address)} '#{di.instruction.to_s}'")
         @tbComments[di.address] = "Anti-dbg ?"
     }
     log("")
@@ -1110,7 +1118,7 @@ if (@instrAntiVM.length > 0)
     log("\nAnti-VM instructions :")
     log("")
     @instrAntiVM.each{|di|
-        log("  * #{poliLinkAddr(di.address)} '#{di.instruction.to_s}'")
+        log("  * #{PoliUtils.poliLinkAddr(di.address)} '#{di.instruction.to_s}'")
         @tbComments[di.address] = "Anti-VM ?"
     }
     log("")
@@ -1130,11 +1138,11 @@ dasm.sections.each{|secAddr, secDatas|
             end
         end
         if ok == 1
-            log("\nPattern affected to #{name} found at #{poliLinkAddr(pattAddr)}.")
+            log("\nPattern affected to #{name} found at #{PoliUtils.poliLinkAddr(pattAddr)}.")
             @tbComments[pattAddr] = "Crypto #{name} ?"
-            orifunc = find_start_of_function(pattAddr)
+            orifunc = MetasmUtils.find_start_of_function(pattAddr)
             if orifunc
-                log("Function : #{poliLinkAddr(orifunc)}.")
+                log("Function : #{PoliUtils.poliLinkAddr(orifunc)}.")
                 if orifunc != 0
                     AddTagFunction(orifunc, "Crypt_")
                 end
@@ -1145,7 +1153,7 @@ dasm.sections.each{|secAddr, secDatas|
                         if addr == orifunc
                             log("")
                             fromaddr.each{|ref_from|
-                                log("  * #{poliLinkAddr(ref_from)} call #{poliLinkAddr(orifunc)}.")
+                                log("  * #{PoliUtils.poliLinkAddr(ref_from)} call #{PoliUtils.poliLinkAddr(orifunc)}.")
                             }
                             log("")
                         end
@@ -1159,7 +1167,7 @@ dasm.sections.each{|secAddr, secDatas|
 @CryptoBlocks = []
 
 dasm.decoded.each{|addr, di|
-    if di.opcode.name == 'xor' and di.instruction.args.first.to_s != di.instruction.args.last.to_s and is_looping(di)
+    if di.opcode.name == 'xor' and di.instruction.args.first.to_s != di.instruction.args.last.to_s and MetasmUtils.is_looping(di)
         next if @CryptoBlocks.include? di.block.address
         @CryptoBlocks << di.block.address
         next if di.instruction.args.last.to_s == "-1"
@@ -1171,9 +1179,9 @@ dasm.decoded.each{|addr, di|
                 log("    #{tdi.to_s()}")
             }
             log("\n")
-            orifunc = find_start_of_function(di.address)
+            orifunc = MetasmUtils.find_start_of_function(di.address)
             if orifunc
-                log("Top function #{poliLinkAddr(orifunc)}.")
+                log("Top function #{PoliUtils.poliLinkAddr(orifunc)}.")
                 if orifunc != 0
                     AddTagFunction(orifunc, "Crypt_")
                 end
@@ -1189,7 +1197,7 @@ dasm.decoded.each{|addr, di|
                         if addr == orifunc
                             log("")
                             fromaddr.each{|ref_from|
-                                log("  *   #{poliLinkAddr(ref_from)} call #{poliLinkAddr(orifunc)}.")
+                                log("  *   #{PoliUtils.poliLinkAddr(ref_from)} call #{PoliUtils.poliLinkAddr(orifunc)}.")
                             }
                             log("")
                         end
@@ -1197,11 +1205,11 @@ dasm.decoded.each{|addr, di|
                 end
             end
         else
-            log("\nPotential crypto loop at #{poliLinkAddr(di.address)} '#{di.instruction.to_s}'")
+            log("\nPotential crypto loop at #{PoliUtils.poliLinkAddr(di.address)} '#{di.instruction.to_s}'")
             @tbComments[di.address] = "Crypto loop ?"
-            orifunc = find_start_of_function(di.address)
+            orifunc = MetasmUtils.find_start_of_function(di.address)
             if orifunc
-                log("top function #{poliLinkAddr(orifunc)}.")
+                log("top function #{PoliUtils.poliLinkAddr(orifunc)}.")
                 if orifunc != 0
                     AddTagFunction(orifunc, "Crypt_")
                 end
@@ -1217,7 +1225,7 @@ dasm.decoded.each{|addr, di|
                         if addr == orifunc
                             log("")
                             fromaddr.each{|ref_from|
-                                log("  *   #{poliLinkAddr(ref_from)} call #{poliLinkAddr(orifunc)}.")
+                                log("  *   #{PoliUtils.poliLinkAddr(ref_from)} call #{PoliUtils.poliLinkAddr(orifunc)}.")
                             }
                             log("")
                         end
@@ -1232,20 +1240,27 @@ dasm.decoded.each{|addr, di|
 log("Strings")
 log("-------")
 
+def parse_some_string(addr, str, comment)
+	basefunc = MetasmUtils.find_start_of_function(addr)
+	basefunc = 0 if basefunc == nil
+	di = $gdasm.di_at(addr)
+	if defined?(di.block) and defined?(di.block.list[0]) and defined?(di.block.list[0].address)
+		tbloc = di.block.list[0].address
+	else
+		tbloc = 0
+	end
+	log("  *   '#{str}'")
+	log("    * instr : #{PoliUtils.poliLinkAddr(addr)} ; block : #{PoliUtils.poliLinkAddr(tbloc)} ; function : #{PoliUtils.poliLinkAddr(basefunc)}")
+	if comment != ""
+        @tbComments[di.address] = comment
+	end
+end
+
 if (@strAntiVM.length > 0)
     log("\n### Anti-VM")
     log("")
     @strAntiVM.each{|addr, str|
-        basefunc = find_start_of_function(addr)
-        basefunc = 0 if basefunc == nil
-        di = $gdasm.di_at(addr)
-        if defined?(di.block) and defined?(di.block.list[0]) and defined?(di.block.list[0].address)
-            tbloc = di.block.list[0].address
-        else
-            tbloc = 0
-        end
-        log("  *   '#{str}'")
-        log("    * instr : #{poliLinkAddr(addr)} ; block : #{poliLinkAddr(tbloc)} ; function : #{poliLinkAddr(basefunc)}")
+		parse_some_string(addr, str, "Anti-VM?")
     }
 end
 
@@ -1253,17 +1268,7 @@ if (@strAntiDBG.length > 0)
     log("\n### Anti-Debug")
     log("")
     @strAntiDBG.each{|addr, str|
-        basefunc = find_start_of_function(addr)
-        basefunc = 0 if basefunc == nil
-        di = $gdasm.di_at(addr)
-        if defined?(di.block) and defined?(di.block.list[0]) and defined?(di.block.list[0].address)
-            tbloc = di.block.list[0].address
-        else
-            tbloc = 0
-        end
-        log("  *   '#{str}'")
-        log("    * instr : #{poliLinkAddr(addr)} ; block : #{poliLinkAddr(tbloc)} ; function : #{poliLinkAddr(basefunc)}")
-        @tbComments[di.address] = "Anti-dbg ?"
+		parse_some_string(addr, str, "Anti-DBG?")
     }
 end
 
@@ -1271,17 +1276,7 @@ if (@strAntiAV.length > 0)
     log("\n### Anti-AV")
     log("")
     @strAntiAV.each{|addr, str|
-        basefunc = find_start_of_function(addr)
-        basefunc = 0 if basefunc == nil
-        di = $gdasm.di_at(addr)
-        if defined?(di.block) and defined?(di.block.list[0]) and defined?(di.block.list[0].address)
-            tbloc = di.block.list[0].address
-        else
-            tbloc = 0
-        end
-        log("  *   '#{str}'")
-        log("    * instr : #{poliLinkAddr(addr)} ; block : #{poliLinkAddr(tbloc)} ; function : #{poliLinkAddr(basefunc)}")
-        @tbComments[di.address] = "Anti-VM ?"
+		parse_some_string(addr, str, "Anti-AV?")
     }
 end
 
@@ -1289,16 +1284,7 @@ if (@strEXE.length > 0)
     log("\n### Executables")
     log("")
     @strEXE.each{|addr, str|
-        basefunc = find_start_of_function(addr)
-        basefunc = 0 if basefunc == nil
-        di = $gdasm.di_at(addr)
-        if defined?(di.block) and defined?(di.block.list[0]) and defined?(di.block.list[0].address)
-            tbloc = di.block.list[0].address
-        else
-            tbloc = 0
-        end
-        log("  *   '#{str}'")
-        log("    *   instr : #{poliLinkAddr(addr)} ; block : #{poliLinkAddr(tbloc)} ; function : #{poliLinkAddr(basefunc)}")
+		parse_some_string(addr, str, "")
     }
 end
 
@@ -1306,16 +1292,7 @@ if (@strREG.length > 0)
     log("\n### Registry")
     log("")
     @strREG.each{|addr, str|
-        basefunc = find_start_of_function(addr)
-        basefunc = 0 if basefunc == nil
-        di = $gdasm.di_at(addr)
-        if defined?(di.block) and defined?(di.block.list[0]) and defined?(di.block.list[0].address)
-            tbloc = di.block.list[0].address
-        else
-            tbloc = 0
-        end
-        log("  *   '#{str}'")
-        log("    * instr : #{poliLinkAddr(addr)} ; block : #{poliLinkAddr(tbloc)} ; function : #{poliLinkAddr(basefunc)}")
+		parse_some_string(addr, str, "")
 }
 end
 
@@ -1323,16 +1300,7 @@ if (@strWEB.length > 0)
     log("\n### Web")
     log("")
     @strWEB.each{|addr, str|
-        basefunc = find_start_of_function(addr)
-        basefunc = 0 if basefunc == nil
-        di = $gdasm.di_at(addr)
-        if defined?(di.block) and defined?(di.block.list[0]) and defined?(di.block.list[0].address)
-            tbloc = di.block.list[0].address
-        else
-            tbloc = 0
-        end
-        log("  *   '#{str}'")
-        log("    * instr : #{poliLinkAddr(addr)} ; block : #{poliLinkAddr(tbloc)} ; function : #{poliLinkAddr(basefunc)}")
+		parse_some_string(addr, str, "")
     }
 end
 
@@ -1340,16 +1308,7 @@ if (@strDNS.length > 0)
     log("\n### DNS")
     log("")
     @strDNS.each{|addr, str|
-        basefunc = find_start_of_function(addr)
-        basefunc = 0 if basefunc == nil
-        di = $gdasm.di_at(addr)
-        if defined?(di.block) and defined?(di.block.list[0]) and defined?(di.block.list[0].address)
-            tbloc = di.block.list[0].address
-        else
-            tbloc = 0
-        end
-        log("  *   '#{str}'")
-        log("    * instr : #{poliLinkAddr(addr)} ; block : #{poliLinkAddr(tbloc)} ; function : #{poliLinkAddr(basefunc)}")
+		parse_some_string(addr, str, "")
     }
 end
 
@@ -1357,16 +1316,7 @@ if (@strFIL.length > 0)
     log("\n### Files")
     log("")
     @strFIL.each{|addr, str|
-        basefunc = find_start_of_function(addr)
-        basefunc = 0 if basefunc == nil
-        di = $gdasm.di_at(addr)
-        if defined?(di.block) and defined?(di.block.list[0]) and defined?(di.block.list[0].address)
-            tbloc = di.block.list[0].address
-        else
-            tbloc = 0
-        end
-        log("  *   '#{str}'")
-        log("    * instr : #{poliLinkAddr(addr)} ; block : #{poliLinkAddr(tbloc)} ; function : #{poliLinkAddr(basefunc)}")
+		parse_some_string(addr, str, "")
     }
 end
 
@@ -1374,100 +1324,24 @@ if (strings.length > 0)
     log("\n### Unclassified")
     log("")
     strings.each{|addr, str|
-        basefunc = find_start_of_function(addr)
-        basefunc = 0 if basefunc == nil
-        di = $gdasm.di_at(addr)
-        if defined?(di.block) and defined?(di.block.list[0]) and defined?(di.block.list[0].address)
-            tbloc = di.block.list[0].address
-        else
-            tbloc = 0
-        end
-        next if str =~ /([\x7f-\xff]|[\x01-\x08]|[\x0b-\x1f])/n
-        log("  *   '#{str}'")
-        log("    * instr : #{poliLinkAddr(addr)} ; block : #{poliLinkAddr(tbloc)} ; function : #{poliLinkAddr(basefunc)}")
+		parse_some_string(addr, str, "")
     }
 end
 
-
-@fullFuncSign = ""
-@fullHashSign = ""
-dasm.function.each{|addr, symb|
-    @listoffunct << addr if addr.to_s =~ /^[0-9]+$/
-}
-@listoffunct = @listoffunct.sort
-@listoffunct .each{|addr|
-    if addr.to_s =~ /^[0-9]+$/
-        i = 1
-        currFunc = ""
-        @treefunc = dasm.each_function_block(addr)
-        @treefunc = @treefunc.sort
-        @treetbfunc = []
-        c = 1
-        @treefunc.each{|b|
-            @treetbfunc << b
-        }
-        @treefunc.each{|bloc|
-            currFunc += "#{i.to_s()}:"
-            dasm.di_at(bloc[0]).block.list.each{|di|
-                currFunc += "," if di.opcode.name == 'call' and currFunc[-1] == 'c'
-                currFunc += "c" if di.opcode.name == 'call'
-            }
-            refs = bloc[1]
-            refs = refs.sort
-            refs.each{|to_ref|
-                for y in 0..@treetbfunc.length
-                    next if @treetbfunc[y] == nil
-                    currFunc += "," if to_ref == @treetbfunc[y][0] and currFunc[-1] != ',' and currFunc[-1] != ':'
-                    currFunc += "#{(y+1).to_s()}" if to_ref == @treetbfunc[y][0]
-                end
-            }
-            i += 1
-            currFunc += ";"
-        }
-        @fullFuncSign += currFunc
-        @fullHashSign += ("%08x" % murmur3_32_str_hash(currFunc))+":#{addr.to_s(16)};"
-    end
-}
-
-if not defined?($SIMPLE)
-    @signfile = File.open("#{target}.sign", "wb")
-    @signfile.write(@fullHashSign)
-    @signfile.close()
-end
-
-time = Time.new
+@fullHashSign = MachocHash.calculate_machoc_hash(dasm)
+@signfile = File.open("#{target}.sign", "wb")
+@signfile.write(@fullHashSign)
+@signfile.close()
 
 @tbFuncName.each{|cFuncAddr, cName|
-    # if ori_renamed_functions[cFuncAddr] == nil
-        # mysqlClient.query("INSERT INTO #{dbName}.ida_cmd VALUES ('', '#{opts[:idMalware]}','#{ida_cmd_type_name['idc.MakeName']}', '0x#{cFuncAddr.to_s(16)}', '#{cName}', 0, 2)")
-    # end
     @IDAscript += "idc.MakeName::0x#{cFuncAddr.to_s(16)}::#{cName}\n"
 }
 
 @tbComments.each{|addr, cComment|
-    # if ori_comments[addr] == nil
-        # mysqlClient.query("INSERT INTO #{dbName}.ida_cmd VALUES ('', '#{opts[:idMalware]}','#{ida_cmd_type_name['idc.MakeRptCmt']}', '0x#{addr.to_s(16)}', '#{cComment}', 0, 2)")
-    # end
     @IDAscript += "idc.MakeRptCmt::0x#{addr.to_s(16)}::#{cComment}\n"
 }
 
-if not File.exist?("#{target}.idacmd") and (not defined?($SIMPLE))
-    File.open("#{target}.idacmd", 'wb') { |file| file.write("#{@IDAscript}nop() # Polichombr 1337 - Skelenox 1337 too ;]") }
-end
+File.open("#{target}.idacmd", 'wb') { |file| file.write("#{@IDAscript}nop() # Polichombr 1337 - Skelenox 1337 too ;]") }
 
-# pp dasm.program.methods
-# Gui::DasmWindow.new("metasm disassembler - #{target}", dasm, entrypoints)
-# dasm.load_plugin('hl_opcode')	# hilight jmp/call instrs
-# dasm.gui.focus_addr(dasm.gui.curaddr, :graph)	# start in graph mode
-# Gui.main
-if not defined?($SIMPLE)
-    @file.write("\n")
-    @file.close
-end
-
-if $SHOWGUI
-    Gui::DasmWindow.new("metasm disassembler - #{target}", dasm, entrypoints)
-    dasm.load_plugin('hl_opcode')	# hilight jmp/call instrs
-    dasm.gui.focus_addr(dasm.gui.curaddr, :graph)	# start in graph mode
-    Gui.main
-end
+@file.write("\n")
+@file.close

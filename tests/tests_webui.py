@@ -599,7 +599,7 @@ class WebUISampleManagementTests(WebUIBaseClass):
         self.assertEqual(retval.status_code, 200)
         self.assertIn(
             '<!DOCTYPE svg PUBLIC "-//W3C//DTD SVG 1.1//EN"', retval.data)
-        self.assertIn("40100fh mov dx, 2 ;", retval.data)
+        self.assertIn("40100fh mov dx, 2", retval.data)
         self.assertIn("401000h mov eax, 1 ; Top function : entry", retval.data)
 
         # XXX maybe test for getting the AnalyzeIt comments
