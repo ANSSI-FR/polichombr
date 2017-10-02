@@ -11,13 +11,8 @@ require 'optparse'
 
 opts = {}
 OptionParser.new { |opt|
-	opt.banner = 'Usage: AnalyzeIt.rb [-f] <executable>'
-	opt.on('-f', '--fast', 'use fast disassemble') { $FASTDISAS = true }
-	opt.on('-v', '--verbose', 'use fast disassemble') { $VERBOSEOPT = true }
-	opt.on('-g', '--gui', 'show GUI at end of script') { $SHOWGUI = true }
+	opt.banner = 'Usage: disassemblefunc.rb [-f] <executable>'
 	opt.on('-o <outfile>', '--output <outfile>', 'save the assembly listing in the specified file (defaults to stdout)') { |h| opts[:outfile] = h }
-	opt.on('-p', '--peid', 'Use PEiD database') { $SHOWGUI = true }
-	opt.on('-u', '--update', 'update sql') { $UPDATE_SQL = true }
 	opt.on('-graph', '--graph', 'Output is a DOT') { $GRAPH = true }
 	opt.on('-svg', '--svg', 'Output is a DOT') { $SVG = true }
 	opt.on('-print', '--print', 'Output is a DOT') { $PRINT = true }
@@ -33,39 +28,12 @@ entrypoints << 'entrypoint' if entrypoints.empty?
 decodedfile = AutoExe.decode_file(target)
 dasm = decodedfile.disassembler
 $gdasm = dasm
+
 # disassemble obfuscated code
-if defined?($FASTDISAS)
-    # puts "  [*] Fast disassemble of binary..."
-    dasm.disassemble_fast(*entrypoints)
-else
-    # puts "  [*] Full disassemble of binary..."
-    # dasm.disassemble(*entrypoints)
-    # puts "  [*] Fast disassemble of binary..."
-    dasm.disassemble_fast(*entrypoints)
-end
+dasm.disassemble_fast(*entrypoints)
 
 # Get all commited comments and functions
 comments = {}
-renamed_functions = {}
-md5sum = Digest::MD5.file(target).hexdigest
-datas_comm = nil
-if File.exist?('ida\\'+md5sum+'.py')
-    File.open('ida\\'+md5sum+'.py', 'r') { |fd|
-        datas_comm = fd.read().split("\n")
-    }
-end
-# pp datas_comm
-if datas_comm != nil
-    datas_comm.each{|line|
-        if line.split('(')[0] == 'idc.MakeName'
-            # renamed_functions[line.split('(')[1].split(',')[0].to_i(0)] = line.split('(')[1].split('"')[1..-2].join('"')
-            dasm.set_label_at(line.split('(')[1].split(',')[0].to_i(0), line.split('(')[1].split('"')[1..-2].join('"')+"_at_#{line.split('(')[1].split(',')[0]}_")
-        end
-        if line.split('(')[0] == 'idc.MakeRptCmt'
-            comments[line.split('(')[1].split(',')[0].to_i(0)] = line.split('(')[1].split('"')[1..-2].join('"').gsub("\\\"","\"")
-        end
-    }
-end
 # pp renamed_functions
 
 tbdi = []
@@ -97,7 +65,6 @@ tbdi.each{|addr|
         comment = comments[di.address]
     end
     if di.opcode.name == "call" and defined?(di.block) and (di.block != nil)
-        count_push = 0
         tempargs = []
         di.block.list.each{|tempdi|
             if tempdi.opcode.name == "push" and tempdi.instruction.to_s != "push ebp"
@@ -184,15 +151,6 @@ if (opts[:outfile] == nil) and  ($GRAPH == nil)
     }
 end
 
-if opts[:outfile]
-	File.open(opts[:outfile], 'w') { |fd|
-		fd.puts dasm.c_parser if opts[:decompile]
-		fd.puts "#if 0" if opts[:decompile]
-		dasm.dump(false) { |l| fd.puts l }
-		fd.puts "#endif" if opts[:decompile]
-	}
-end
-
 def parseInstr(di)
     return di.to_s.gsub('\\', '\\\\\\').gsub('"', '\\"') if $SVG == nil
     ret = nil
@@ -207,7 +165,7 @@ end
 
 if defined?($GRAPH) and opts[:outfile]
     File.open(opts[:outfile], 'w') { |fd|
-    
+
     tbdi.each{|addr|
         di = dasm.di_at(addr)
         if di.opcode.name == "call"
@@ -215,7 +173,7 @@ if defined?($GRAPH) and opts[:outfile]
             next if not defined?(tdi.block)
             tdi.block.from_normal = [] if tdi.block.from_normal == nil
             tdi.block.from_normal << di.next_addr() if not tdi.block.from_normal.include? di.address
-            
+
             di.block.to_normal = [tdi.address]
         end
     }
@@ -236,13 +194,13 @@ if defined?($GRAPH) and opts[:outfile]
         # pp di.block.address.to_s(16)
         # cblock += "#{di.to_s}\l| "
         # if di.block.list.last.address == di.address
-        
+
         if ((di.block.list.first.address == di.address) and (di.block.from_normal != nil and di.block.from_normal.length > 1))
             fd.puts '        "0x'+curblock.to_s(16)+'" [color="lightgray", label="'+cblock+'\\l"];' if cblock != ""
             cblock = "| "
             curblock = di.block.address
         end
-        
+
         if not defined?(di.block) or (dasm.di_at(di.next_addr()) and di.opcode.name != "jmp") == nil
             cblock += parseInstr(di)
             fd.puts '        "0x'+curblock.to_s(16)+'" [color="lightgray", label="'+cblock+'\\l"];' if cblock != ""
@@ -256,7 +214,7 @@ if defined?($GRAPH) and opts[:outfile]
             pdi = di
             next
         end
-        
+
         if ((di.block.list.last.address == di.address) and (((di.block.to_normal != nil and di.block.to_normal.length > 1) or (di.block.to_normal ==nil)) or (di.opcode.name[0] == 'j') or (dasm.di_at(di.next_addr()).block.from_normal != nil and dasm.di_at(di.next_addr()).block.from_normal.length > 1))) or (di.opcode.name == "jmp")
             # pp di
             cblock += parseInstr(di)
@@ -277,17 +235,10 @@ if defined?($GRAPH) and opts[:outfile]
             cblock += "\\l| " if not ((di.block.list.last.address == di.address) and dasm.di_at(di.next_addr()).block.from_normal != nil and dasm.di_at(di.next_addr()).block.from_normal.length == 1)
         end
         cblock += "\\l| " if (di.block.list.last.address == di.address) and dasm.di_at(di.next_addr()) != nil and (dasm.di_at(di.next_addr()).block.from_normal != nil and dasm.di_at(di.next_addr()).block.from_normal.length == 1) and (di.opcode.name == 'call')
-        
+
         pdi = di
     }
     fd.puts '}'
-    
-    }
-end
 
-if $SHOWGUI
-    Gui::DasmWindow.new("metasm disassembler - #{target}", dasm, entrypoints)
-    dasm.load_plugin('hl_opcode')	# hilight jmp/call instrs
-    dasm.gui.focus_addr(dasm.gui.curaddr, :graph)	# start in graph mode
-    Gui.main
+    }
 end
