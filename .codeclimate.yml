@@ -19,7 +19,6 @@ ratings:
   - "poli/**"
   - "**.py"
 exclude_paths:
-- "**.rb"
 - "**.md"
 - "tests/**"
 - "poli/static/**"
