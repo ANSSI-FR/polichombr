@@ -143,8 +143,6 @@ tbdi.each{|addr|
     di.add_comment(comment) if comment != ""
 }
 
-# $cgui = Gui::DasmWindow.new("metasm disassembler - #{target}", dasm, entrypoints)
-
 if (opts[:outfile] == nil) and  ($GRAPH == nil)
     tbdi.each{|addr|
         puts dasm.di_at(addr).to_s
@@ -177,6 +175,7 @@ if defined?($GRAPH) and opts[:outfile]
             di.block.to_normal = [tdi.address]
         end
     }
+
     fd.puts "digraph code {"
     if defined?($PRINT)
         fd.puts "        graph [bgcolor=white];"
@@ -190,10 +189,6 @@ if defined?($GRAPH) and opts[:outfile]
     tbdi.each{|addr|
         di = dasm.di_at(addr)
         curblock = di.block.address if curblock == nil
-        # pp di.instruction.methods
-        # pp di.block.address.to_s(16)
-        # cblock += "#{di.to_s}\l| "
-        # if di.block.list.last.address == di.address
 
         if ((di.block.list.first.address == di.address) and (di.block.from_normal != nil and di.block.from_normal.length > 1))
             fd.puts '        "0x'+curblock.to_s(16)+'" [color="lightgray", label="'+cblock+'\\l"];' if cblock != ""
@@ -216,7 +211,6 @@ if defined?($GRAPH) and opts[:outfile]
         end
 
         if ((di.block.list.last.address == di.address) and (((di.block.to_normal != nil and di.block.to_normal.length > 1) or (di.block.to_normal ==nil)) or (di.opcode.name[0] == 'j') or (dasm.di_at(di.next_addr()).block.from_normal != nil and dasm.di_at(di.next_addr()).block.from_normal.length > 1))) or (di.opcode.name == "jmp")
-            # pp di
             cblock += parseInstr(di)
             cblock += "\\l| " if (di.block.list.last.address != di.address)
             fd.puts '        "0x'+curblock.to_s(16)+'" [color="lightgray", label="'+cblock+'\\l"];'
@@ -239,6 +233,5 @@ if defined?($GRAPH) and opts[:outfile]
         pdi = di
     }
     fd.puts '}'
-
-    }
+}
 end

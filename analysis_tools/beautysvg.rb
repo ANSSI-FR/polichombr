@@ -36,9 +36,8 @@ calls = calls.sort_by {|x| x.length}
 calls = calls.reverse
 calls.each{|call_stub|
     if call_stub.include?("_at_0x")
-        
+
     else
-        # pp "<a xlink:href=\"disassfunc.php?id_bin=#{opts[:binid]}&address=0x#{call_stub.split(' ')[0]}&view=metasmsvg\">#{call_stub}</a>"
         datas = datas.gsub(call_stub,"<a xlink:href=\"#\" stroke-width=\"0.7\" stroke=\"red\" fill=\"red\">#{call_stub.gsub('_','_<!-- -->')}</a>")
     end
 }
@@ -48,7 +47,7 @@ calls = calls.uniq
 calls = calls.sort_by {|x| x.length}
 calls = calls.reverse
 calls.each{|call_stub|
-    next if 
+    next if
     datas = datas.gsub(call_stub,"<a xlink:href=\"#\" stroke-width=\"0.7\" stroke=\"red\" fill=\"red\">#{call_stub.split('(')[0]}<!-- --></a>(#{call_stub.split('(')[1]}")
 }
 calls = datas.scan(/[au]&quot;.*&quot;/)
