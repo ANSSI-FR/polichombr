@@ -26,7 +26,7 @@
 						<td>{{u.last_login_ip}}</td>
 						<td>{{u.login_count}}</td>
 						<td>
-							{% if u.is_active %}
+						{% if u.is_active %}
 								<a href="/user/{{u.id}}/deactivate" class="btn btn-danger">
 									Deactivate
 								</a>
@@ -36,7 +36,17 @@
 								</a>
 							{% endif %}
 						</td>
-						<td></td>
+						<td>
+							{% if "admin" in u.roles %}
+								<a href="/user/{{u.id}}/admin" class="btn btn-danger">
+									Remove admin
+								</a>
+							{% else %}
+								<a href="/user/{{u.id}}/admin" class="btn btn-success">
+									Give admin
+								</a>
+							{% endif %}
+						</td>
 
 					</tr>
 				{% endfor %}

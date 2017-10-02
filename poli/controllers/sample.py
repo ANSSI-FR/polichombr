@@ -15,6 +15,8 @@ import magic
 import time
 import json
 
+from sqlalchemy import func
+import sqlalchemy
 from hashlib import md5, sha1, sha256
 from collections import Counter
 from subprocess import Popen
@@ -535,15 +537,16 @@ class SampleController(object):
         src_funcs = cls.get_functions_filtered(sample_src.id)
 
         matches = []
-        for func in src_funcs:
-            match = FunctionInfo.query.filter_by(sample_id=sample_dst.id)
-            match = match.filter_by(machoc_hash=func.machoc_hash)
-            if match.count() > 1 or match.count() == 0:
-                # app.logger.debug("Got %d matches for same hash, don't match",
-                # match.count())
-                pass
-            else:
-                matches.append(match.first())
+
+        funcs = FunctionInfo.query.filter_by(sample_id=sample_dst.id)
+        funcs = funcs.group_by(FunctionInfo.machoc_hash)
+        funcs = funcs.having(func.count(FunctionInfo.machoc_hash) == 1)
+
+        for funcx in src_funcs:
+            match = funcs.filter_by(machoc_hash=funcx.machoc_hash)
+            match = match.scalar()
+            if match is not None:
+                matches.append(match)
         app.logger.debug("Got %d direct machoc matches" % len(matches))
         return matches
 

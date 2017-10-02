@@ -56,6 +56,17 @@ class task_analyzeitrb(Task):
             data = items[2].replace('\n', '')
         return addr, data
 
+    def remove_blacklist_machoc(self, functions):
+        blacklisted = [
+                0x1a02300e,
+                0xd3fa94a,
+        ]
+
+        for func in functions.keys():
+            if functions[func]["machoc"] in blacklisted:
+                functions.pop(func)
+        return functions
+
     def parse_machoc_signatures(self):
         """
             Returns a dict containing the functions and the hashes
@@ -75,6 +86,7 @@ class task_analyzeitrb(Task):
                     machoc_h = int(subitems[0].strip(), 16)
                     address = int(subitems[1].strip(), 16)
                     functions[address] = dict(machoc=machoc_h, name="")
+        functions = self.remove_blacklist_machoc(functions)
         return functions
 
     def parse_ida_cmds(self, sid, functions):

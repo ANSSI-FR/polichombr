@@ -302,6 +302,7 @@ class UploadSampleForm(FlaskForm):
     level = SelectField(u'Sensibility', choices=TLPLevelChoices,
                         coerce=int, validators=[DataRequired()])
     family = SelectField(u'Associated Family', coerce=int)
+    zipflag = BooleanField('Sample Zip archive')
     uploadsample = SubmitField(u'Submit')
 
 

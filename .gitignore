@@ -7,3 +7,5 @@ flask
 poli/storage/*
 db_repository
 skelsettings.json
+pylintrc
+.coveragerc

@@ -276,7 +276,7 @@ def view_user(user_id):
                            user=myuser)
 
 
-@app.route('/user/<int:user_id>/activate', methods=['GET', 'POST'])
+@app.route('/user/<int:user_id>/activate/', methods=['GET', 'POST'])
 @login_required
 @roles_required("admin")
 def activate_user(user_id):
@@ -288,6 +288,21 @@ def activate_user(user_id):
         flash("Cannot activate user", "error")
     else:
         flash("activated user", "success")
+    return redirect(url_for("admin_page"))
+
+
+@app.route('/user/<int:user_id>/admin/', methods=['GET', 'POST'])
+@login_required
+@roles_required("admin")
+def admin_user(user_id):
+    """
+        Add admin role for a user
+    """
+    ret = api.usercontrol.manage_admin_role(user_id)
+    if not ret:
+        flash("Cannot give admin to user", "error")
+    else:
+        flash("User %d is now an admin" % (user_id), "success")
     return redirect(url_for("admin_page"))
 
 
@@ -535,6 +550,7 @@ def ui_sample_upload():
 
     if upload_form.validate_on_submit():
         family_id = upload_form.family.data
+        zipflag = upload_form.zipflag.data
         family = None
         if family_id != 0:
             family = api.get_elem_by_type("family", family_id)
@@ -544,7 +560,12 @@ def ui_sample_upload():
             file_name = secure_filename(mfile.filename)
 
             samples = api.dispatch_sample_creation(
-                file_data, file_name, g.user, upload_form.level.data, family)
+                file_data,
+                file_name,
+                g.user,
+                upload_form.level.data,
+                family,
+                zipflag)
             if len(samples) == 0:
                 flash("Error during sample creation", "error")
             else:
