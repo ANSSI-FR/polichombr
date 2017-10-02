@@ -535,6 +535,7 @@ def ui_sample_upload():
 
     if upload_form.validate_on_submit():
         family_id = upload_form.family.data
+        zipflag = upload_form.zipflag.data
         family = None
         if family_id != 0:
             family = api.get_elem_by_type("family", family_id)
@@ -544,7 +545,12 @@ def ui_sample_upload():
             file_name = secure_filename(mfile.filename)
 
             samples = api.dispatch_sample_creation(
-                file_data, file_name, g.user, upload_form.level.data, family)
+                file_data,
+                file_name,
+                g.user,
+                upload_form.level.data,
+                family,
+                zipflag)
             if len(samples) == 0:
                 flash("Error during sample creation", "error")
             else:
