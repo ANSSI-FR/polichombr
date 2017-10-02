@@ -14,10 +14,15 @@ engines:
     enabled: true
     config:
       python_version: 2
+  rubocop:
+      enabled: true
+  reek:
+      enabled: true
 ratings:
   paths:
   - "poli/**"
   - "**.py"
+  - "**.rb"
 exclude_paths:
 - "**.md"
 - "tests/**"
