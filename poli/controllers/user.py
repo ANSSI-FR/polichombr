@@ -49,20 +49,32 @@ class UserController(object):
 
         # the first user is active and admin
         if User.query.count() == 1:
-            role = user_datastore.find_or_create_role(
-                "admin", description="Administrator")
-            if role is not None:
-                user_datastore.add_role_to_user(myuser, role)
-            else:
-                app.logger.error("Cannot find and affect admin role to user")
+            self.manage_admin_role(myuser.id)
             user_datastore.activate_user(myuser)
-
         db.session.commit()
         return True
 
-    def add_role_to_user(uid, role):
+    @classmethod
+    def manage_admin_role(cls, uid):
         user = user_datastore.get_user(int(uid))
-        user_datastore.add_role_to_user(user, role)
+
+        role = user_datastore.find_or_create_role(
+            "admin", description="Administrator")
+        if role is not None:
+            if role not in user.roles:
+                app.logger.debug("Giving admin privileges to user %s" %
+                                 (user.nickname))
+                user_datastore.add_role_to_user(user, role)
+            else:
+                app.logger.debug("Removing admin privileges to user %s" %
+                                 (user.nickname))
+                user_datastore.remove_role_from_user(user, role)
+
+        else:
+            app.logger.error("Cannot find and affect admin role to user")
+            return False
+        db.session.commit()
+        return True
 
     @staticmethod
     def get_by_name(name):

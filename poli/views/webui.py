@@ -276,7 +276,7 @@ def view_user(user_id):
                            user=myuser)
 
 
-@app.route('/user/<int:user_id>/activate', methods=['GET', 'POST'])
+@app.route('/user/<int:user_id>/activate/', methods=['GET', 'POST'])
 @login_required
 @roles_required("admin")
 def activate_user(user_id):
@@ -288,6 +288,21 @@ def activate_user(user_id):
         flash("Cannot activate user", "error")
     else:
         flash("activated user", "success")
+    return redirect(url_for("admin_page"))
+
+
+@app.route('/user/<int:user_id>/admin/', methods=['GET', 'POST'])
+@login_required
+@roles_required("admin")
+def admin_user(user_id):
+    """
+        Add admin role for a user
+    """
+    ret = api.usercontrol.manage_admin_role(user_id)
+    if not ret:
+        flash("Cannot give admin to user", "error")
+    else:
+        flash("User %d is now an admin" % (user_id), "success")
     return redirect(url_for("admin_page"))
 
 
