@@ -1,7 +1,7 @@
 """
     This file is part of Polichombr.
 
-    (c) 2016 ANSSI-FR
+    (c) 2017 ANSSI-FR
 
 
     Description:
@@ -62,14 +62,15 @@ class APIControl(object):
                                  filename="",
                                  user=None,
                                  tlp=TLPLevel.TLPWHITE,
-                                 family=None):
+                                 family=None,
+                                 zipflag=True):
         """
             If the sample is a ZipFile, we unpack it and return
             the last sample,otherwise we return a single sample.
         """
         file_data = file_stream.read(4)
         file_stream.seek(0)
-        if file_data.startswith("PK"):
+        if file_data.startswith("PK") and zipflag:
             samples = self.create_from_zip(file_stream, user, tlp, family)
         else:
             sample = self.create_sample_and_run_analysis(file_stream,

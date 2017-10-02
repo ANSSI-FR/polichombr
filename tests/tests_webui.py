@@ -373,7 +373,7 @@ class WebUIUserManagementTestCase(WebUIBaseClass):
 
         # the new user is not activated, so it cannot login
         retval = self.login("john", "password")
-        retval = self.app.post("/user/2/activate", follow_redirects=True)
+        retval = self.app.post("/user/2/activate/", follow_redirects=True)
         self.assertEqual(retval.status_code, 200)
         self.logout()
         retval = self.login("SomeUserName", "password2")
@@ -393,7 +393,7 @@ class WebUIUserManagementTestCase(WebUIBaseClass):
         self.assertEqual(retval.status_code, 200)
         self.assertIn("notadmin", retval.data)
         # don't forget to activate user 2
-        retval = self.app.post("/user/2/activate", follow_redirects=True)
+        retval = self.app.post("/user/2/activate/", follow_redirects=True)
 
         self.logout()
 
@@ -403,6 +403,29 @@ class WebUIUserManagementTestCase(WebUIBaseClass):
 
         retval = self.app.get("/admin/", follow_redirects=True)
         self.assertNotIn("Admin", retval.data)
+
+    def test_giving_admin_rights(self):
+        retval = self.register_user("notadmin", "password")
+        self.logout()
+
+        retval = self.login("john", "password")
+        retval = self.app.post("/user/2/activate/", follow_redirects=True)
+        retval = self.app.post("/user/2/admin/", follow_redirects=True)
+        self.assertEqual(retval.status_code, 200)
+
+        self.assertNotIn("Cannot give admin to user", retval.data)
+        self.assertIn("is now an admin", retval.data)
+
+        self.logout()
+
+        retval = self.login("notadmin", "password")
+
+        retval = self.app.get("/", follow_redirects=True)
+        self.assertIn("notadmin", retval.data)
+        self.assertIn("Admin", retval.data)
+        retval = self.app.get("/admin/", follow_redirects=True)
+        self.assertEqual(retval.status_code, 200)
+        self.assertIn("/admin", retval.data)
 
     def test_user_password(self):
         retval = self.login("john", "password")
