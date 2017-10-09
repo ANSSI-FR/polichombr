@@ -14,16 +14,16 @@ from flask_security import UserMixin, RoleMixin
 
 usersample = db.Table('usersample',
                       db.Column('user_id', db.Integer,
-                                db.ForeignKey('user.id')),
+                                db.ForeignKey('user.id'), index=True),
                       db.Column('sample_id', db.Integer,
-                                db.ForeignKey('sample.id'))
+                                db.ForeignKey('sample.id'), index=True)
                       )
 
 userfamily = db.Table('userfamily',
                       db.Column('user_id', db.Integer,
-                                db.ForeignKey('user.id')),
+                                db.ForeignKey('user.id'), index=True),
                       db.Column('family_id', db.Integer,
-                                db.ForeignKey('family.id'))
+                                db.ForeignKey('family.id'), index=True)
                       )
 
 roles_users = db.Table('roles_users',

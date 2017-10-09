@@ -226,7 +226,6 @@ class Sample(db.Model):
     __tablename__ = 'sample'
     id = db.Column(db.Integer, primary_key=True)
     # N-N relationships
-    family_id = db.Column(db.Integer, db.ForeignKey('family.id'))
     check_list = db.relationship('CheckList',
                                  secondary=sampletochecklist,
                                  backref=db.backref('samples', lazy='dynamic'))

@@ -73,11 +73,11 @@ class FamilyController(object):
 
             TODO: direct SQL request?
         """
-        users = []
+        users = set()
+
         for sample in family.samples:
             for user in sample.users:
-                if user not in users:
-                    users.append(user)
+                users.add(user)
         return users
 
     def get_all_schema(self):
