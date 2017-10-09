@@ -1,4 +1,5 @@
 #!/usr/bin/env ruby
+# encoding: ASCII-8BIT
 
 require './metasm/metasm'
 # require "c:\\UnixTools\\metasm\\metasm"
@@ -945,7 +946,7 @@ dasm.decoded.each do |_addr, di|
   end
   next unless (di.opcode.name == 'mov') && di.instruction.args.last.to_s =~ /^[(xref_|)0-9a-f]+h$/
   argStr = dasm.decode_strz(di.instruction.args.last)
-  if !argStr.nil? && (argStr.length > 4) && (argStr =~ egexStr || ((argStr.length > 5) && (argStr !~ /[\x80-\xff]/n)))
+  if !argStr.nil? && (argStr.length > 4) && (argStr =~ regexStr || ((argStr.length > 5) && (argStr !~ /[\x80-\xff]/n)))
     strings << [di.address, argStr.gsub(/[\x0d]/n, '\\r').gsub(/[\x0a]/n, '\\n')]
     next
     end
