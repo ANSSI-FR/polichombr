@@ -23,7 +23,7 @@ entrypoints = ARGV.map do |ep|
                   Integer(ep)
                 rescue
                   ep
-                end
+  end
 end
 entrypoints << 'entrypoint' if entrypoints.empty?
 
@@ -84,7 +84,7 @@ tbdi.each do |addr|
           tempargs << dasm.backtrace(tempdi.instruction.args.last.symbolic(tempdi), tempdi.address, origin: tempdi.address, type: :x).reduce.to_s
         else
           tempargs << 'x'
-          end
+        end
       end
     end
     if defined?(di.instruction.args.last.symbolic.target) && !dasm.get_label_at(di.instruction.args.last.symbolic.target.bind.reduce).nil?
