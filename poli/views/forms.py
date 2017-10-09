@@ -1,7 +1,7 @@
 """
     This file is part of Polichombr.
 
-    (c) 2016 ANSSI-FR
+    (c) 2017 ANSSI-FR
 
 
     Description:
@@ -9,18 +9,14 @@
 """
 
 from flask_wtf import FlaskForm
-from flask_wtf.file import FileField, FileRequired
+from flask_wtf.file import FileField
 from wtforms import StringField, SelectField
 from wtforms import SubmitField, TextAreaField, BooleanField
 from wtforms import PasswordField, HiddenField
 from wtforms import IntegerField
-from wtforms.validators import DataRequired, Length, EqualTo, InputRequired
+from wtforms.validators import DataRequired, Length, EqualTo
 from poli.models.family import DetectionType
 from poli.models.models import TLPLevelChoices
-
-"""
-    USER forms.
-"""
 
 
 class ChgThemeForm(FlaskForm):
@@ -98,13 +94,6 @@ class UserRegistrationForm(FlaskForm):
     userregister = SubmitField(u'Submit')
 
 
-"""
-
-    SETTINGS forms.
-
-"""
-
-
 class CreateCheckListForm(FlaskForm):
 
     """
@@ -113,13 +102,6 @@ class CreateCheckListForm(FlaskForm):
     title = StringField("Title", validators=[DataRequired()])
     description = TextAreaField("Content", validators=[DataRequired()])
     changepoke = SubmitField(u'Submit')
-
-
-"""
-
-    YARA forms.
-
-"""
 
 
 class YaraForm(FlaskForm):
@@ -146,7 +128,9 @@ class FamilyForm(FlaskForm):
     """
     Create family.
     """
-    familyname = StringField('familyname', validators=[DataRequired()])
+    familyname = StringField('familyname',
+                             default=None,
+                             validators=[DataRequired()])
     createfamily = SubmitField(u'Submit')
 
 
@@ -230,7 +214,6 @@ class ChangeStatusForm(FlaskForm):
 
 
 class AddYaraToFamilyForm(FlaskForm):
-
     """
     Add yara rule.
     """
@@ -243,7 +226,6 @@ class AddYaraToFamilyForm(FlaskForm):
 
 
 class RenameForm(FlaskForm):
-
     """
     Rename.
     """
@@ -253,7 +235,6 @@ class RenameForm(FlaskForm):
 
 
 class FamilyAbstractForm(FlaskForm):
-
     """
     Edit abstract.
     """
@@ -283,13 +264,6 @@ class ExportFamilyForm(FlaskForm):
     datatype = SelectField(u'Data type', choices=choices,
                            coerce=int, validators=[DataRequired()])
     exportfam = SubmitField('Submit')
-
-
-"""
-
-    SAMPLES forms.
-
-"""
 
 
 class UploadSampleForm(FlaskForm):
