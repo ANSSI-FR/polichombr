@@ -2,7 +2,6 @@
 # encoding: ASCII-8BIT
 
 require './metasm/metasm'
-# require "c:\\UnixTools\\metasm\\metasm"
 include Metasm
 
 require 'pp'
@@ -12,7 +11,7 @@ require 'optparse'
 OptionParser.new do |opt|
   opt.banner = 'Usage: AnalyzeIt.rb [-f] <executable>'
   opt.on('-f', '--fast', 'use fast disassemble') { $FASTDISAS = true }
-  opt.on('-v', '--verbose', 'use fast disassemble') { $VERBOSEOPT = true }
+  opt.on('-v', '--verbose', 'Display more information on console') { $VERBOSEOPT = true }
 end.parse!(ARGV)
 
 Encoding.default_internal = Encoding.find('ASCII-8BIT')
@@ -127,6 +126,7 @@ cryptoPatterns = [['AES_forward_box', ["\x63\x7c\x77\x7b\xf2\x6b\x6f\xc5\x30\x01
                   ['MT19937 coefficient (Mersenne Twister)', ["\x65\x89\x07\x6C", "\x80\x56\x2C\x9D", "\x00\x00\x6C\xEF", "\xDF\xB0\x08\x99"]],
                   ['RC5/RC6 magic', ["\x63\x51\xe1\xb7", "\x62\x51\xe1\xb7", "\x6b\x2a\xed\x8a", "\xb9\x79\x37\x9e", "\x15\x7c\x4a\x7f"]]]
 
+# Murmurhash calculation
 class MurmurHash
   MASK32 = 0xffffffff
   def self.murmur3_32_rotl(x, r)
@@ -171,8 +171,8 @@ class MurmurHash
   end
 end
 
-class MachocHash
   # Class implementing the machoc hash calculation
+class MachocHash
   def self.calculate_machoc_hash(dasm)
     @fullFuncSign = ''
     @fullHashSign = ''
@@ -435,7 +435,10 @@ end
   'WaitNamedPipeA' => { 'args' => %w[PSTR UINT], 'tags' => ['PIPE_'] },
   'CreateNamedPipeW' => { 'args' => %w[PWSTR UINT UINT UINT UINT UINT UINT UINT UINT], 'tags' => ['PIPE_'] },
   'CreateNamedPipeA' => { 'args' => %w[PSTR UINT UINT UINT UINT UINT UINT UINT UINT], 'tags' => ['PIPE_'] },
-  'ConnectNamedPipe' => { 'args' => [nil, nil], 'tags' => ['PIPE_'] }
+  'ConnectNamedPipe' => { 'args' => [nil, nil], 'tags' => ['PIPE_'] },
+  'GetProcAddress' => {'args' => [nil, 'PSTR'], 'tags' => ['RESOLVE_']},
+  'LoadLibraryA' => {'args' => ['PSTR'], 'tags' => ['RESOLVE_']},
+  'LoadLibraryW' => {'args' => ['PWSTR'], 'tags' => ['RESOLVE_']}
 }
 
 def checkCall(strFunc, xrefCall)
@@ -515,21 +518,21 @@ def checkCall(strFunc, xrefCall)
           strArg += ' (CLSID_LNK)'
           @tbComments[xrefCall] += ' (CLSID_LNK)'
         end
-        end
-      strArg = '' if strArg.nil?
+      end
+    strArg = '' if strArg.nil?
     when 'PVOID'
       if $gdasm.read_raw_data(carg, 0x10)
         strArg = $gdasm.read_raw_data(carg, 0x10).unpack('C*').map { |a| '\\x' + a.to_s(16) }.join
       else
         strArg = ''
-        end
+      end
     when 'HKEY'
       strArg = { 0x80000000 => 'HKEY_CLASSES_ROOT ', 0x80000001 => 'HKEY_CURRENT_USER', 0x80000002 => 'HKEY_LOCAL_MACHINE', 0x80000003 => 'HKEY_USERS', 0x80000004 => 'HKEY_PERFORMANCE_DATA', 0x80000005 => 'HKEY_CURRENT_CONFIG', 0x80000006 => 'HKEY_DYN_DATA' }[carg]
       strArg = '' if strArg.nil?
     when 'TIC'
       unless carg.nil?
         strArg = [nil, 'TokenUser', 'TokenGroups', 'TokenPrivileges', 'TokenOwner', 'TokenPrimaryGroup', 'TokenDefaultDacl', 'TokenSource', 'TokenType', 'TokenImpersonationLevel', 'TokenStatistics', 'TokenRestrictedSids', 'TokenSessionId', 'TokenGroupsAndPrivileges', 'TokenSessionReference', 'TokenSandBoxInert', 'TokenAuditPolicy', 'TokenOrigin', 'TokenElevationType', 'TokenLinkedToken', 'TokenElevation', 'TokenHasRestrictions', 'TokenAccessInformation', 'TokenVirtualizationAllowed', 'TokenVirtualizationEnabled', 'TokenIntegrityLevel', 'TokenUIAccess', 'TokenMandatoryPolicy', 'TokenLogonSid', 'TokenIsAppContainer', 'TokenCapabilities', 'TokenAppContainerSid', 'TokenAppContainerNumber', 'TokenUserClaimAttributes', 'TokenDeviceClaimAttributes', 'TokenRestrictedUserClaimAttributes', 'TokenRestrictedDeviceClaimAttributes', 'TokenDeviceGroups', 'TokenRestrictedDeviceGroups', 'TokenSecurityAttributes', 'TokenIsRestricted', 'MaxTokenInfoClass'][carg]
-        end
+      end
       strArg = '' if strArg.nil?
     end
     decoded_arg = true if !strArg.nil? && (strArg != '')
@@ -695,7 +698,7 @@ def repareIatLinks
         $gdasm.xrefs[di.instruction.args.last.symbolic.target.bind.reduce] = [di.instruction.args.last.symbolic.target.bind.reduce, di]
       elsif !$gdasm.xrefs[di.instruction.args.last.symbolic.target.bind.reduce].include? di
         $gdasm.xrefs[di.instruction.args.last.symbolic.target.bind.reduce] |= [di]
-        end
+      end
     end
   end
 end
@@ -716,10 +719,10 @@ log(title)
 # the entrypoints to obfuscated functions
 entrypoints = ARGV.map do |ep|
   begin
-                  Integer(ep)
-                rescue
-                  ep
-                end
+	Integer(ep)
+	rescue
+      ep
+  end
 end
 
 # load binary
@@ -760,12 +763,12 @@ dasm.sections.each do |secAddr, secDatas|
         if dasm.di_at(secAddr + i + pattAddr).nil?
           puts "    [+] Pattern found at 0x#{(secAddr + i + pattAddr).to_s(16)} fast disassembling in process..." if defined?($VERBOSEOPT)
           dasm.disassemble_fast_deep(secAddr + i + pattAddr)
-          end
+        end
         if dasm.function[secAddr + i + pattAddr].nil?
           if dasm.di_at(secAddr + i + pattAddr).block.from_subfuncret.nil? && dasm.di_at(secAddr + i + pattAddr).block.from_normal.nil?
             dasm.function[secAddr + i + pattAddr] = (dasm.function[:default] || dasm.DecodedFunction.new).dup
             dasm.function[secAddr + i + pattAddr].finalized = true
-            end
+          end
           dasm.disassemble_fast_checkfunc(secAddr + i + pattAddr)
         end
         i += pattAddr + 1
@@ -781,8 +784,8 @@ dasm.function.each do |addr, _symb|
   fromaddr = []
   xreftree = dasm.get_xrefs_x(dasm.di_at(addr))
   xreftree.each do |xref_addr|
-    fromaddr << xref_addr if xref_addr.to_s =~ /^[0-9]+$/
-  end
+	fromaddr << xref_addr if xref_addr.to_s =~ /^[0-9]+$/
+    end
   dasm.each_function_block(addr).each do |bloc|
     dasm.di_at(bloc[0]).block.list.each do |di|
       toaddr << dasm.normalize(di.instruction.args.first) if (di.opcode.name == 'call') && dasm.normalize(di.instruction.args.first).to_s =~ /^[0-9]+$/
@@ -811,8 +814,12 @@ entrypoints.each do |ep|
   @treefuncs << [dasm.normalize(ep), toaddr, fromaddr]
 end
 
-@compiled_date = DateTime.strptime(decodedfile.header.time.to_s, '%s').to_s.tr('T', ' ').gsub(/\+.*/, '')
-log("Executable compiled the #{DateTime.strptime(decodedfile.header.time.to_s, '%s')}\n")
+begin
+  @compiled_date = DateTime.strptime(decodedfile.header.time.to_s, '%s').to_s.tr('T', ' ').gsub(/\+.*/, '')
+  log("Executable compiled the #{DateTime.strptime(decodedfile.header.time.to_s, '%s')}\n")
+rescue
+  @compiled_date = nil
+end
 
 @allintructionssize = 0
 dasm.decoded.each do |_addr, di|
