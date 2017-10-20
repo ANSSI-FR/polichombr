@@ -555,6 +555,21 @@ class SkelHooks(object):
 
             return idaapi.IDB_Hooks.area_cmt_changed(self, *args)
 
+        def renamed(self, *args):
+            g_logger.debug("[IDB Hook] Something is renamed")
+            ea, new_name, is_local_name = args
+            if ea >= idc.MinEA() and ea <= idc.MaxEA():
+                if is_local_name:
+                    g_logger.warning("Local names are unimplemented")
+                    pass
+                else:
+                    if not SkelUtils.name_blacklist(new_name):
+                        self.skel_conn.push_name(ea, new_name)
+            else:
+                g_logger.warning("ea outside program...")
+
+            return idaapi.IDB_Hooks.renamed(self, *args)
+
         def cmt_changed(self, *args):
             """
                 A comment changed somewhere
@@ -702,7 +717,7 @@ class SkelHooks(object):
             self.skel_conn = skel_conn
 
         def renamed(self, *args):
-            g_logger.debug("[IDB Hook] Something is renamed")
+            g_logger.debug("[IDP Hook] Something is renamed")
             ea, new_name, is_local_name = args
             if ea >= idc.MinEA() and ea <= idc.MaxEA():
                 if is_local_name:
@@ -1224,7 +1239,7 @@ class SkelUI(idaapi.PluginForm):
         g_logger.debug("UI is terminating")
 
     def Close(self, options=idaapi.PluginForm.FORM_SAVE):
-        super(SkelUI, self).Close(options)
+        idaapi.PluginForm.Close(self, options)
 
 
 class SkelCore(object):
@@ -1400,18 +1415,23 @@ class SkelenoxPlugin(idaapi.plugin_t):
         IDA plugin init
         """
         self.icon_id = 0
-        self.skel_object = launch_skelenox()
+        self.skel_object = None
 
         return idaapi.PLUGIN_OK
 
     def run(self, arg=0):
+        self.skel_object = launch_skelenox()
         return
 
     def term(self):
-        self.skel_object.end_skelenox()
+        if self.skel_object is not None:
+            self.skel_object.end_skelenox()
 
 
 if __name__ == '__main__':
-    # RUN !
+    # run as a script
     idaapi.autoWait()
+    if "skel" in globals() and skel is not None:
+        g_logger.info("Previous instance found, killing it")
+        skel.end_skelenox()
     skel = launch_skelenox()
