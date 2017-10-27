@@ -1,4 +1,4 @@
- ** Polichombr's API **
+# Polichombr API
 
 Polichombr expose a HTTP api using the endpoint `/api/1.0/`
 
