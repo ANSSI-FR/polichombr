@@ -1,6 +1,6 @@
 # With docker
 
-** This feature is experimental **
+**This feature is provided as a debug option, and should not be used for production**
 
 To use polichombr as a docker container, we provide a *DockerFile*
 in the root directory.
