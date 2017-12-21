@@ -1,7 +1,7 @@
 """
     This file is part of Polichombr.
 
-    (c) 2016 ANSSI-FR
+    (c) 2017 ANSSI-FR
 
 
     Description:
@@ -12,30 +12,28 @@
 from poli import db, ma
 from flask_security import UserMixin, RoleMixin
 
-usersample = db.Table('usersample',
-                      db.Column('user_id', db.Integer,
-                                db.ForeignKey('user.id'), index=True),
-                      db.Column('sample_id', db.Integer,
-                                db.ForeignKey('sample.id'), index=True)
-                      )
 
-userfamily = db.Table('userfamily',
-                      db.Column('user_id', db.Integer,
-                                db.ForeignKey('user.id'), index=True),
-                      db.Column('family_id', db.Integer,
-                                db.ForeignKey('family.id'), index=True)
-                      )
+def create_link_tables(table1, table2):
+    """
+        Create a joint table for n-n relationships
+    """
+    table = db.Table(table1+table2,
+                     db.Column(table1 + '_id', db.Integer,
+                               db.ForeignKey(table1 + '.id'), index=True),
+                     db.Column(table2 + '_id', db.Integer,
+                               db.ForeignKey(table2 + '.id'), index=True))
+    return table
 
-roles_users = db.Table('roles_users',
-                       db.Column('user_id',
-                                 db.Integer(),
-                                 db.ForeignKey('user.id')),
-                       db.Column('role_id',
-                                 db.Integer(),
-                                 db.ForeignKey('auth_role.id')))
+
+usersample = create_link_tables("user", "sample")
+userfamily = create_link_tables("user", "family")
+roles_users = create_link_tables("user", "auth_role")
 
 
 class Role(db.Model, RoleMixin):
+    """
+        Role definition for RBAC
+    """
     __tablename__ = 'auth_role'
     id = db.Column(db.Integer, primary_key=True)
     name = db.Column(db.String(80), unique=True)
@@ -56,7 +54,6 @@ class Role(db.Model, RoleMixin):
 
 
 class User(db.Model, UserMixin):
-
     """
     User model.
     """
@@ -99,7 +96,6 @@ class User(db.Model, UserMixin):
 
 
 class UserSchema(ma.ModelSchema):
-
     """
     Schema representation.
     """
