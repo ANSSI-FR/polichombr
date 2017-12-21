@@ -43,7 +43,6 @@ class DetectionType(CustomEnum):
 
 
 class FamilyDataFile(db.Model):
-
     """
     Family data file. Whatever you want, script, report, etc.
     """
@@ -57,7 +56,6 @@ class FamilyDataFile(db.Model):
 
 
 class FamilyStatus(CustomEnum):
-
     """
         Is the family analysis complete or not?
     """
@@ -73,15 +71,14 @@ familytoyara = db.Table('familytoyara',
                         db.Column('yara_id', db.Integer,
                                   db.ForeignKey('yararule.id'), index=True),
                         db.Column('family_id', db.Integer,
-                                  db.ForeignKey('family.id'), index=True)
-                        )
+                                  db.ForeignKey('family.id'), index=True))
+
 # Samples relationship.
 familytosample = db.Table('familytosample',
                           db.Column('sample_id', db.Integer,
                                     db.ForeignKey('sample.id'), index=True),
                           db.Column('family_id', db.Integer,
-                                    db.ForeignKey('family.id'), index=True)
-                          )
+                                    db.ForeignKey('family.id'), index=True))
 
 
 class Family(db.Model):
@@ -109,7 +106,7 @@ class Family(db.Model):
     associated_files = db.relationship('FamilyDataFile')
     detection_items = db.relationship('DetectionElement')
     # Family name's
-    name = db.Column(db.String(), index=True, unique=True)
+    name = db.Column(db.String(), index=True)
     # User-supplied abstract
     abstract = db.Column(db.String())
     # Analysis status
@@ -138,7 +135,10 @@ class FamilySchema(ma.ModelSchema):
                                                                  'status'])
     parents = fields.Nested('FamilySchema', many=True, only=['id', 'name'])
 
-    class Meta:
+    class Meta(object):
+        """
+            List of simple fields
+        """
         fields = ('id',
                   'name',
                   'parent_id',
@@ -146,5 +146,4 @@ class FamilySchema(ma.ModelSchema):
                   'samples',
                   'abstract',
                   'status',
-                  'TLP_sensibility'
-                  )
+                  'TLP_sensibility')

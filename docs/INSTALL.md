@@ -1,7 +1,10 @@
 # Installation
 ## Prerequisites
-On a Ubuntu derivative:
-        ``sudo apt-get install -y git virtualenv ruby libffi-dev python-dev graphviz gcc libssl-dev python-pip``
+
+Polichombr is based on the `Flask` framework and this needs several dependencies to be installed.
+
+To install them on an Ubuntu derivative:
+	sudo apt-get install -y git virtualenv ruby libffi-dev python-dev graphviz gcc libssl-dev python-pip
 
 ## Initialization
         ./install.sh
@@ -12,23 +15,27 @@ On a Ubuntu derivative:
 
 Access it at http://localhost:5000
 
-## With nginx and uwsgi
-Configure your nginx to use the uwsgi protocol, and modify the `poli.ini`
-file according to your needs.
+## Production ready version: using nginx and uwsgi
+The previous version uses the ``flask`` debug server, and thus is not suitable for production use.
 
-Then  launch the app:
+The preferred configuration is using `nginx` to dispatch request to an `uwsgi` broker.
+
+The `uwsgi` server can be configured by modifying the `poli.ini` file according to your needs,
+and telling `nginx` to forward request to `uwsgi`.
+
+Then to launch the app:
+
 	uwsgi --ini poli.ini
 
-Now access it at the defined address for nginx
+Now access it at the defined address for your nginx server!
 
 ## virtualenv
-We use virtualenv, so don't forget to activate the environment
+A Python virtual environment is created by the installer script, so don't forget to activate it
 
         source flask/bin/activate
 
 ## Alternative: postgresql
-The polichombr backends also supports
-PostgreSQL
+The polichombr DB backends also supports PostgreSQL, but it relies on some specific dependencies
 
 ```
 	sudo apt-get install libpq-dev postgresql-server-dev-all

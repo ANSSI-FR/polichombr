@@ -64,7 +64,6 @@ class SampleController(object):
             sample = Sample()
             db.session.add(sample)
             sample.TLP_sensibility = tlp_level
-            sample.family_id = None
             sample.file_date = datetime.datetime.now()
         elif sample.file_date is None:
             sample.file_date = datetime.datetime.now()
@@ -539,14 +538,17 @@ class SampleController(object):
         matches = []
 
         funcs = FunctionInfo.query.filter_by(sample_id=sample_dst.id)
-        funcs = funcs.group_by(FunctionInfo.machoc_hash)
+        funcs = funcs.group_by(FunctionInfo.id, FunctionInfo.machoc_hash)
         funcs = funcs.having(func.count(FunctionInfo.machoc_hash) == 1)
 
         for funcx in src_funcs:
             match = funcs.filter_by(machoc_hash=funcx.machoc_hash)
-            match = match.scalar()
-            if match is not None:
-                matches.append(match)
+            try:
+                match = match.scalar()
+                if match is not None:
+                    matches.append(match)
+            except sqlalchemy.orm.exc.MultipleResultsFound:
+                pass
         app.logger.debug("Got %d direct machoc matches" % len(matches))
         return matches
 
