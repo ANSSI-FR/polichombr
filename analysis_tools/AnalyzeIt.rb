@@ -1,6 +1,5 @@
 #!/usr/bin/env ruby
 # encoding: ASCII-8BIT
-
 require './metasm/metasm'
 include Metasm
 
@@ -11,7 +10,7 @@ require 'optparse'
 OptionParser.new do |opt|
   opt.banner = 'Usage: AnalyzeIt.rb [-f] <executable>'
   opt.on('-f', '--fast', 'use fast disassemble') { $FASTDISAS = true }
-  opt.on('-v', '--verbose', 'Display more information on console') { $VERBOSEOPT = true }
+  opt.on('-v', '--verbose', 'Display more information') { $VERBOSEOPT = true }
 end.parse!(ARGV)
 
 Encoding.default_internal = Encoding.find('ASCII-8BIT')
@@ -171,7 +170,7 @@ class MurmurHash
   end
 end
 
-  # Class implementing the machoc hash calculation
+# Class implementing the machoc hash calculation
 class MachocHash
   def self.calculate_machoc_hash(dasm)
     @fullFuncSign = ''
@@ -436,9 +435,9 @@ end
   'CreateNamedPipeW' => { 'args' => %w[PWSTR UINT UINT UINT UINT UINT UINT UINT UINT], 'tags' => ['PIPE_'] },
   'CreateNamedPipeA' => { 'args' => %w[PSTR UINT UINT UINT UINT UINT UINT UINT UINT], 'tags' => ['PIPE_'] },
   'ConnectNamedPipe' => { 'args' => [nil, nil], 'tags' => ['PIPE_'] },
-  'GetProcAddress' => {'args' => [nil, 'PSTR'], 'tags' => ['RESOLVE_']},
-  'LoadLibraryA' => {'args' => ['PSTR'], 'tags' => ['RESOLVE_']},
-  'LoadLibraryW' => {'args' => ['PWSTR'], 'tags' => ['RESOLVE_']}
+  'GetProcAddress' => { 'args' => [nil, 'PSTR'], 'tags' => ['RESOLVE_'] },
+  'LoadLibraryA' => { 'args' => ['PSTR'], 'tags' => ['RESOLVE_'] },
+  'LoadLibraryW' => { 'args' => ['PWSTR'], 'tags' => ['RESOLVE_'] }
 }
 
 def checkCall(strFunc, xrefCall)
@@ -519,7 +518,7 @@ def checkCall(strFunc, xrefCall)
           @tbComments[xrefCall] += ' (CLSID_LNK)'
         end
       end
-    strArg = '' if strArg.nil?
+      strArg = '' if strArg.nil?
     when 'PVOID'
       if $gdasm.read_raw_data(carg, 0x10)
         strArg = $gdasm.read_raw_data(carg, 0x10).unpack('C*').map { |a| '\\x' + a.to_s(16) }.join
@@ -719,9 +718,9 @@ log(title)
 # the entrypoints to obfuscated functions
 entrypoints = ARGV.map do |ep|
   begin
-	Integer(ep)
-	rescue
-      ep
+    Integer(ep)
+  rescue
+    ep
   end
 end
 
@@ -784,8 +783,8 @@ dasm.function.each do |addr, _symb|
   fromaddr = []
   xreftree = dasm.get_xrefs_x(dasm.di_at(addr))
   xreftree.each do |xref_addr|
-	fromaddr << xref_addr if xref_addr.to_s =~ /^[0-9]+$/
-    end
+    fromaddr << xref_addr if xref_addr.to_s =~ /^[0-9]+$/
+  end
   dasm.each_function_block(addr).each do |bloc|
     dasm.di_at(bloc[0]).block.list.each do |di|
       toaddr << dasm.normalize(di.instruction.args.first) if (di.opcode.name == 'call') && dasm.normalize(di.instruction.args.first).to_s =~ /^[0-9]+$/
@@ -815,8 +814,10 @@ entrypoints.each do |ep|
 end
 
 begin
-  @compiled_date = DateTime.strptime(decodedfile.header.time.to_s, '%s').to_s.tr('T', ' ').gsub(/\+.*/, '')
-  log("Executable compiled the #{DateTime.strptime(decodedfile.header.time.to_s, '%s')}\n")
+  date_str = decodedfile.header.time.to_s
+  @compiled_date = DateTime.strptime(date_str, '%s')
+  @compiled_date = @compiled_date.to_s.tr('T', ' ').gsub(/\+.*/, '')
+  log("Executable compiled on #{@compiled_date}\n")
 rescue
   @compiled_date = nil
 end
@@ -956,13 +957,13 @@ dasm.decoded.each do |_addr, di|
   if !argStr.nil? && (argStr.length > 4) && (argStr =~ regexStr || ((argStr.length > 5) && (argStr !~ /[\x80-\xff]/n)))
     strings << [di.address, argStr.gsub(/[\x0d]/n, '\\r').gsub(/[\x0a]/n, '\\n')]
     next
-    end
+  end
   argStr = dasm.decode_wstrz(di.instruction.args.last)
   argStr = argStr.gsub(/[\x00]/n, '') unless argStr.nil?
   if !argStr.nil? && (argStr.length > 4) && (argStr =~ regexStr || ((argStr.length > 5) && (argStr !~ /[\x80-\xff]/n)))
     strings << [di.address, argStr.gsub(/[\x0d]/n, '\\r').gsub(/[\x0a]/n, '\\n')]
     next
-    end
+  end
 end
 
 strings = strings.sort.uniq
@@ -1164,7 +1165,7 @@ dasm.decoded.each do |_addr, di|
         if isFuncTreeLink(dasm.normalize(ep), orifunc)
           printCallTree(dasm.normalize(ep), orifunc)
           @treeloop = 1
-          end
+        end
       end
       if @treeloop == 0
         @treefuncs.each do |addr, _toaddr, fromaddr|
@@ -1189,7 +1190,7 @@ dasm.decoded.each do |_addr, di|
         if isFuncTreeLink(dasm.normalize(ep), orifunc)
           printCallTree(dasm.normalize(ep), orifunc)
           @treeloop = 1
-          end
+        end
       end
       if @treeloop == 0
         @treefuncs.each do |addr, _toaddr, fromaddr|

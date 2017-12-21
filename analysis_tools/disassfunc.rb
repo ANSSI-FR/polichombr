@@ -20,9 +20,9 @@ target = ARGV.shift || 'bla.exe'
 # the entrypoints to obfuscated functions
 entrypoints = ARGV.map do |ep|
   begin
-                  Integer(ep)
-                rescue
-                  ep
+    Integer(ep)
+  rescue
+    ep
   end
 end
 entrypoints << 'entrypoint' if entrypoints.empty?
