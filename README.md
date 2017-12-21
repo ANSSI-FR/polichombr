@@ -1,21 +1,21 @@
 # Polichombr
-Collaborative malware analysis framework
 
 [![Build Status](https://travis-ci.org/ANSSI-FR/polichombr.svg?branch=master)](https://travis-ci.org/ANSSI-FR/polichombr)
-[![Code Climate](https://codeclimate.com/github/ANSSI-FR/polichombr/badges/gpa.svg)](https://codeclimate.com/github/ANSSI-FR/polichombr)
+[![Maintainability](https://api.codeclimate.com/v1/badges/b78688130c309307618f/maintainability)](https://codeclimate.com/github/ANSSI-FR/polichombr/maintainability)
+[![Test Coverage](https://api.codeclimate.com/v1/badges/b78688130c309307618f/test_coverage)](https://codeclimate.com/github/ANSSI-FR/polichombr/test_coverage)
 
-Originally presented at [SSTIC 2016] ( https://www.sstic.org/2016/presentation/demarche_d_analyse_collaborative_de_codes_malveillants/ )
+This tool aim to provide a collaborative malware analysis framework.
+It was originally presented at [SSTIC 2016](https://www.sstic.org/2016/presentation/demarche_d_analyse_collaborative_de_codes_malveillants/),
 
-# Warning
-This is a beta version, use at your own risk!
 
 # Documentation
 A more detailled documentation is placed in the `docs` folder
 
 ## Analysis platform
-This platform is designed to help analysts to reverse malwares, as a team.
-We provide an engine to automate the analysis tasks,
-and identify hotpoints in the binary, and collaboratively reverse binaries.
+Polichombr is designed to help analysts to reverse malwares, as a team.
+It provides an engine to automate the analysis tasks,
+and identify hotpoints in the binary, a script to collaborate during the reverse of binaries,
+and can be used to store and manage informations about malware families.
 
 ### Example scripts
 Scripts under the folder [examples](https://github.com/ANSSI-FR/polichombr/tree/master/examples)
