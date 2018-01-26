@@ -4,7 +4,10 @@
 """
 import os
 import uuid
+import logging
+
 DEBUG = True
+LOG_LEVEL = logging.INFO
 BASE_DIR = os.path.abspath(os.path.dirname(__file__))
 
 # used for server creation and skelenox script generation

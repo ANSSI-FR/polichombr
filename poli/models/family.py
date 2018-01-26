@@ -124,7 +124,6 @@ class Family(db.Model):
 
 
 class FamilySchema(ma.ModelSchema):
-
     """
     Schema for exporting by marshalling in JSON.
     """
@@ -134,6 +133,7 @@ class FamilySchema(ma.ModelSchema):
                                                                  'subfamilies',
                                                                  'status'])
     parents = fields.Nested('FamilySchema', many=True, only=['id', 'name'])
+    users = fields.Nested('UserSchema', many=True, only=["id", "nickname"])
 
     class Meta(object):
         """
@@ -146,4 +146,5 @@ class FamilySchema(ma.ModelSchema):
                   'samples',
                   'abstract',
                   'status',
-                  'TLP_sensibility')
+                  'TLP_sensibility',
+                  'users')

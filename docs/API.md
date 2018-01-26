@@ -158,6 +158,13 @@ The data returned is in the format:
        ],
       "status": 3,
       "subfamilies": []
+	  "users": [{
+        "id": 1,
+        "nickname": "test"
+      }
+    ]
+
+	  ]
     }
   ]
 }
