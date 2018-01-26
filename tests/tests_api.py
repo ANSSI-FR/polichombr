@@ -1,6 +1,12 @@
 #!/usr/bin/env python
 """
-    This module implements all the tests for the API view.
+
+        This file is part of Polichombr.
+            (c) ANSSI-FR 2018
+
+
+        Description:
+            This module implements all the tests for the API endpoints
 """
 import os
 import unittest

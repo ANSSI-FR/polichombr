@@ -26,7 +26,7 @@
 			Create
 	</button></h1>
 	</div>
-	<div class="row">
+	<div class="row" id="families_header">
 		<div class="col-lg-4">
 			<h2>
 				Name
@@ -52,42 +52,11 @@
 			</h2>
 		</div>
 	</div>
+	<div class="container" id="families_container">
+	</div>
+{% endblock %}
 
-	{% for family in myfamilies recursive %}
-        {% if (loop.depth == 1 and family.parent_id == None) or (loop.depth > 1) %}
-		    <div class="row panel panel-default" style="padding: 5px;">
-				<div class="col-lg-4">
-					<a class="btn btn-{{familycolorbystatus(family)}}" href="/family/{{family.id}}">{{family.name}}</a>
-				</div>
-                <div class="col-lg-2">
-                {% if family.TLP_sensibility == 1 %}
-                    <p class="btn btn-standard">TLP WHITE</p>
-                {% elif family.TLP_sensibility == 2 %}
-                    <p class="btn btn-success">TLP GREEN</p>
-                {% elif family.TLP_sensibility == 3 %}
-                    <p class="btn btn-warning">TLP AMBER</p>
-                {% elif family.TLP_sensibility == 4 %}
-                    <p class="btn btn-danger">TLP RED</p>
-                {% elif family.TLP_sensibility == 5 %}
-                    <p class="btn">TLP BLACK</p>
-                {% endif %}
-                </div>
-				<div class="col-lg-4">
-					<p class="text-center">
-					{% for u in family.users %}
-						<a class="btn btn-info" href='/user/{{u.id}}'>{{u.nickname}}</a>
-					{% endfor %}
-					</p>
-				</div>
-                <div class="col-lg-1">
-{% if family.subfamilies %}<a class="btn" data-toggle="collapse" data-target="#lochild{{family.id}}">Expand</a>{% endif %}
-                </div>
-            </div>
-	       {% if family.subfamilies %}
-			    <div id="lochild{{family.id}}" class="collapse">
-                    {{ loop(family.subfamilies) }}
-                </div>
-            {% endif %}
-		{% endif %}
-	{% endfor %}
+{% block scripts %}
+{{super()}}
+	<script src="{{url_for('.static', filename='js/families.js')}}"></script>
 {% endblock %}

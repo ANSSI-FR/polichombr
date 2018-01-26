@@ -6,12 +6,6 @@
 {% block styles %}
 {{super()}}
 
-<script language="javascript">
-    window.onload = function() {
-     $('a[href=' + location.hash + ']').tab('show');
-}
-</script>
-
 {% if current_user.theme %}
     {% if current_user.theme == "dark" %}
         <link rel="stylesheet" href="{{url_for('.static', filename='poli.css')}}"> 

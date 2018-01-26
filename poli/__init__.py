@@ -1,7 +1,7 @@
 """
     This file is part of Polichombr.
 
-    (c) 2016 ANSSI-FR
+    (c) 2018 ANSSI-FR
 
 
     Description:
@@ -16,16 +16,17 @@ from flask_bootstrap import Bootstrap
 from flask_marshmallow import Marshmallow
 from flask_misaka import Misaka
 from flask_security import Security, SQLAlchemyUserDatastore
+from flask_bootstrap import StaticCDN
 
 
 app = Flask(__name__)
 
 app.config.from_object('config')
-
+app.logger.setLevel(app.config["LOG_LEVEL"])
 
 # Init bootstrap extension
 Bootstrap(app)
-
+app.extensions['bootstrap']['cdns']['jquery'] = StaticCDN()
 
 # Init SQL extension
 db = SQLAlchemy(app)
