@@ -17,8 +17,9 @@ from poli.models.sample import Sample, SampleSchema
 from poli.models.sample import FunctionInfoSchema
 from poli.models.yara_rule import YaraSchema
 from poli.models.models import TLPLevel
+from poli.models.user import User
 
-from flask_security import login_required
+from flask_security import auth_token_required
 
 from flask import jsonify, request, send_file, abort, make_response
 
@@ -81,6 +82,18 @@ def api_help():
         See docs/API.md for more informations
     """
     return plain_text(text)
+
+
+@apiview.route('/get_auth_token/', methods=["POST"])
+def generate_token():
+    data = request.json
+    if not data:
+        abort(400, "Missing JSON arguments")
+    key = data['api_key']
+    user = User.query.filter_by(api_key=key).first()
+    if not user:
+        abort(400, "Invalid user")
+    return jsonify({'token': user.get_auth_token()})
 
 
 @apiview.route(
@@ -147,6 +160,7 @@ def api_family_export_samplesioc(family_id, tlp_level):
 
 
 @apiview.route('/families/', methods=['GET'])
+@auth_token_required
 def api_get_families():
     """
         Exports all the families
