@@ -15,7 +15,7 @@
 					<td>Theme</td>
 					<td>{{user.theme}}</td>
 					<td>
-						<a data-toggle="collapse" data-target="#changetheme" class="btn btn-xs btn-default">Change</a>
+						<a data-toggle="collapse" data-target="#changetheme" class="btn btn-primary">Change</a>
 						<div class="collapse" id="changetheme">
 							{{wtf.quick_form(chthemeform)}}
 						</div>
@@ -25,7 +25,7 @@
 					<td>Nickname</td>
 					<td>{{user.nickname}}</td>
 					<td>
-						<a data-toggle="collapse" data-target="#changenick" class="btn btn-xs btn-default">Change</a>
+						<a data-toggle="collapse" data-target="#changenick" class="btn btn-primary">Change</a>
 						<div class="collapse" id="changenick">
 						{{wtf.quick_form(chnickform)}}
 						</div>
@@ -35,7 +35,7 @@
 					<td>Complete name</td>
 					<td>{{user.completename}}</td>
 					<td>
-						<a data-toggle="collapse" data-target="#changename" class="btn btn-xs btn-default">Change</a>
+						<a data-toggle="collapse" data-target="#changename" class="btn btn-primary">Change</a>
 						<div class="collapse" id="changename">
 							{{wtf.quick_form(chnameform)}}
 						</div>
@@ -45,7 +45,7 @@
 					<td>Password</td>
 					<td></td>
 					<td>
-						<a data-toggle="collapse" data-target="#changepassword" class="btn btn-xs btn-default">Change</a>
+						<a data-toggle="collapse" data-target="#changepassword" class="btn btn-primary">Change</a>
 						<div class="collapse" id="changepassword">
 							{{wtf.quick_form(chpassform)}}
 						</div>
@@ -53,7 +53,8 @@
 				</tr>
 				<tr>
 					<td>Api key</td>
-					<td colspan="2">{{user.api_key}}</td>
+					<td>{{user.api_key}}</td>
+					<td><a class="btn btn-primary" href="/user/{{user.id}}/renew_api_key">Change</a></td>
 				</tr>
 			</table>
 		</div>
@@ -64,7 +65,7 @@
 		</div>
 		<div class="panel-body">
 			{% for f in user.families %}
-				<a href="/family/{{f.id}}/" class="btn btn-default">{{f.name}}</a>
+				<a href="/family/{{f.id}}/" class="btn btn-{{familycolorbystatus(f)}}">{{f.name}}</a>
 			{% endfor %}
 		</div>
 	</div>

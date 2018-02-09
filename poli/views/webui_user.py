@@ -7,7 +7,7 @@
     Description:
         Routes and forms parsing related to user management
 """
-from flask import render_template, g, redirect, url_for, flash
+from flask import render_template, g, redirect, url_for, flash, abort
 from flask_security import login_user, logout_user
 from flask_security import login_required, roles_required
 
@@ -163,3 +163,13 @@ def deactivate_user(user_id):
     if not ret:
         flash("Cannot deactivate user", "error")
     return redirect(url_for("admin_page"))
+
+
+@app.route('/user/<int:user_id>/renew_api_key')
+@login_required
+def renew_user_apikey(user_id):
+    if g.user.id == user_id:
+        user = api.usercontrol.get_by_id(user_id)
+        api.usercontrol.renew_api_key(user)
+        return redirect(url_for("view_user", user_id=user_id))
+    return abort(403)
