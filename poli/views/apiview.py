@@ -57,11 +57,21 @@ def api_500_handler(error):
 @apiview.errorhandler(400)
 def api_400_handler(error):
     """
-        Module wide error handler, returned when there is an argument problem
+        module wide error handler, returned when there is an argument problem
     """
     return jsonify({'error': 400,
                     'error_description': error.description,
                     'error_message': error.message}), 400
+
+
+@apiview.errorhandler(401)
+def api_401_handler(error):
+    """
+        module wide error handler, returned when there is an argument problem
+    """
+    return jsonify({'error': 401,
+                    'error_description': error.description,
+                    'error_message': error.message}), 401
 
 
 @apiview.route("/<path:invalid_path>", methods=['GET', 'POST', 'PATCH'])
@@ -85,7 +95,7 @@ def api_help():
     return plain_text(text)
 
 
-@apiview.route('/get_auth_token/', methods=["POST"])
+@apiview.route('/auth_token/', methods=["POST"])
 def generate_token():
     """
         Generate a temporary token for using the API

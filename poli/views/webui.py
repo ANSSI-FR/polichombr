@@ -46,7 +46,16 @@ def not_found(error):
         404 management
     """
     current_app.logger.error(error)
-    return render_template('error.html'), 404
+    return render_template('error.html', error=error), 404
+
+
+@webuiview.errorhandler(401)
+def api_401_handler(error):
+    """
+        module wide error handler, returned when there is an argument problem
+    """
+    current_app.logger.error(error)
+    return render_template('error.html', error=error), 401
 
 
 @webuiview.before_request

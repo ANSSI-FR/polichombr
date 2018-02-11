@@ -2,9 +2,8 @@
 {% block content%}
     {{super()}}
     <div class="page-header">
-	    <h1>ERROR</h1>
+		<h1>ERROR {{ error.code }}</h1>
     </div>
-	
-		<p class="text-center"><img src="/static/error.gif" /></p>
-	
+	<p class="text-center"><img src="/static/error.gif" /></p>
+	<p class="text-center">{{ error.description }}</p>
 {% endblock %}

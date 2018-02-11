@@ -7,7 +7,7 @@
     Description:
         Init flask app and the modules.
 """
-from flask import Flask
+from flask import Flask, abort
 
 
 from flask_sqlalchemy import SQLAlchemy
@@ -49,10 +49,14 @@ def create_app(config_filename):
 
     security.init_app(app, user_datastore)
 
+    @app.login_manager.unauthorized_handler
+    def abort_401():
+        return abort(401)
     return app
 
 
 app = create_app("config")
+
 from .controllers.api import APIControl
 api = APIControl()
 
@@ -61,3 +65,4 @@ from .views import webui
 
 app.register_blueprint(apiview.apiview)
 app.register_blueprint(webui.webuiview)
+
