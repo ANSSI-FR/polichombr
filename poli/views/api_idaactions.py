@@ -9,10 +9,11 @@
 """
 import datetime
 
-from poli import api, apiview, app
+from poli import api
+from poli.views.apiview import apiview
 from poli.models.sample import FunctionInfoSchema
 
-from flask import jsonify, request, abort
+from flask import jsonify, request, abort, current_app
 
 
 def get_filter_arguments(mrequest):
@@ -98,7 +99,7 @@ def api_post_sample_comments(sid):
         abort(400, "Missing comment or address arguments")
     address = data['address']
     comment = data['comment']
-    app.logger.debug(
+    current_app.logger.debug(
         "Getting a new comment for sample %d : %s@0x%x",
         sid,
         comment,
@@ -132,7 +133,7 @@ def api_post_sample_names(sid):
     data = request.json
     addr = data['address']
     name = data['name']
-    app.logger.debug(
+    current_app.logger.debug(
         "Getting a new name for sample %d : %s@0x%x",
         sid,
         name,
@@ -181,7 +182,7 @@ def api_create_struct(sid):
         abort(400, "Missing JSON data")
     result = False
     name = data['name']
-    app.logger.debug("Creating structure %s" % name)
+    current_app.logger.debug("Creating structure %s" % name)
     mstruct = api.idacontrol.create_struct(name=name)
     if mstruct is not False:
         result = api.samplecontrol.add_idaaction(sid, mstruct)

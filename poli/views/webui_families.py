@@ -10,24 +10,24 @@
 
 
 from flask import render_template, g, redirect, url_for, flash
-from flask import abort, make_response, request, jsonify
-from flask_security import login_user, logout_user, current_user
-from flask_security import login_required, roles_required
+from flask import abort
+from flask_security import login_required
 from werkzeug import secure_filename
 
-from poli import app, api
+from poli import api
 
 from poli.models.yara_rule import YaraRule
 
-from poli.views.forms import FamilyForm
+from poli.views.forms import FamilyForm, ExportFamilyForm
 from poli.views.forms import FamilyAbstractForm, AddYaraToFamilyForm
 from poli.views.forms import AddSubFamilyForm, UploadFamilyFileForm
 from poli.views.forms import ChangeTLPForm, ChangeStatusForm
-from poli.views.forms import ExportFamilyForm
 from poli.views.forms import CreateDetectionItemForm
 
+from poli.views.webui import webuiview
 
-@app.route('/families/', methods=['GET', 'POST'])
+
+@webuiview.route('/families/', methods=['GET', 'POST'])
 @login_required
 def view_families():
     """
@@ -83,9 +83,10 @@ def family_manage_export_form(family_id, export_form):
                 "apiview.api_family_export_sampleszip",
                 family_id=family_id,
                 tlp_level=lvl))
+    return abort("Not implemented", 500)
 
 
-@app.route('/family/<int:family_id>/', methods=['GET', 'POST'])
+@webuiview.route('/family/<int:family_id>/', methods=['GET', 'POST'])
 @login_required
 def view_family(family_id):
     """
@@ -159,7 +160,7 @@ def view_family(family_id):
                            yaraform=add_yara_form)
 
 
-@app.route("/family/<int:family_id>/addreme/")
+@webuiview.route("/family/<int:family_id>/addreme/")
 @login_required
 def add_remove_me(family_id):
     """
@@ -168,10 +169,10 @@ def add_remove_me(family_id):
     family_id = api.remove_user_from_element("family",
                                              family_id,
                                              g.user)
-    return redirect(url_for('view_family', family_id=family_id))
+    return redirect(url_for('webuiview.view_family', family_id=family_id))
 
 
-@app.route('/family/<int:family_id>/deletefile/<int:file_id>/')
+@webuiview.route('/family/<int:family_id>/deletefile/<int:file_id>/')
 @login_required
 def delete_family_file(family_id, file_id):
     """
@@ -180,10 +181,11 @@ def delete_family_file(family_id, file_id):
     family = api.get_elem_by_type("family", family_id)
     attachment = api.get_elem_by_type("family_file", file_id)
     api.familycontrol.delete_file(attachment)
-    return redirect(url_for('view_family', family_id=family.id))
+    return redirect(url_for('webuiview.view_family', family_id=family.id))
 
 
-@app.route('/family/<int:family_id>/deleteyara/<int:yara_id>', methods=['GET'])
+@webuiview.route('/family/<int:family_id>/deleteyara/<int:yara_id>',
+                 methods=['GET'])
 @login_required
 def delete_yara_family(family_id, yara_id):
     """
@@ -194,10 +196,10 @@ def delete_yara_family(family_id, yara_id):
     api.yaracontrol.remove_from_family(family, yar)
     flash("Removed yara %s from family %s" % (yar.name, family.name),
           "success")
-    return redirect(url_for("view_family", family_id=family_id))
+    return redirect(url_for('webuiview.view_family', family_id=family_id))
 
 
-@app.route('/family/<int:family_id>/deleteitem/<int:item_id>/')
+@webuiview.route('/family/<int:family_id>/deleteitem/<int:item_id>/')
 @login_required
 def delete_family_item(family_id, item_id):
     """
@@ -206,10 +208,10 @@ def delete_family_item(family_id, item_id):
     family = api.get_elem_by_type("family", family_id)
     detection_item = api.get_elem_by_type("detection_item", item_id)
     api.familycontrol.delete_detection_item(detection_item)
-    return redirect(url_for('view_family', family_id=family.id))
+    return redirect(url_for('webuiview.view_family', family_id=family.id))
 
 
-@app.route('/family/<int:family_id>/delete/')
+@webuiview.route('/family/<int:family_id>/delete/')
 @login_required
 def delete_family(family_id):
     """
@@ -221,5 +223,6 @@ def delete_family(family_id):
     api.familycontrol.delete(family)
     flash("Deleted family", "success")
     if parentfamily is not None:
-        return redirect(url_for('view_family', family_id=parentfamily.id))
-    return redirect(url_for('view_families'))
+        return redirect(url_for('webuiview.view_family',
+                                family_id=parentfamily.id))
+    return redirect(url_for('webuiview.view_families'))

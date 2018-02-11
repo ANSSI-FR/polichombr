@@ -8,15 +8,17 @@
         Routes for REST API
 """
 
-from poli import api, apiview, app
-from poli.models.sample import FunctionInfoSchema
+from poli import api, app
 from poli.models.yara_rule import YaraSchema
 from poli.models.models import TLPLevel
 from poli.models.user import User
 
-from flask_security import auth_token_required
-
 from flask import jsonify, request, abort, make_response
+from flask import Blueprint
+
+apiview = Blueprint('apiview', __name__,
+                    url_prefix=app.config['API_PATH'])
+
 
 from poli.views.api_family import *
 from poli.views.api_idaactions import *
@@ -99,7 +101,6 @@ def generate_token():
 
 
 @apiview.route('/yaras/', methods=['GET'])
-@auth_token_required
 def api_get_all_yaras():
     """
         Dump all the yaras
@@ -132,19 +133,3 @@ def api_create_yara():
     if result is None or not result:
         abort(500, "Cannot create yara rule")
     return jsonify({"id": result.id})
-
-
-@apiview.route('/machoc/<int:machoc_hash>', methods=["GET"])
-def api_get_machoc_names(machoc_hash):
-    """
-        Get user-defined names associated with machoc hashes
-        @arg machoc_hash
-        @return A list of names
-    """
-    functions = api.samplecontrol.get_functions_by_machoc_hash(machoc_hash)
-    app.logger.debug("Got %d functions matching machoc %x",
-                     len(functions),
-                     machoc_hash)
-
-    schema = FunctionInfoSchema(many=True)
-    return jsonify(schema.dump(functions).data)

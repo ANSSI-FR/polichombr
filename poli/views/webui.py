@@ -14,12 +14,13 @@ import io
 
 from zipfile import ZipFile
 
-from flask import render_template, g, redirect, url_for, flash
+from flask import render_template, g, redirect, url_for, flash, Blueprint
+from flask import current_app
 from flask import abort, make_response, request
 from flask_security import current_user
 from flask_security import login_required
 
-from poli import app, api
+from poli import api
 
 from poli.models.family import Family
 from poli.models.sample import Sample, SampleMetadataType
@@ -30,22 +31,25 @@ from poli.views.forms import FullTextSearchForm, HashSearchForm
 from poli.views.forms import CreateCheckListForm, MachocHashSearchForm
 from poli.views.forms import UploadSampleForm
 
+
+webuiview = Blueprint('webuiview', __name__, static_folder="static")
+
 # Import the subview
 from webui_families import *
 from webui_user import *
 from webui_sample import *
 
 
-@app.errorhandler(404)
+@webuiview.errorhandler(404)
 def not_found(error):
     """
         404 management
     """
-    app.logger.error(error)
+    current_app.logger.error(error)
     return render_template('error.html'), 404
 
 
-@app.before_request
+@webuiview.before_request
 def before_request():
     """
         Affects global variables for each request
@@ -55,8 +59,8 @@ def before_request():
     g.samples = Sample.query.order_by(Sample.id.desc()).limit(15).all()
 
 
-@app.route('/')
-@app.route('/index/')
+@webuiview.route('/')
+@webuiview.route('/index/')
 def index():
     """
     Index. Distinction between logged-in users and guests is performed
@@ -78,7 +82,7 @@ def index():
                            form=upload_sample_form)
 
 
-@app.route('/skelenox/', methods=['GET', 'POST'])
+@webuiview.route('/skelenox/', methods=['GET', 'POST'])
 @login_required
 def dl_skelenox():
     """
@@ -98,9 +102,9 @@ def dl_skelenox():
         skel_config["edit_flag"] = True
         skel_config["initial_sync"] = True
         skel_config["poli_server"] = ip_addr
-        skel_config["poli_port"] = app.config['SERVER_PORT']
-        skel_config["poli_remote_path"] = app.config['API_PATH'] + "/"
-        skel_config["debug_http"] = app.config['HTTP_DEBUG']
+        skel_config["poli_port"] = current_app.config['SERVER_PORT']
+        skel_config["poli_remote_path"] = current_app.config['API_PATH'] + "/"
+        skel_config["debug_http"] = current_app.config['HTTP_DEBUG']
         skel_config["poli_apikey"] = g.user.api_key
         skel_config["save_timeout"] = 10 * 60
         skel_config["sync_frequency"] = 1.0 * 100
@@ -117,7 +121,7 @@ def dl_skelenox():
     return response
 
 
-@app.route('/settings/', methods=['GET', 'POST'])
+@webuiview.route('/settings/', methods=['GET', 'POST'])
 @login_required
 def ui_settings():
     """
@@ -133,7 +137,8 @@ def ui_settings():
                            users=api.usercontrol.get_all())
 
 
-@app.route('/settings/deletechecklist/<int:checklist_id>/', methods=['GET'])
+@webuiview.route('/settings/deletechecklist/<int:checklist_id>/',
+                 methods=['GET'])
 @login_required
 def deletechecklist(checklist_id):
     """
@@ -142,12 +147,12 @@ def deletechecklist(checklist_id):
     checklist_item = api.samplecontrol.get_checklist_by_id(checklist_id)
     if not checklist_item:
         abort(404)
-    app.logger.debug("deleting checklist %s", checklist_item.title)
+    current_app.logger.debug("deleting checklist %s", checklist_item.title)
     api.samplecontrol.delete_checklist(checklist_item)
-    return redirect(url_for('ui_settings'))
+    return redirect(url_for('webuiview.ui_settings'))
 
 
-@app.context_processor
+@webuiview.context_processor
 def utility_processor():
     """
         define utilities for Jinja processing
@@ -160,7 +165,7 @@ def utility_processor():
     return dict(format_meta=format_metadata)
 
 
-@app.route('/search/', methods=['GET', 'POST'])
+@webuiview.route('/search/', methods=['GET', 'POST'])
 @login_required
 def ui_search():
     """
@@ -202,7 +207,7 @@ def ui_search():
                            results=samples_results)
 
 
-@app.route('/signatures/', methods=['GET', 'POST'])
+@webuiview.route('/signatures/', methods=['GET', 'POST'])
 @login_required
 def ui_yara():
     """
@@ -241,7 +246,7 @@ def ui_yara():
                            yaraform=create_yara_form)
 
 
-@app.route('/signatures/delete/<int:sig_id>')
+@webuiview.route('/signatures/delete/<int:sig_id>')
 @login_required
 def ui_delete_yara(sig_id):
     """
@@ -251,4 +256,4 @@ def ui_delete_yara(sig_id):
     name = yar.name
     api.yaracontrol.delete(yar)
     flash("Deleted rule " + name, "success")
-    return redirect(url_for('ui_yara'))
+    return redirect(url_for('webuiview.ui_yara'))

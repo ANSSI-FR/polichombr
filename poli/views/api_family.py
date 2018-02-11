@@ -10,13 +10,16 @@
 
 import os
 
-from poli import api, apiview, app
+from poli import api
+from poli.views.apiview import apiview
 from poli.models.family import FamilySchema
 from poli.models.models import TLPLevel
 
-from flask_security import auth_token_required
+from flask_security import login_required
 
 from flask import jsonify, request, send_file, abort, make_response
+from flask import current_app
+
 
 def plain_text(data):
     """
@@ -92,6 +95,7 @@ def api_family_export_samplesioc(family_id, tlp_level):
 
 
 @apiview.route('/families/', methods=['GET'])
+@login_required
 def api_get_families():
     """
         Exports all the families
@@ -114,7 +118,7 @@ def api_post_families():
     try:
         tlp_level = data['tlp_level']
     except KeyError:
-        app.logger.warning("No TLP for family, default to AMBER")
+        current_app.logger.warning("No TLP for family, default to AMBER")
 
     pfam = None
     try:
@@ -211,4 +215,3 @@ def download_family_file(family_id, file_id):
     return send_file('../' + data_file,
                      as_attachment=True,
                      attachment_filename=os.path.basename(data_file))
-

@@ -9,11 +9,13 @@
 """
 import os
 
-from poli import api, apiview, app
+from poli import api
+from poli.views.apiview import apiview
 from poli.models.sample import Sample, SampleSchema
 from poli.models.models import TLPLevel
+from poli.models.sample import FunctionInfoSchema
 
-from flask import jsonify, request, send_file, abort
+from flask import jsonify, request, send_file, abort, current_app
 
 
 @apiview.route('/samples/<shash>/')
@@ -74,12 +76,12 @@ def api_post_samples():
     try:
         tlp_level = int(request.form["tlp_level"])
     except KeyError:
-        app.logger.debug("Could not find the tlp_level key")
+        current_app.logger.debug("Could not find the tlp_level key")
 
     try:
         orig_filename = request.form['filename']
     except KeyError:
-        app.logger.debug("No filename provided")
+        current_app.logger.debug("No filename provided")
         orig_filename = ""
 
     samples = api.dispatch_sample_creation(mfile, orig_filename)
@@ -87,13 +89,13 @@ def api_post_samples():
         abort(500, "Cannot create sample")
 
     if tlp_level not in range(1, 6):
-        app.logger.warning("Incorrect TLP level, defaulting to AMBER")
+        current_app.logger.warning("Incorrect TLP level, defaulting to AMBER")
         tlp_level = TLPLevel.TLPAMBER
 
     for sample in samples:
         result = api.samplecontrol.set_tlp_level(sample, tlp_level)
         if result is False:
-            app.logger.warning(
+            current_app.logger.warning(
                 "Cannot set TLP level for sample %d" % sample.id)
     result = api.samplecontrol.schema_export_many(samples)
 
@@ -220,3 +222,19 @@ def api_get_yara_matches(sid):
     sample = api.get_elem_by_type("sample", sid)
     result = None
     return jsonify({'result': result})
+
+
+@apiview.route('/machoc/<int:machoc_hash>', methods=["GET"])
+def api_get_machoc_names(machoc_hash):
+    """
+        Get user-defined names associated with machoc hashes
+        @arg machoc_hash
+        @return A list of names
+    """
+    functions = api.samplecontrol.get_functions_by_machoc_hash(machoc_hash)
+    current_app.logger.debug("Got %d functions matching machoc %x",
+                             len(functions),
+                             machoc_hash)
+
+    schema = FunctionInfoSchema(many=True)
+    return jsonify(schema.dump(functions).data)

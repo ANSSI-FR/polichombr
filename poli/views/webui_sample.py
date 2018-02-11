@@ -14,7 +14,9 @@ from flask import abort, request, jsonify
 from werkzeug import secure_filename
 from flask_security import login_required
 
-from poli import app, api
+from poli import api
+
+from poli.views.webui import webuiview
 
 from poli.models.family import Family
 
@@ -26,7 +28,7 @@ from poli.views.forms import CompareMachocForm
 from poli.controllers.sample import disassemble_sample_get_svg
 
 
-@app.route('/samples/', methods=['GET', 'POST'])
+@webuiview.route('/samples/', methods=['GET', 'POST'])
 @login_required
 def ui_sample_upload():
     """
@@ -55,15 +57,15 @@ def ui_sample_upload():
                 upload_form.level.data,
                 family,
                 zipflag)
-            if samples:
+            if not samples:
                 flash("Error during sample creation", "error")
             else:
                 for sample in samples:
                     flash("Created sample " + str(sample.id), "success")
-    return redirect(url_for('index'))
+    return redirect(url_for('webuiview.index'))
 
 
-@app.route('/import/', methods=['GET', 'POST'])
+@webuiview.route('/import/', methods=['GET', 'POST'])
 @login_required
 def ui_import():
     """
@@ -76,8 +78,8 @@ def ui_import():
         sample = api.samplecontrol.create_sample_from_json_machex(
             machex_data, tlp_level)
         if sample:
-            return redirect(url_for('view_sample', sample_id=sample.id))
-    return redirect(url_for('index'))
+            return redirect(url_for('webuiview.view_sample', sample_id=sample.id))
+    return redirect(url_for('webuiview.index'))
 
 
 def parse_machoc_form(sample, form):
@@ -140,7 +142,7 @@ def gen_sample_view(sample_id, graph=None, fctaddr=None):
                            fctaddr=fctaddr)
 
 
-@app.route('/sample/<int:sample_id>/', methods=['GET', 'POST'])
+@webuiview.route('/sample/<int:sample_id>/', methods=['GET', 'POST'])
 @login_required
 def view_sample(sample_id):
     """
@@ -149,7 +151,7 @@ def view_sample(sample_id):
     return gen_sample_view(sample_id)
 
 
-@app.route('/sample/<int:sid>/disassemble/<address>')
+@webuiview.route('/sample/<int:sid>/disassemble/<address>')
 @login_required
 def ui_disassemble_sample(sid, address):
     """
@@ -167,7 +169,7 @@ def ui_disassemble_sample(sid, address):
     return gen_sample_view(sid, graph=svg_data, fctaddr=hex(integer_address))
 
 
-@app.route('/samples/<int:sample_id>/machexport/', methods=['POST'])
+@webuiview.route('/samples/<int:sample_id>/machexport/', methods=['POST'])
 @login_required
 def machexport(sample_id):
     """
@@ -209,7 +211,7 @@ def machexport(sample_id):
     return abort(400)
 
 
-@app.route('/machocdiff/<int:sample_id>/<int:sample2_id>/',
+@webuiview.route('/machocdiff/<int:sample_id>/<int:sample2_id>/',
            methods=['GET', 'POST'])
 @login_required
 def diff_samples(sample_id, sample2_id):
@@ -244,7 +246,7 @@ def diff_samples(sample_id, sample2_id):
                            sdiff=sdiff)
 
 
-@app.route("/sample/<int:sample_id>/checkfield/<int:checklist_id>/")
+@webuiview.route("/sample/<int:sample_id>/checkfield/<int:checklist_id>/")
 @login_required
 def check_field(sample_id, checklist_id):
     """
@@ -253,10 +255,10 @@ def check_field(sample_id, checklist_id):
     sample = api.get_elem_by_type("sample", sample_id)
     checklist = api.get_elem_by_type("checklist", checklist_id)
     api.samplecontrol.toggle_sample_checklist(sample, checklist)
-    return redirect(url_for('view_sample', sample_id=sample_id))
+    return redirect(url_for('webuiview.view_sample', sample_id=sample_id))
 
 
-@app.route("/sample/<int:sample_id>/addreme/")
+@webuiview.route("/sample/<int:sample_id>/addreme/")
 @login_required
 def add_remove_me_samp(sample_id):
     """
@@ -265,10 +267,10 @@ def add_remove_me_samp(sample_id):
     api.remove_user_from_element("sample",
                                  sample_id,
                                  g.user)
-    return redirect(url_for('view_sample', sample_id=sample_id))
+    return redirect(url_for('webuiview.view_sample', sample_id=sample_id))
 
 
-@app.route('/sample/<int:sample_id>/removefam/<int:family_id>')
+@webuiview.route('/sample/<int:sample_id>/removefam/<int:family_id>')
 @login_required
 def ui_sample_remove_family(sample_id, family_id):
     """
@@ -277,10 +279,10 @@ def ui_sample_remove_family(sample_id, family_id):
     sample = api.get_elem_by_type("sample", sample_id)
     family = api.get_elem_by_type("family", family_id)
     api.familycontrol.remove_sample(sample, family)
-    return redirect(url_for('view_sample', sample_id=sample_id))
+    return redirect(url_for('webuiview.view_sample', sample_id=sample_id))
 
 
-@app.route('/sample/<int:sample_id>/delete/')
+@webuiview.route('/sample/<int:sample_id>/delete/')
 @login_required
 def delete_sample(sample_id):
     """
@@ -288,10 +290,10 @@ def delete_sample(sample_id):
     """
     sample = api.get_elem_by_type("sample", sample_id)
     api.samplecontrol.delete(sample)
-    return redirect(url_for('index'))
+    return redirect(url_for('webuiview.index'))
 
 
-@app.route('/sample/<int:sample_id>/download/')
+@webuiview.route('/sample/<int:sample_id>/download/')
 @login_required
 def download_sample(sample_id):
     """

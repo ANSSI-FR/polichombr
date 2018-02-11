@@ -30,6 +30,7 @@ class ApiTestCase(unittest.TestCase):
         self.db_fd, self.fname = tempfile.mkstemp()
         poli.app.config['SQLALCHEMY_DATABASE_URI'] = "sqlite:///"+self.fname
         poli.app.config['TESTING'] = False
+        poli.app.config["LOGIN_DISABLED"] = True
         poli.app.config['WTF_CSRF_ENABLED'] = False
         self.app = poli.app.test_client()
         with poli.app.app_context():
@@ -47,17 +48,9 @@ class ApiTestCase(unittest.TestCase):
         os.close(self.db_fd)
         os.unlink(self.fname)
 
-    def _login(self, username, password):
-        return self.app.post("/login/",
-                             data=dict(
-                                 username=username,
-                                 password=password),
-                             follow_redirects=True)
-
     def _create_sample(self):
         with open("tests/example_pe.bin", "rb") as hfile:
             data = StringIO(hfile.read())
-        self._login("john", "password")
         retval = self.app.post("/api/1.0/samples/",
                                #content_type='multipart/form-data',
                                data=dict({'file': (data, u"toto"),
