@@ -10,6 +10,7 @@ All arguments to POST requests should be passed in JSON form.
 
 
 ## Authentication
+
 The API uses a token authentication mechanism.
 
 You should request a token by posting the user's api key to ``/auth_token``,
