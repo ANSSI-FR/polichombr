@@ -10,7 +10,7 @@
 import datetime
 
 from flask import jsonify, request, abort, current_app
-from flask_security import login_required
+from flask_security import login_required, current_user
 
 from poli import api
 from poli.views.apiview import apiview
@@ -105,12 +105,13 @@ def api_post_sample_comments(sid):
         abort(400, "Missing comment or address arguments")
     address = data['address']
     comment = data['comment']
+    user_id = current_user.id
     current_app.logger.debug(
         "Getting a new comment for sample %d : %s@0x%x",
         sid,
         comment,
         address)
-    action_id = api.idacontrol.add_comment(address, comment)
+    action_id = api.idacontrol.add_comment(address, comment, user_id)
     result = api.samplecontrol.add_idaaction(sid, action_id)
     return jsonify({'result': result})
 
@@ -141,12 +142,13 @@ def api_post_sample_names(sid):
     data = request.json
     addr = data['address']
     name = data['name']
+    user_id = current_user.id
     current_app.logger.debug(
         "Getting a new name for sample %d : %s@0x%x",
         sid,
         name,
         addr)
-    action_id = api.idacontrol.add_name(addr, name)
+    action_id = api.idacontrol.add_name(addr, name, user_id)
     result = api.samplecontrol.add_idaaction(sid, action_id)
     if result is True:
         api.samplecontrol.rename_func_from_action(sid, addr, name)
@@ -164,8 +166,9 @@ def api_post_sample_types(sid):
     data = request.json
     addr = data['address']
     typedef = data['typedef']
+    user_id = current_user.id
 
-    action_id = api.idacontrol.add_typedef(addr, typedef)
+    action_id = api.idacontrol.add_typedef(addr, typedef, user_id)
     result = api.samplecontrol.add_idaaction(sid, action_id)
     return jsonify(dict(result=result))
 
@@ -194,7 +197,8 @@ def api_create_struct(sid):
     result = False
     name = data['name']
     current_app.logger.debug("Creating structure %s" % name)
-    mstruct = api.idacontrol.create_struct(name=name)
+    user_id = current_user.id
+    mstruct = api.idacontrol.create_struct(name=name, user_id=user_id)
     if mstruct is not False:
         result = api.samplecontrol.add_idaaction(sid, mstruct)
     return jsonify({'result': result, 'structs': [{'id': mstruct}]})
