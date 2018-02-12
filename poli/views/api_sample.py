@@ -16,9 +16,11 @@ from poli.models.models import TLPLevel
 from poli.models.sample import FunctionInfoSchema
 
 from flask import jsonify, request, send_file, abort, current_app
+from flask_security import login_required
 
 
 @apiview.route('/samples/<shash>/')
+@login_required
 def api_get_sample_id_from_hash(shash):
     """
         Useful for initialization of scripts, get the remote
@@ -38,6 +40,7 @@ def api_get_sample_id_from_hash(shash):
 
 
 @apiview.route('/samples/<int:sid>/download/')
+@login_required
 def api_get_sample_file(sid):
     """
         Return the sample binary
@@ -50,6 +53,7 @@ def api_get_sample_file(sid):
 
 
 @apiview.route('/samples/', methods=['GET'])
+@login_required
 def api_get_samples():
     """
         Returns all the samples
@@ -60,6 +64,7 @@ def api_get_samples():
 
 
 @apiview.route('/samples/', methods=['POST'])
+@login_required
 def api_post_samples():
     """
     @description : Insert a new sample in database, launch analysis
@@ -103,6 +108,7 @@ def api_post_samples():
 
 
 @apiview.route('/samples/<int:sid>/', methods=['GET'])
+@login_required
 def api_get_unique_sample(sid):
     sample_schema = SampleSchema()
     data = Sample.query.get(sid)
@@ -114,31 +120,37 @@ def api_get_unique_sample(sid):
 
 
 @apiview.route('/samples/<int:sid>/', methods=['POST'])
+@login_required
 def api_post_unique_sample(sid):
     abort(405)
 
 
 @apiview.route('/samples/<int:sid>/analysis/', methods=['GET'])
+@login_required
 def api_get_sample_full_analysis(sid):
     return jsonify({'analysis': 'Not implemented'})
 
 
 @apiview.route('/samples/<int:sid>/analysis/analyzeit/', methods=['GET'])
+@login_required
 def api_get_sample_analyzeit(sid):
     return jsonify({'analyzeit': 'Not implemented'})
 
 
 @apiview.route('/samples/<int:sid>/analysis/strings/', methods=['GET'])
+@login_required
 def api_get_sample_strings(sid):
     return jsonify({'strings': 'Not implemented'})
 
 
 @apiview.route('/samples/<int:sid>/analysis/peinfo/', methods=['GET'])
+@login_required
 def api_get_sample_peinfo(sid):
     return jsonify({'peinfo': 'not implemented'})
 
 
 @apiview.route('/samples/<int:sid>/families/', methods=['POST'])
+@login_required
 def api_post_sample_family(sid):
     samp = api.get_elem_by_type("sample", sid)
     if request.json is None:
@@ -158,6 +170,7 @@ def api_post_sample_family(sid):
 
 
 @apiview.route('/samples/<int:sid>/abstract/', methods=['POST'])
+@login_required
 def api_set_sample_abstract(sid):
     """
         @arg: abstract Markdown for the abstract
@@ -172,6 +185,7 @@ def api_set_sample_abstract(sid):
 
 
 @apiview.route('/samples/<int:sid>/abstract/', methods=['GET'])
+@login_required
 def api_get_sample_abstract(sid):
     """
         Returns the raw markdown sample abstract
@@ -182,6 +196,7 @@ def api_get_sample_abstract(sid):
 
 
 @apiview.route('/samples/<int:sid>/matches/', methods=['GET'])
+@login_required
 def api_get_matches(sid):
     """
     TODO
@@ -195,6 +210,7 @@ def api_get_matches(sid):
 
 
 @apiview.route('/samples/<int:sid>/matches/machoc', methods=['GET'])
+@login_required
 def api_get_machoc_matches(sid):
     """
         TODO : Get machoc hashes
@@ -205,6 +221,7 @@ def api_get_machoc_matches(sid):
 
 
 @apiview.route('/samples/<int:sid>/matches/iat_hash', methods=['GET'])
+@login_required
 def api_get_iat_matches(sid):
     """
         TODO : Get IAT hashes
@@ -215,6 +232,7 @@ def api_get_iat_matches(sid):
 
 
 @apiview.route('/samples/<int:sid>/matches/yara', methods=['GET'])
+@login_required
 def api_get_yara_matches(sid):
     """
         TODO : Get yara matches
@@ -225,6 +243,7 @@ def api_get_yara_matches(sid):
 
 
 @apiview.route('/machoc/<int:machoc_hash>', methods=["GET"])
+@login_required
 def api_get_machoc_names(machoc_hash):
     """
         Get user-defined names associated with machoc hashes

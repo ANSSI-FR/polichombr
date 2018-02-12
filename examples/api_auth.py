@@ -1,25 +1,31 @@
-import requests
+"""
+    This file is part of Polichombr.
+
+    (c) 2018 ANSSI-FR
+
+    Description:
+        Login using an API key,
+        and show the resulting token
+"""
+
 import argparse
-import sys
+import requests
 
 
 def get_auth_token(key):
+    """
+        Get a token from the backend
+    """
     json_data = dict(api_key=str(key))
-    req = requests.post('http://localhost:5000/api/1.0/get_auth_token/',
+    req = requests.post('http://localhost:5000/api/1.0/auth_token/',
                         json=json_data)
 
     return req.json()["token"]
 
 
-def get_protected_api(token):
-
-    for i in xrange(0x20):
-        req = requests.get('http://localhost:5000/api/1.0/families/',
-                           headers={'X-Api-Key': token})
-
-        print req.status_code
-
-
 if __name__ == "__main__":
-    token = get_auth_token(sys.argv[1])
-    get_protected_api(token)
+    parser = argparse.ArgumentParser(description="Auth token example")
+    parser.add_argument("api_key", type=str, help="Your API key")
+    args = parser.parse_args()
+    token = get_auth_token(args.api_key)
+    print("Your token: %s" % token)

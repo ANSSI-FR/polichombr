@@ -142,7 +142,7 @@ class task_analyzeitrb(Task):
 
             # Functions: just push the list
             app.logger.info("Storing functions")
-            samplecontrol.add_multiple_functions(sample, functions)
+            samplecontrol.add_multiple_functions(self.sid, functions)
 
             # global machoc match
             app.logger.info("Calculating machoc80 matches")

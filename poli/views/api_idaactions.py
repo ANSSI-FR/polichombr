@@ -9,11 +9,12 @@
 """
 import datetime
 
+from flask import jsonify, request, abort, current_app
+from flask_security import login_required
+
 from poli import api
 from poli.views.apiview import apiview
 from poli.models.sample import FunctionInfoSchema
-
-from flask import jsonify, request, abort, current_app
 
 
 def get_filter_arguments(mrequest):
@@ -36,6 +37,7 @@ def get_filter_arguments(mrequest):
 
 
 @apiview.route('/samples/<int:sid>/idaactions/', methods=['GET'])
+@login_required
 def api_get_idaactions_updates(sid):
     """
         Get all actions for a sample
@@ -52,6 +54,7 @@ def api_get_idaactions_updates(sid):
 
 
 @apiview.route('/samples/<int:sid>/functions/', methods=['GET'])
+@login_required
 def api_get_sample_functions(sid):
     """
         Return all functions info for a sample
@@ -62,6 +65,7 @@ def api_get_sample_functions(sid):
 
 
 @apiview.route('/samples/<int:sid>/functions/proposednames/', methods=['GET'])
+@login_required
 def api_suggest_func_names(sid):
     """
         Returns a dictionary containing proposed function names
@@ -73,6 +77,7 @@ def api_suggest_func_names(sid):
 
 
 @apiview.route('/samples/<int:sid>/comments/', methods=['GET'])
+@login_required
 def api_get_sample_comments(sid):
     """
         Get all the comments for a given sample
@@ -88,6 +93,7 @@ def api_get_sample_comments(sid):
 
 
 @apiview.route('/samples/<int:sid>/comments/', methods=['POST'])
+@login_required
 def api_post_sample_comments(sid):
     """
         Upload a new comment for a sample
@@ -110,6 +116,7 @@ def api_post_sample_comments(sid):
 
 
 @apiview.route('/samples/<int:sid>/names/', methods=['GET'])
+@login_required
 def api_get_sample_names(sid):
     """
         Get names for a given sample
@@ -124,6 +131,7 @@ def api_get_sample_names(sid):
 
 
 @apiview.route('/samples/<int:sid>/names/', methods=['POST'])
+@login_required
 def api_post_sample_names(sid):
     """
         Upload a new names for a sample
@@ -148,6 +156,7 @@ def api_post_sample_names(sid):
 
 
 @apiview.route('/samples/<int:sid>/types/', methods=['POST'])
+@login_required
 def api_post_sample_types(sid):
     """
         Manage the creation of type definitions at specific addresses
@@ -162,6 +171,7 @@ def api_post_sample_types(sid):
 
 
 @apiview.route('/samples/<int:sid>/types/', methods=['GET'])
+@login_required
 def api_get_sample_types(sid):
     """
         Get the IDA types stored in DB
@@ -172,6 +182,7 @@ def api_get_sample_types(sid):
 
 
 @apiview.route('/samples/<int:sid>/structs/', methods=['POST'])
+@login_required
 def api_create_struct(sid):
     """
         Create a new IDA Struct for a given sample
@@ -190,6 +201,7 @@ def api_create_struct(sid):
 
 
 @apiview.route('/samples/<int:sid>/structs/', methods=['GET'])
+@login_required
 def api_get_sample_structs(sid):
     """
         Returns the structures associated with a sample
@@ -203,13 +215,18 @@ def api_get_sample_structs(sid):
 
 
 @apiview.route('/samples/<int:sid>/structs/<int:struct_id>/', methods=['GET'])
+@login_required
 def api_get_one_struct(sid, struct_id):
+    """
+        Returns a unique struct
+    """
     structs = api.idacontrol.get_one_struct(struct_id)
     return jsonify({'structs': structs})
 
 
 @apiview.route('/samples/<int:sid>/structs/<int:struct_id>/members/',
                methods=['POST'])
+@login_required
 def api_create_struct_member(sid, struct_id):
     """
         Add a new member to a structure
@@ -232,6 +249,7 @@ def api_create_struct_member(sid, struct_id):
 
 
 @apiview.route('/samples/<int:sid>/structs/<string:struct_name>/')
+@login_required
 def api_get_struct_by_name(sid, struct_name):
     """
         Get structure data from a name
@@ -242,6 +260,7 @@ def api_get_struct_by_name(sid, struct_name):
 
 @apiview.route('/samples/<int:sid>/structs/<int:struct_id>/',
                methods=["PATCH"])
+@login_required
 def api_rename_struct(sid, struct_id):
     """
         Rename a struct
@@ -256,6 +275,7 @@ def api_rename_struct(sid, struct_id):
 
 @apiview.route('/samples/<int:sid>/structs/<int:struct_id>/',
                methods=["DELETE"])
+@login_required
 def api_delete_struct(sid, struct_id):
     """
         Completely delete a struct from database
@@ -266,7 +286,14 @@ def api_delete_struct(sid, struct_id):
 
 @apiview.route('/samples/<int:sid>/structs/<int:struct_id>/members/',
                methods=['PATCH'])
+@login_required
 def api_update_struct_member(sid, struct_id):
+    """
+        Modify a struct member
+        Supported operations:
+            - newname: change member name
+            - newsize: resize the member
+    """
     data = request.json
     if data is None:
         abort(400, "Missing JSON data")
@@ -283,7 +310,12 @@ def api_update_struct_member(sid, struct_id):
 
 @apiview.route('/samples/<int:sid>/structs/<int:struct_id>/members/',
                methods=['GET'])
+@login_required
 def api_get_struct_member(sid, struct_id):
+    """
+        Get all members of a struct
+        TODO: implement and test
+    """
     result = False
     structs = None
     return jsonify({'result': result, 'structs': structs})
@@ -291,6 +323,7 @@ def api_get_struct_member(sid, struct_id):
 
 @apiview.route('/samples/<int:sid>/structs/<int:struct_id>/members/',
                methods=['DELETE'])
+@login_required
 def api_delete_struct_member(sid, struct_id):
     """
         TODO : implement and test

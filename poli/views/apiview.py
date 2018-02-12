@@ -111,6 +111,7 @@ def generate_token():
 
 
 @apiview.route('/yaras/', methods=['GET'])
+@login_required
 def api_get_all_yaras():
     """
         Dump all the yaras
@@ -121,6 +122,7 @@ def api_get_all_yaras():
 
 
 @apiview.route('/yaras/', methods=['POST'])
+@login_required
 def api_create_yara():
     """
         Add a new yara

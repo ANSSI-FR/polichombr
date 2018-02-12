@@ -19,13 +19,15 @@ class MainModule(object):
     server_port = None
     base_uri = None
 
+    api_key = None
     auth_token = None
     logger = None
 
     def __init__(self, server="127.0.0.1", server_port=5000,
-                 base_uri='/api/1.0/'):
+                 base_uri='/api/1.0/', api_key=''):
         self.server, self.server_port = server, server_port
         self.base_uri = base_uri
+        self.api_key = api_key
         self.logger = logging.getLogger(__name__)
         self.logger.setLevel(logging.DEBUG)
         handler = logging.StreamHandler()
@@ -42,7 +44,10 @@ class MainModule(object):
         """
             Initialize the auth token by issuing a call to the API
         """
-        pass
+        data = dict(api_key=self.api_key)
+        ept = self.prepare_endpoint(root="auth_token")
+        token = self.post(ept, json=data)["token"]
+        self.auth_token = token
 
     def post(self, endpoint, **kwargs):
         """
@@ -55,10 +60,12 @@ class MainModule(object):
             data = kwargs['data']
         if 'files' in kwargs.keys():
             files = kwargs['files']
+        headers = {"X-Api-Key": self.auth_token}
         answer = requests.post(endpoint,
                                json=json_data,
                                data=data,
-                               files=files)
+                               files=files,
+                               headers=headers)
         if answer.status_code != 200:
             self.logger.error(
                 "Error during post request for endpoint %s", endpoint)
@@ -72,7 +79,8 @@ class MainModule(object):
             Wrapper for requests.get
             @arg args is a dict wich is converted to URL parameters
         """
-        answer = requests.get(endpoint, params=args)
+        headers = {"X-Api-Key": self.auth_token}
+        answer = requests.get(endpoint, params=args, headers=headers)
         if answer.status_code != 200:
             if answer.status_code == 404:
                 self.logger.error(
@@ -104,11 +112,6 @@ class SampleModule(MainModule):
     """
         Uses the sample endpoint
     """
-
-    def __init__(self, server="127.0.0.1", server_port=5000,
-                 base_uri='/api/1.0/'):
-        super(SampleModule, self).__init__(server, server_port, base_uri)
-
     def send_sample(self, filename, tlp):
         """
             Upload a sample to the polichombr service
@@ -161,12 +164,18 @@ class SampleModule(MainModule):
         return self.post(endpoint, json=json_data)["result"]
 
     def get_abstract(self, sid):
+        """
+            Return sample's markdown abstract
+        """
         endpoint = self.prepare_endpoint(root='samples')
         endpoint += str(sid) + '/abstract/'
 
         return self.get(endpoint)["abstract"]
 
     def get_sid_from_MD5(self, md5):
+        """
+            Returns the sample's ID
+        """
         endpoint = self.prepare_endpoint(root='samples')
         endpoint += md5 + '/'
 
@@ -177,11 +186,6 @@ class FamilyModule(MainModule):
     """
         Utilities to manage families
     """
-
-    def __init__(self, server="127.0.0.1", server_port=5000,
-                 base_uri='/api/1.0/'):
-        super(FamilyModule, self).__init__(server, server_port, base_uri)
-
     def create_family(self, name, parent=None, tlp_level=3):
         """
             Create a family, and return it's id
@@ -229,11 +233,6 @@ class YaraModule(MainModule):
     """
         Manage yara rules
     """
-
-    def __init__(self, server="127.0.0.1", server_port=5000,
-                 base_uri='/api/1.0/'):
-        super(YaraModule, self).__init__(server, server_port, base_uri)
-
     def create_yara(self, name, rule, tlp_level=2):
         """
             Create a new yara rule

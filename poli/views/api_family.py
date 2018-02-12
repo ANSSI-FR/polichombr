@@ -34,6 +34,7 @@ def plain_text(data):
 @apiview.route(
     '/family/<family_id>/export/<tlp_level>/detection/yara',
     methods=['GET'])
+@login_required
 def api_family_export_detection_yara(family_id, tlp_level):
     """
         This endpoint is ugly, should replace with tlp in argument
@@ -46,6 +47,7 @@ def api_family_export_detection_yara(family_id, tlp_level):
 @apiview.route(
     '/family/<family_id>/export/<tlp_level>/detection/snort',
     methods=['GET'])
+@login_required
 def api_family_export_detection_snort(family_id, tlp_level):
     my_family = api.get_elem_by_type("family", family_id)
     return plain_text(
@@ -55,6 +57,7 @@ def api_family_export_detection_snort(family_id, tlp_level):
 @apiview.route(
     '/family/<family_id>/export/<tlp_level>/detection/openioc/',
     methods=['GET'])
+@login_required
 def api_family_export_detection_openioc(family_id, tlp_level):
     """
         This endpoint format should be reimplemented
@@ -67,6 +70,7 @@ def api_family_export_detection_openioc(family_id, tlp_level):
 @apiview.route(
     '/family/<family_id>/export/<tlp_level>/detection/custom_elements',
     methods=['GET'])
+@login_required
 def api_family_export_detection_custom_elements(family_id, tlp_level):
     my_family = api.get_elem_by_type("family", family_id)
     return plain_text(
@@ -76,6 +80,7 @@ def api_family_export_detection_custom_elements(family_id, tlp_level):
 @apiview.route(
     '/family/<family_id>/export/<tlp_level>/samplesarchive',
     methods=['GET'])
+@login_required
 def api_family_export_sampleszip(family_id, tlp_level):
     my_family = api.get_elem_by_type("family", family_id)
     zpath = api.familycontrol.generate_samples_zip_file(my_family, tlp_level)
@@ -88,6 +93,7 @@ def api_family_export_sampleszip(family_id, tlp_level):
 @apiview.route(
     '/family/<family_id>/export/<tlp_level>/samplesioc',
     methods=['GET'])
+@login_required
 def api_family_export_samplesioc(family_id, tlp_level):
     my_family = api.get_elem_by_type("family", family_id)
     return plain_text(
@@ -95,6 +101,7 @@ def api_family_export_samplesioc(family_id, tlp_level):
 
 
 @apiview.route('/families/', methods=['GET'])
+@login_required
 @login_required
 def api_get_families():
     """
@@ -105,6 +112,7 @@ def api_get_families():
 
 
 @apiview.route('/family/', methods=['POST'])
+@login_required
 def api_post_families():
     """
         Insert a new family
@@ -137,6 +145,7 @@ def api_post_families():
 
 
 @apiview.route('/family/<fname>/', methods=['GET'])
+@login_required
 def api_get_family(fname):
     """
         Get family data using it's name
@@ -150,6 +159,7 @@ def api_get_family(fname):
 
 
 @apiview.route('/family/<int:fid>/', methods=['GET'])
+@login_required
 def api_get_family_by_id(fid):
     """
         Get family informations
@@ -161,6 +171,7 @@ def api_get_family_by_id(fid):
 
 
 @apiview.route('/family/<int:fid>/abstract/', methods=['POST'])
+@login_required
 def api_set_family_abstract(fid):
     """
         @arg abstract: The family abstract
@@ -179,6 +190,7 @@ def api_set_family_abstract(fid):
 
 
 @apiview.route('/family/<int:fid>/yaras/', methods=['POST'])
+@login_required
 def api_add_yara_to_family(fid):
     """
         Add a yara rule to a family
@@ -196,6 +208,7 @@ def api_add_yara_to_family(fid):
 
 
 @apiview.route('/family/<fam_name>', methods=['POST'])
+@login_required
 def api_post_family(fam_name):
     """
         TODO: Update a family from POST request
@@ -204,6 +217,7 @@ def api_post_family(fam_name):
 
 
 @apiview.route('/family/<int:family_id>/attachment/<int:file_id>/')
+@login_required
 def download_family_file(family_id, file_id):
     """
     Family attachment download endpoint.
