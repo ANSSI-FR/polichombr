@@ -727,12 +727,13 @@ class SampleController(object):
         db.session.commit()
         return True
 
-    def add_multiple_functions(self, sample, funcs, overwrite=False):
+    def add_multiple_functions(self, sid, funcs, overwrite=False):
         """
             Add multiple functions to the sample
             Each func is a dict with the address as key,
             and is a dict (machoc_hash, name)
         """
+        sample = self.get_by_id(sid)
         for addr in funcs.keys():
             self.add_function(
                 sample,

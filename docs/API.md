@@ -8,6 +8,17 @@ We also provides utilities modules in the folder [poliapi](https://github.com/AN
 
 All arguments to POST requests should be passed in JSON form.
 
+
+## Authentication
+
+The API uses a token authentication mechanism.
+
+You should request a token by posting the user's api key to ``/auth_token``,
+and then forward the given token in each request using the `X-Api-Key` header.
+
+If the token is invalid, the endpoint will return a 401 error.
+
+
 ## `/samples/`
 
 * [POST] Create a new sample

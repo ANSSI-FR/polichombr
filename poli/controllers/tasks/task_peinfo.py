@@ -222,12 +222,13 @@ class task_peinfo(Task):
 
     def apply_result(self):
         s_controller = SampleController()
-        sample = s_controller.get_by_id(self.sid)
-        app.logger.debug(self.tmessage + "APPLY_RESULT")
-        # Compilation timestamp (even when faked) IS a file date, so update it.
-        s_controller.add_multiple_metadata(sample, self.metadata_extracted)
-        s_controller.set_file_date(sample, self.compile_timestamp)
-        s_controller.set_import_hash(sample, self.import_hash)
+        with app.app_context():
+            sample = s_controller.get_by_id(self.sid)
+            app.logger.debug(self.tmessage + "APPLY_RESULT")
+            # Compilation timestamp (even when faked) IS a file date, so update it.
+            s_controller.add_multiple_metadata(sample, self.metadata_extracted)
+            s_controller.set_file_date(sample, self.compile_timestamp)
+            s_controller.set_import_hash(sample, self.import_hash)
         app.logger.debug(self.tmessage + "END - TIME %i" %
                          (int(time.time()) - self.tstart))
         return True
