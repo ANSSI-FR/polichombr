@@ -107,7 +107,6 @@ def dl_skelenox():
     with ZipFile(zipout, "w") as myzip:
         myzip.write("skelenox.py")
         skel_config = {}
-        skel_config["username"] = g.user.nickname
         skel_config["edit_flag"] = True
         skel_config["initial_sync"] = True
         skel_config["poli_server"] = ip_addr

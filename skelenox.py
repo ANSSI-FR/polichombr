@@ -45,7 +45,6 @@ class SkelConfig(object):
 
     def __init__(self, settings_file):
         filename = os.path.dirname(__file__) + "/" + settings_file
-        self.username = "Anonymous"
         self.edit_flag = False
 
         # Network config
