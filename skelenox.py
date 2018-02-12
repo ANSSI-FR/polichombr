@@ -131,6 +131,7 @@ class SkelConnection(object):
         self.poli_port = skel_config.poli_port
 
         self.h_conn = None
+        self.auth_token = None
         self.is_online = False
         self.sample_id = None
 
@@ -156,6 +157,7 @@ class SkelConnection(object):
 
         self.h_conn = httplib.HTTPConnection(self.poli_server, self.poli_port)
         self.h_conn.connect()
+        self.login()
         self.is_online = True
         self.init_sample_id()
 
@@ -168,6 +170,24 @@ class SkelConnection(object):
             self.h_conn.close()
         self.is_online = False
         self.sample_id = None
+
+    def login(self):
+        data = json.dumps({'api_key': self.api_key})
+        headers = {"Accept-encoding": "gzip, deflate",
+                   "Content-type": "application/json",
+                   "Accept": "*/*;q=0.8",
+                   "Accept-Language": "en-US,en;q=0.5"}
+
+        self.h_conn.request("POST",
+                            "/api/1.0/auth_token/",
+                            data,
+                            headers)
+        res = self.h_conn.getresponse()
+        if res.status != 200:
+            idc.warning("Error, cannot login to Polichombr!")
+            raise IOError
+        token = json.loads(res.read())["token"]
+        self.auth_token = token
 
     def poli_request(self, endpoint, data, method="POST"):
         """
@@ -183,7 +203,7 @@ class SkelConnection(object):
                    "Accept": "*/*;q=0.8",
                    "Accept-Language": "en-US,en;q=0.5",
                    "Connection": "Keep-Alive",
-                   "X-API-Key": self.api_key}
+                   "X-Api-Key": self.auth_token}
         json_data = json.dumps(data)
         try:
             self.h_conn.request(method, endpoint, json_data, headers)
@@ -194,7 +214,11 @@ class SkelConnection(object):
             self.h_conn.request(method, endpoint, json_data, headers)
         res = self.h_conn.getresponse()
 
-        if res.status != 200:
+        if res.status == 401:
+            g_logger.error("Token is invalid, trying to login again")
+            self.login()
+            return None
+        elif res.status != 200:
             g_logger.error("The %s request didn't go as expected", method)
             g_logger.debug("Status code was %d and content was %s",
                            res.status, res.read())
@@ -283,7 +307,7 @@ class SkelConnection(object):
         """
         endpoint = "/api/1.0/samples/"
         headers = {"Accept-encoding": "gzip, deflate",
-                   "X-API-Key": self.api_key}
+                   "X-Api-Key": self.auth_token}
 
         method = "POST"
         boundary = "70f6e331562f4b8f98e5f9590e0ffb8e"

@@ -2,15 +2,9 @@
 {% import "bootstrap/wtf.html" as wtf %}
 {% import "bootstrap/utils.html" as utils %}
 {% macro familycolorbystatus(family) %}{% if family.status == 3 %}primary{% elif family.status == 2 %}warning{% elif family.status == 1 %}success{% else %}default{%endif%}{% endmacro %}
-{% macro printsample(sample) %}<a href="{{ url_for('view_sample',sample_id=sample.id) }}"><span style='font-family:Menlo,Monaco,Consolas,"Courier New",monospace'>{{sample.md5}}</label></a>&nbsp;{% for f in sample.families %}<a class="label label-{{familycolorbystatus(f)}} btn-xs" href="{{url_for('view_family',family_id=f.id)}}">{{f.name}}</a>{%endfor%}{% endmacro %}
+{% macro printsample(sample) %}<a href="{{ url_for('webuiview.view_sample',sample_id=sample.id) }}"><span style='font-family:Menlo,Monaco,Consolas,"Courier New",monospace'>{{sample.md5}}</label></a>&nbsp;{% for f in sample.families %}<a class="label label-{{familycolorbystatus(f)}} btn-xs" href="{{url_for('webuiview.view_family',family_id=f.id)}}">{{f.name}}</a>{%endfor%}{% endmacro %}
 {% block styles %}
 {{super()}}
-
-<script language="javascript">
-    window.onload = function() {
-     $('a[href=' + location.hash + ']').tab('show');
-}
-</script>
 
 {% if current_user.theme %}
     {% if current_user.theme == "dark" %}
@@ -51,7 +45,7 @@
 					<a class="dropdown-toggle" data-toggle="dropdown" href='#'>{{current_user.nickname}}
 
 					<ul class="dropdown-menu">
-						<li><a href="{{ url_for('logout') }}"> <span class="glyphicon glyphicon-log-out"></span>  Logout</a> </li>
+						<li><a href="{{ url_for('webuiview.logout') }}"> <span class="glyphicon glyphicon-log-out"></span>  Logout</a> </li>
 						<li><a href="/user/{{current_user.id}}"><span class="glyphicon glyphicon-log-in"></span> View Profile</a></li>
 					</ul>
 				</li>

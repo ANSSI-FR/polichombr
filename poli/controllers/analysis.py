@@ -184,11 +184,12 @@ class Analysis(object):
         Sets the analysis status to FINISHED. Sets by the jobpool after tasks
         execution.
         """
-        if self.sid:
-            sample = Sample.query.get(self.sid)
-            if sample:
-                sample.analysis_status = AnalysisStatus.FINISHED
-                db.session.commit()
+        with app.app_context():
+            if self.sid:
+                sample = Sample.query.get(self.sid)
+                if sample:
+                    sample.analysis_status = AnalysisStatus.FINISHED
+                    db.session.commit()
         return True
 
     def add_task(self, task, tname):

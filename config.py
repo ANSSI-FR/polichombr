@@ -4,7 +4,10 @@
 """
 import os
 import uuid
+import logging
+
 DEBUG = True
+LOG_LEVEL = logging.INFO
 BASE_DIR = os.path.abspath(os.path.dirname(__file__))
 
 # used for server creation and skelenox script generation
@@ -27,6 +30,7 @@ CSRF_SESSION_KEY = str(uuid.uuid4())
 SECRET_KEY = str(uuid.uuid4())
 USERS_CAN_REGISTER = True
 SECURITY_PASSWORD_HASH = 'pbkdf2_sha512'
+SECURITY_TOKEN_AUTHENTICATION_HEADER="X-Api-Key"
 SECURITY_PASSWORD_SALT = 'CHANGEMEINPRODUCTION'
 SECURITY_TRACKABLE = True
 

@@ -11,7 +11,8 @@
 import atexit
 from multiprocessing import Pool, Queue
 
-from poli import app, db
+from poli import app
+from poli import db
 
 
 def execute_task(mqueue):
@@ -35,7 +36,8 @@ def execute_task(mqueue):
             except Exception as e:
                 app.logger.error("Error executing task %s (%s)" % (mtask, e))
                 app.logger.exception(e)
-                db.session.rollback()
+                with app.app_context():
+                    db.session.rollback()
                 continue
             del mtask
         m_analysis.set_finished()
@@ -59,9 +61,10 @@ def execute_yara_task(mqueue):
             if not result:
                 app.logger.error("Error executing yara task %s" % (yara_task))
         except Exception as e:
-            db.session.rollback()
-            app.logger.error("Exception executing yara task: %s" % (e))
-            app.logger.exception(e)
+            with app.app_context():
+                db.session.rollback()
+                app.logger.error("Exception executing yara task: %s" % (e))
+                app.logger.exception(e)
             continue
     return True
 

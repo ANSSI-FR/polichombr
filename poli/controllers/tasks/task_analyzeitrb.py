@@ -20,7 +20,6 @@ from poli.controllers.idaactions import IDAActionsController
 
 
 class task_analyzeitrb(Task):
-
     """
     This is a wrapper class for the AnalyzeIt.rb script.
     """
@@ -58,8 +57,8 @@ class task_analyzeitrb(Task):
 
     def remove_blacklist_machoc(self, functions):
         blacklisted = [
-                0x1a02300e,
-                0xd3fa94a,
+            0x1a02300e,
+            0xd3fa94a,
         ]
 
         for func in functions.keys():
@@ -116,36 +115,38 @@ class task_analyzeitrb(Task):
                 else:
                     app.logger.debug("Unknown IDA command %s" % (line))
                     continue
-                SampleController.add_idaaction(sid, act)
+                with app.app_context():
+                    SampleController.add_idaaction(sid, act)
         return funcs
 
     @Task._timer
     def apply_result(self):
-        samplecontrol = SampleController()
-        sample = SampleController.get_by_id(self.sid)
-        if sample is None:
-            app.logger.error(self.tmessage + "Sample has disappeared...")
-            raise IOError
-        app.logger.debug(self.tmessage + "APPLY_RESULT")
+        with app.app_context():
+            samplecontrol = SampleController()
+            sample = SampleController.get_by_id(self.sid)
+            if sample is None:
+                app.logger.error(self.tmessage + "Sample has disappeared...")
+                raise IOError
+            app.logger.debug(self.tmessage + "APPLY_RESULT")
 
-        # TXT report
-        app.logger.info("Creating new analyzeit report")
-        SampleController.create_analysis(
-            sample, self.txt_report, "analyzeit", True)
+            # TXT report
+            app.logger.info("Creating new analyzeit report")
+            SampleController.create_analysis(
+                sample, self.txt_report, "analyzeit", True)
 
-        functions = self.parse_machoc_signatures()
+            functions = self.parse_machoc_signatures()
 
-        # IDA COMMANDS report:
-        app.logger.info("Parsing idacommands")
-        functions = self.parse_ida_cmds(sample.id, functions)
+            # IDA COMMANDS report:
+            app.logger.info("Parsing idacommands")
+            functions = self.parse_ida_cmds(sample.id, functions)
 
-        # Functions: just push the list
-        app.logger.info("Storing functions")
-        samplecontrol.add_multiple_functions(sample, functions)
+            # Functions: just push the list
+            app.logger.info("Storing functions")
+            samplecontrol.add_multiple_functions(self.sid, functions)
 
-        # global machoc match
-        app.logger.info("Calculating machoc80 matches")
-        samplecontrol.match_by_machoc80(sample)
+            # global machoc match
+            app.logger.info("Calculating machoc80 matches")
+            samplecontrol.match_by_machoc80(sample)
         return True
 
     def analyze_it(self):

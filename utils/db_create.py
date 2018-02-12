@@ -11,15 +11,16 @@
 
 
 import os.path
-from poli import db
+from poli import app, db
 
 from config import SQLALCHEMY_DATABASE_URI
 from config import SQLALCHEMY_MIGRATE_REPO
 from migrate.versioning import api
-import migrate.exceptions
+from migrate import exceptions
 
 try:
-    db.create_all()
+    with app.app_context():
+        db.create_all()
 except exceptions.DatabaseAlreadyControlledError:
     pass
 

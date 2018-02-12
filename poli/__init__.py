@@ -1,50 +1,68 @@
 """
     This file is part of Polichombr.
 
-    (c) 2016 ANSSI-FR
+    (c) 2018 ANSSI-FR
 
 
     Description:
         Init flask app and the modules.
 """
+from flask import Flask, abort
 
-from flask import Flask
-from flask import Blueprint
 
 from flask_sqlalchemy import SQLAlchemy
 from flask_bootstrap import Bootstrap
 from flask_marshmallow import Marshmallow
 from flask_misaka import Misaka
 from flask_security import Security, SQLAlchemyUserDatastore
-
-
-app = Flask(__name__)
-
-app.config.from_object('config')
+from flask_bootstrap import StaticCDN
 
 
 # Init bootstrap extension
-Bootstrap(app)
-
+bootstrap = Bootstrap()
 
 # Init SQL extension
-db = SQLAlchemy(app)
-ma = Marshmallow(app)
-Misaka(app)
+db = SQLAlchemy()
+ma = Marshmallow()
+
+# Init other extensions
+misaka = Misaka()
+security = Security()
 
 # Init user management
-from poli.models.user import User, Role
+from .models.user import User, Role
 user_datastore = SQLAlchemyUserDatastore(db, User, Role)
-security = Security(app, user_datastore)
 
-from poli.controllers.api import APIControl
 
+def create_app(config_filename):
+    app = Flask(__name__)
+
+    app.config.from_object(config_filename)
+    app.logger.setLevel(app.config["LOG_LEVEL"])
+
+    bootstrap.init_app(app)
+    app.extensions['bootstrap']['cdns']['jquery'] = StaticCDN()
+
+    db.init_app(app)
+    ma.init_app(app)
+    misaka.init_app(app)
+
+    security.init_app(app, user_datastore)
+
+    @app.login_manager.unauthorized_handler
+    def abort_401():
+        return abort(401)
+    return app
+
+
+app = create_app("config")
+
+from .controllers.api import APIControl
 api = APIControl()
 
+from .views import apiview
+from .views import webui
 
-apiview = Blueprint('apiview', __name__, url_prefix=app.config['API_PATH'])
+app.register_blueprint(apiview.apiview)
+app.register_blueprint(webui.webuiview)
 
-from poli.views import webui
-from poli.views import apiview as view
-
-app.register_blueprint(apiview)

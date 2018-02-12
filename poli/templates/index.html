@@ -50,7 +50,7 @@
 	            <div class="panel-body">
             {% for f in families %}
                 {% if f.status == 2 %}
-                    <a href="{{url_for('view_family',family_id=f.id)}}" class="btn btn-{{familycolorbystatus(f)}}">{{f.name}}</a>&nbsp;
+                    <a href="{{url_for('webuiview.view_family',family_id=f.id)}}" class="btn btn-{{familycolorbystatus(f)}}">{{f.name}}</a>&nbsp;
                 {% endif %}
             {% endfor %}
                 </div>

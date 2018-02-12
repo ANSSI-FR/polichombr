@@ -43,25 +43,27 @@ class task_yara(Task):
         Extended yara execution. Stores hits on the yaramatched attribute.
         """
         s_controller = SampleController()
-        sample = s_controller.get_by_id(self.sid)
-        self.tstart = int(time.time())
-        app.logger.debug(self.tmessage + "EXECUTE")
-        for yar in YaraRule.query.all():
-            if run_extended_yara(yar.raw_rule, sample) is True:
-                self.yaramatched.append(yar)
+        with app.app_context():
+            sample = s_controller.get_by_id(self.sid)
+            self.tstart = int(time.time())
+            app.logger.debug(self.tmessage + "EXECUTE")
+            for yar in YaraRule.query.all():
+                if run_extended_yara(yar.raw_rule, sample) is True:
+                    self.yaramatched.append(yar)
         return True
 
     def apply_result(self):
         """
         Commits to database.
         """
-        s_controller = SampleController()
-        sample = s_controller.get_by_id(self.sid)
-        app.logger.debug(self.tmessage + "APPLY_RESULT")
-        for match in self.yaramatched:
-            # use the static YaraController => the () will create a JobPool,
-            # causing exceptions (daemon => child).
-            YaraController.add_to_sample(sample, match)
+        with app.app_context():
+            s_controller = SampleController()
+            sample = s_controller.get_by_id(self.sid)
+            app.logger.debug(self.tmessage + "APPLY_RESULT")
+            for match in self.yaramatched:
+                # use the static YaraController => the () will create a JobPool,
+                # causing exceptions (daemon => child).
+                YaraController.add_to_sample(sample, match)
         app.logger.debug(self.tmessage + "END - TIME %i" %
                          (int(time.time()) - self.tstart))
         return True
