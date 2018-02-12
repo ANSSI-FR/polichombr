@@ -673,7 +673,7 @@ class ApiIDAActionsTests(ApiTestCase):
         self.assertIn(actions["idaactions"][3]["data"], "TESTCOMMENT2")
 
         self.assertIn(actions["idaactions"][4]["type"], "idastructs")
-        self.assertEqual(actions["idaactions"][4]["address"], None)
+        self.assertEqual(actions["idaactions"][4]["address"], 0)
         self.assertIn(actions["idaactions"][4]["data"], "ThisIsAStruct")
 
     def test_push_comments(self):

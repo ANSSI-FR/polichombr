@@ -55,7 +55,7 @@ class SampleController(object):
         # If not, we will just update some information
         if Sample.query.filter_by(sha256=sha_256).count() != 0:
             sample = Sample.query.filter_by(sha256=sha_256).first()
-            if sample.storage_file is not None and sample.storage_file != "" and os.path.exists(
+            if sample.storage_file is not None and os.path.exists(
                     sample.storage_file):
                 return sample
 
@@ -637,12 +637,12 @@ class SampleController(object):
             metadata_value = hex(metadata_value)
         else:
             try:
-                metadata_value = str(metadata_value)
+                metadata_value = str(metadata_value).replace("\x00", "")
             except Exception as e:
                 app.logger.exception(e)
                 return False
-        for s_metadata in sample.s_metadata:
-            if s_metadata.type_id == metadata_type and s_metadata.value == metadata_value:
+        for meta in sample.s_metadata:
+            if meta.type_id == metadata_type and meta.value == metadata_value:
                 return True
         s_metadata = SampleMetadata()
         s_metadata.value = metadata_value

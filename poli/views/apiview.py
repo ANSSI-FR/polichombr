@@ -14,7 +14,7 @@ from poli.models.models import TLPLevel
 from poli.models.user import User
 
 from flask import jsonify, request, abort, make_response
-from flask import Blueprint
+from flask import Blueprint, current_app
 
 apiview = Blueprint('apiview', __name__,
                     url_prefix=app.config['API_PATH'])
@@ -106,7 +106,8 @@ def generate_token():
     key = data['api_key']
     user = User.query.filter_by(api_key=key).first()
     if not user:
-        abort(400, "Invalid user")
+        current_app.logger.error("Invalid user trying to login")
+        abort(401, "Invalid user")
     return jsonify({'token': user.get_auth_token()})
 
 
