@@ -24,14 +24,14 @@ def get_filter_arguments(mrequest):
     data = mrequest.args
     cur_timestamp, addr = None, None
     if data is not None:
-        if 'timestamp' in data.keys():
+        if 'timestamp' in list(data.keys()):
             cur_timestamp = data['timestamp']
             form = "%Y-%m-%dT%H:%M:%S.%f"
             try:
                 cur_timestamp = datetime.datetime.strptime(cur_timestamp, form)
             except ValueError:
                 abort(500, "Wrong timestamp format")
-        if 'addr' in data.keys():
+        if 'addr' in list(data.keys()):
             addr = int(data['addr'], 16)
     return cur_timestamp, addr
 
@@ -101,7 +101,7 @@ def api_post_sample_comments(sid):
     if request.json is None:
         abort(400, "No JSON data")
     data = request.json
-    if "address" not in data.keys() or "comment" not in data.keys():
+    if "address" not in list(data.keys()) or "comment" not in list(data.keys()):
         abort(400, "Missing comment or address arguments")
     address = data['address']
     comment = data['comment']
@@ -212,7 +212,7 @@ def api_get_sample_structs(sid):
         @arg timestamp: get structs after this timestamp (optional)
     """
     timestamp = None
-    if request.args is not None and 'timestamp' in request.args.keys():
+    if request.args is not None and 'timestamp' in list(request.args.keys()):
         timestamp = request.args['timestamp']
     structs = api.idacontrol.get_structs(sid, timestamp)
     return jsonify({'structs': structs})
@@ -303,10 +303,10 @@ def api_update_struct_member(sid, struct_id):
         abort(400, "Missing JSON data")
     mid = data["mid"]
     result = False
-    if 'newname' in data.keys():
+    if 'newname' in list(data.keys()):
         result = api.idacontrol.change_struct_member_name(struct_id, mid,
                                                           data["newname"])
-    if 'newsize' in data.keys():
+    if 'newsize' in list(data.keys()):
         result = api.idacontrol.change_struct_member_size(struct_id, mid,
                                                           data["newsize"])
     return jsonify({'result': result})

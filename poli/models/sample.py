@@ -92,7 +92,7 @@ class SampleMetadataType(CustomEnum):
         PE_OPTIONAL_HEADER_SizeOfHeapCommit,
         PE_OPTIONAL_HEADER_LoaderFlags,
         PE_OPTIONAL_HEADER_NumberOfRvaAndSizes,
-        PE_import_hash) = range(1, 57)
+        PE_import_hash) = list(range(1, 57))
 
 
 class StringsItem(db.Model):
@@ -118,7 +118,7 @@ class StringsType(CustomEnum):
         ASCII,
         BUILDED,    # builded on stack
         UNPACKED    # extracted after unpacking in IDAPro
-    ) = range(1, 5)
+    ) = list(range(1, 5))
 
 
 class FunctionInfo(db.Model):
@@ -170,7 +170,7 @@ class AnalysisStatus(CustomEnum):
         FINISHED,
         RUNNING,
         TOSTART
-    ) = range(1, 4)
+    ) = list(range(1, 4))
 
 
 class CheckList(db.Model):

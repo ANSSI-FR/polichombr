@@ -30,7 +30,7 @@ class ChgThemeForm(FlaskForm):
     ]
     newtheme = SelectField('Theme', choices=choices,
                            coerce=str, validators=[DataRequired()])
-    changetheme = SubmitField(u'Submit')
+    changetheme = SubmitField('Submit')
 
 
 class ChgNickForm(FlaskForm):
@@ -39,7 +39,7 @@ class ChgNickForm(FlaskForm):
     Change user's nickname (login).
     """
     newnick = StringField("New nick", validators=[DataRequired()])
-    changenick = SubmitField(u'Submit')
+    changenick = SubmitField('Submit')
 
 
 class ChgNameForm(FlaskForm):
@@ -48,7 +48,7 @@ class ChgNameForm(FlaskForm):
     Change user's full name.
     """
     newname = StringField("New name", validators=[DataRequired()])
-    changename = SubmitField(u'Submit')
+    changename = SubmitField('Submit')
 
 
 class ChgPassForm(FlaskForm):
@@ -64,7 +64,7 @@ class ChgPassForm(FlaskForm):
             EqualTo('rpt_pass',
                     message='Confirmation must match')])
     rpt_pass = PasswordField('Confirm password')
-    changepass = SubmitField(u'Submit')
+    changepass = SubmitField('Submit')
 
 
 class LoginForm(FlaskForm):
@@ -74,7 +74,7 @@ class LoginForm(FlaskForm):
     """
     username = StringField('username', validators=[DataRequired()])
     password = PasswordField('password', validators=[Length(min=6)])
-    userlogin = SubmitField(u'Submit')
+    userlogin = SubmitField('Submit')
 
 
 class UserRegistrationForm(FlaskForm):
@@ -91,7 +91,7 @@ class UserRegistrationForm(FlaskForm):
             EqualTo('rpt_pass',
                     message='Confirmation must match')])
     rpt_pass = PasswordField('Confirm password')
-    userregister = SubmitField(u'Submit')
+    userregister = SubmitField('Submit')
 
 
 class CreateCheckListForm(FlaskForm):
@@ -101,7 +101,7 @@ class CreateCheckListForm(FlaskForm):
     """
     title = StringField("Title", validators=[DataRequired()])
     description = TextAreaField("Content", validators=[DataRequired()])
-    changepoke = SubmitField(u'Submit')
+    changepoke = SubmitField('Submit')
 
 
 class YaraForm(FlaskForm):
@@ -113,7 +113,7 @@ class YaraForm(FlaskForm):
     yara_tlp = SelectField('Sensibility', choices=TLPLevelChoices,
                            coerce=int, validators=[DataRequired()])
     yara_raw = TextAreaField('Yaradata', validators=[DataRequired()])
-    createyara = SubmitField(u'Submit')
+    createyara = SubmitField('Submit')
 
 
 """
@@ -131,7 +131,7 @@ class FamilyForm(FlaskForm):
     familyname = StringField('familyname',
                              default=None,
                              validators=[DataRequired()])
-    createfamily = SubmitField(u'Submit')
+    createfamily = SubmitField('Submit')
 
 
 class AddSubFamilyForm(FlaskForm):
@@ -140,7 +140,7 @@ class AddSubFamilyForm(FlaskForm):
     Create sub-family.
     """
     familyname = StringField('Sub-family name', validators=[DataRequired()])
-    subfamily = SubmitField(u'Create')
+    subfamily = SubmitField('Create')
 
 
 class UploadFamilyFileForm(FlaskForm):
@@ -150,9 +150,9 @@ class UploadFamilyFileForm(FlaskForm):
     """
     file = FileField('File', validators=[DataRequired()])
     description = StringField('description', validators=[DataRequired()])
-    level = SelectField(u'Sensibility', choices=TLPLevelChoices,
+    level = SelectField('Sensibility', choices=TLPLevelChoices,
                         coerce=int, validators=[DataRequired()])
-    uploadfile = SubmitField(u'Submit')
+    uploadfile = SubmitField('Submit')
 
 
 class CreateDetectionItemForm(FlaskForm):
@@ -160,27 +160,27 @@ class CreateDetectionItemForm(FlaskForm):
     """
     Add detection item.
     """
-    name = StringField(u'Name', validators=[DataRequired()])
-    item_abstract = TextAreaField(u'Abstract', validators=[DataRequired()])
+    name = StringField('Name', validators=[DataRequired()])
+    item_abstract = TextAreaField('Abstract', validators=[DataRequired()])
     choices = [
         (DetectionType.CUSTOM, 'Custom'),
         (DetectionType.OPENIOC, 'OpenIOC'),
         (DetectionType.SNORT, 'Snort')
     ]
     item_type = SelectField(
-        u'Type',
+        'Type',
         choices=choices,
         coerce=int,
         validators=[
             DataRequired()])
 
     tlp_level = SelectField(
-        u'Sensibility',
+        'Sensibility',
         choices=TLPLevelChoices,
         coerce=int,
         validators=[
             DataRequired()])
-    createitem = SubmitField(u'Create')
+    createitem = SubmitField('Create')
 
 
 class ChangeTLPForm(FlaskForm):
@@ -188,10 +188,10 @@ class ChangeTLPForm(FlaskForm):
     """
     Change TLP level.
     """
-    item_id = HiddenField(u'item_id')
-    level = SelectField(u'', choices=TLPLevelChoices,
+    item_id = HiddenField('item_id')
+    level = SelectField('', choices=TLPLevelChoices,
                         coerce=int, validators=[DataRequired()])
-    changetlp = SubmitField(u'Change TLP level')
+    changetlp = SubmitField('Change TLP level')
 
 
 class ChangeStatusForm(FlaskForm):
@@ -205,12 +205,12 @@ class ChangeStatusForm(FlaskForm):
         (1, 'Finished'),
     ]
     newstatus = SelectField(
-        u'Status',
+        'Status',
         choices=choices,
         coerce=int,
         validators=[
             DataRequired()])
-    changestatus = SubmitField(u'Change status')
+    changestatus = SubmitField('Change status')
 
 
 class AddYaraToFamilyForm(FlaskForm):
@@ -218,11 +218,11 @@ class AddYaraToFamilyForm(FlaskForm):
     Add yara rule.
     """
     yaraid = SelectField(
-        u'Associated yara',
+        'Associated yara',
         coerce=int,
         validators=[
             DataRequired()])
-    addyarafam = SubmitField(u'Submit')
+    addyarafam = SubmitField('Submit')
 
 
 class RenameForm(FlaskForm):
@@ -230,8 +230,8 @@ class RenameForm(FlaskForm):
     Rename.
     """
     newname = StringField('Name', validators=[DataRequired()])
-    item_id = HiddenField(u'item_id')
-    rename = SubmitField(u'Rename')
+    item_id = HiddenField('item_id')
+    rename = SubmitField('Rename')
 
 
 class FamilyAbstractForm(FlaskForm):
@@ -243,7 +243,7 @@ class FamilyAbstractForm(FlaskForm):
         default="Here goes the family informations",
         validators=[
             DataRequired()])
-    familyabstract = SubmitField(u'Submit')
+    familyabstract = SubmitField('Submit')
 
 
 class ExportFamilyForm(FlaskForm):
@@ -251,7 +251,7 @@ class ExportFamilyForm(FlaskForm):
     """
     Export family data.
     """
-    level = SelectField(u'Maximum sensibility', choices=TLPLevelChoices,
+    level = SelectField('Maximum sensibility', choices=TLPLevelChoices,
                         coerce=int, validators=[DataRequired()])
     choices = [
         (1, "Yara rules (RULESET)"),
@@ -261,7 +261,7 @@ class ExportFamilyForm(FlaskForm):
         (5, "Custom generic detection items (TXT)"),
         (6, "Samples (TARGZ)")
     ]
-    datatype = SelectField(u'Data type', choices=choices,
+    datatype = SelectField('Data type', choices=choices,
                            coerce=int, validators=[DataRequired()])
     exportfam = SubmitField('Submit')
 
@@ -273,11 +273,11 @@ class UploadSampleForm(FlaskForm):
     """
     files = FileField('Sample File', validators=[DataRequired()],
                       render_kw={'multiple': True})
-    level = SelectField(u'Sensibility', choices=TLPLevelChoices,
+    level = SelectField('Sensibility', choices=TLPLevelChoices,
                         coerce=int, validators=[DataRequired()])
-    family = SelectField(u'Associated Family', coerce=int)
+    family = SelectField('Associated Family', coerce=int)
     zipflag = BooleanField('Sample Zip archive')
-    uploadsample = SubmitField(u'Submit')
+    uploadsample = SubmitField('Submit')
 
 
 class AddSampleToFamilyForm(FlaskForm):
@@ -286,11 +286,11 @@ class AddSampleToFamilyForm(FlaskForm):
     Add sample to family.
     """
     parentfamily = SelectField(
-        u'Associated family',
+        'Associated family',
         coerce=int,
         validators=[
             DataRequired()])
-    addsample = SubmitField(u'Submit')
+    addsample = SubmitField('Submit')
 
 
 class SampleAbstractForm(FlaskForm):
@@ -302,7 +302,7 @@ class SampleAbstractForm(FlaskForm):
         'Sample abstract',
         default="My beautiful sample! ",
         validators=[DataRequired()])
-    sampleabstract = SubmitField(u'Submit')
+    sampleabstract = SubmitField('Submit')
 
 
 class CompareMachocForm(FlaskForm):
@@ -310,9 +310,9 @@ class CompareMachocForm(FlaskForm):
     """
     Compare to other samples.
     """
-    percent = IntegerField(u'Minimal percent match',
+    percent = IntegerField('Minimal percent match',
                            validators=[DataRequired()])
-    compare = SubmitField(u'Compare!')
+    compare = SubmitField('Compare!')
 
 
 class ExportMachexForm(FlaskForm):
@@ -320,14 +320,14 @@ class ExportMachexForm(FlaskForm):
     """
     Export MACHEX data.
     """
-    machocfull = BooleanField(u'Machoc hash')
-    fmachoc = BooleanField(u'Functions: machoc hashes')
-    fnames = BooleanField(u'Functions: names')
-    analysis_data = BooleanField(u'Analysis data')
-    abstracts = BooleanField(u'Abstract')
-    metadata = BooleanField(u'File metadata (PE, ELF...)')
-    estrings = BooleanField(u'Strings')
-    export = SubmitField(u'Submit')
+    machocfull = BooleanField('Machoc hash')
+    fmachoc = BooleanField('Functions: machoc hashes')
+    fnames = BooleanField('Functions: names')
+    analysis_data = BooleanField('Analysis data')
+    abstracts = BooleanField('Abstract')
+    metadata = BooleanField('File metadata (PE, ELF...)')
+    estrings = BooleanField('Strings')
+    export = SubmitField('Submit')
 
 
 class ImportForm(FlaskForm):
@@ -336,9 +336,9 @@ class ImportForm(FlaskForm):
     Import MACHEX data.
     """
     file = FileField('MACHEX File', validators=[DataRequired()])
-    level = SelectField(u'Sensibility', choices=TLPLevelChoices,
+    level = SelectField('Sensibility', choices=TLPLevelChoices,
                         coerce=int, validators=[DataRequired()])
-    importform = SubmitField(u'Submit')
+    importform = SubmitField('Submit')
 
 
 class FullTextSearchForm(FlaskForm):
@@ -347,7 +347,7 @@ class FullTextSearchForm(FlaskForm):
     Full-text search.
     """
     fneedle = StringField("Search", validators=[DataRequired()])
-    full_text_search = SubmitField(u'Submit')
+    full_text_search = SubmitField('Submit')
 
 
 class MachocHashSearchForm(FlaskForm):
@@ -358,7 +358,7 @@ class MachocHashSearchForm(FlaskForm):
     percent = IntegerField("Minimum hit level")
     mneedle = StringField("Search", validators=[DataRequired(),
                                                 Length(min=8, max=8)])
-    machoc_search = SubmitField(u'Submit')
+    machoc_search = SubmitField('Submit')
 
 
 class HashSearchForm(FlaskForm):
@@ -368,4 +368,4 @@ class HashSearchForm(FlaskForm):
     """
     hneedle = StringField("Search", validators=[DataRequired(),
                                                 Length(min=32, max=64)])
-    hash_search = SubmitField(u'Submit')
+    hash_search = SubmitField('Submit')

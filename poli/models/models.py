@@ -16,7 +16,7 @@ class CustomEnum(object):
     """
     @classmethod
     def tostring(cls, val):
-        for key, value in vars(cls).iteritems():
+        for key, value in vars(cls).items():
             if value == val:
                 return key
         return ""
@@ -38,7 +38,7 @@ class TLPLevel(CustomEnum):
         TLPAMBER,
         TLPRED,
         TLPBLACK
-    ) = range(1, 6)
+    ) = list(range(1, 6))
 
 
 TLPLevelChoices = [

@@ -125,6 +125,9 @@ def api_post_families():
     tlp_level = TLPLevel.TLPAMBER
     try:
         tlp_level = data['tlp_level']
+        if tlp_level is None:
+            tlp_level = TLPLevel.TLPAMBER
+
     except KeyError:
         current_app.logger.warning("No TLP for family, default to AMBER")
 

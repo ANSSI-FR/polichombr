@@ -14,7 +14,6 @@ from poli import db, ma
 
 
 class IDAAction(db.Model):
-
     """
         Abstract class for implementing IDA actions.
         This mirrors actions done by the analyst on his database
@@ -109,8 +108,7 @@ class IDAStruct(IDAAction):
     name = db.Column(db.String(), index=True)
     size = db.Column(db.Integer())
     members = db.relationship("IDAStructMember",
-                              backref=db.backref("struct"),
-                              )
+                              backref=db.backref("struct"))
 
     __mapper_args__ = {
         "polymorphic_identity": "idastructs"}

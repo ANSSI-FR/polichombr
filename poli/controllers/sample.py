@@ -505,9 +505,9 @@ class SampleController(object):
         if len(sample1_hashes) == 0 or len(sample2_hashes) == 0:
             return 0
         maxlen = max(len(sample1_hashes), len(sample2_hashes))
-        c1, c2 = map(Counter, (sample1_hashes, sample2_hashes))
+        c1, c2 = list(map(Counter, (sample1_hashes, sample2_hashes)))
         ch = set(sample1_hashes).intersection(set(sample2_hashes))
-        rate = float(sum(map(lambda h: max(c1[h], c2[h]), ch))) / maxlen
+        rate = float(sum([max(c1[h], c2[h]) for h in ch])) / maxlen
         return rate
 
     @staticmethod
@@ -734,7 +734,7 @@ class SampleController(object):
             and is a dict (machoc_hash, name)
         """
         sample = self.get_by_id(sid)
-        for addr in funcs.keys():
+        for addr in list(funcs.keys()):
             self.add_function(
                 sample,
                 addr,

@@ -11,7 +11,7 @@
 
 
 import zipfile
-from StringIO import StringIO
+from io import BytesIO
 
 from flask import abort, flash
 
@@ -70,7 +70,7 @@ class APIControl(object):
         """
         file_data = file_stream.read(4)
         file_stream.seek(0)
-        if file_data.startswith("PK") and zipflag:
+        if file_data.startswith(b"PK") and zipflag:
             samples = self.create_from_zip(file_stream, user, tlp, family)
         else:
             sample = self.create_sample_and_run_analysis(file_stream,
@@ -86,7 +86,7 @@ class APIControl(object):
             Iterates over the samples in the zip
         """
         output_samples = []
-        file_data = StringIO(file_stream.read())
+        file_data = BytesIO(file_stream.read())
         with zipfile.ZipFile(file_data, "r") as zcl:
             for name in zcl.namelist():
                 mfile = zcl.open(name, "r")

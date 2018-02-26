@@ -35,9 +35,9 @@ from poli.views.forms import UploadSampleForm
 webuiview = Blueprint('webuiview', __name__, static_folder="static")
 
 # Import the subview
-from webui_families import *
-from webui_user import *
-from webui_sample import *
+from .webui_families import *
+from .webui_user import *
+from .webui_sample import *
 
 
 @webuiview.errorhandler(404)
@@ -169,7 +169,7 @@ def utility_processor():
         """
             Used to format correctly a sample metadata type in Jinja
         """
-        return u'%s' % (SampleMetadataType.tostring(meta.type_id))
+        return '%s' % (SampleMetadataType.tostring(meta.type_id))
     return dict(format_meta=format_metadata)
 
 
