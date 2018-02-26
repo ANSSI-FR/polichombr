@@ -53,6 +53,7 @@ class SkelConfig(object):
         self.poli_remote_path = ""
         self.poli_apikey = ""
         self.debug_http = False
+        self.use_ui = True
 
         # Skelenox general config
         self.save_timeout = 10 * 60
@@ -1320,7 +1321,8 @@ class SkelCore(object):
         self.skel_hooks = SkelHooks(self.skel_conn)
 
         # setup UI
-        self.skel_ui = SkelUI(settings_filename)
+        if self.skel_settings.use_ui:
+            self.skel_ui = SkelUI(settings_filename)
 
         # setup skelenox terminator
         self.setup_terminator()
@@ -1372,7 +1374,8 @@ class SkelCore(object):
                          "Do you want to synchronize defined comments?") == 1:
                 self.send_comments()
 
-        self.skel_ui.Show()
+        if self.skel_settings.use_ui:
+            self.skel_ui.Show()
         self.skel_sync_agent.start()
         self.skel_hooks.hook()
 
@@ -1400,7 +1403,8 @@ class SkelCore(object):
         self.skel_sync_agent.kill()
         self.skel_sync_agent.skel_conn.close_connection()
         self.skel_sync_agent.join()
-        self.skel_ui.Close()
+        if self.skel_settings.use_ui:
+            self.skel_ui.Close()
 
         g_logger.info("Skelenox terminated")
 
