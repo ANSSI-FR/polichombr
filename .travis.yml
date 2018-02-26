@@ -1,6 +1,6 @@
 
 addons:
-  ap
+  apt:
     packages:
       - ruby
       - libffi-dev
@@ -10,11 +10,6 @@ addons:
       - libssl-dev
 
 language: python
-
-python:
-    - '2.7'
-    - '3.5'
-    - '3.6'
 
 matrix:
   include:
@@ -27,12 +22,16 @@ matrix:
         - brew update
         - brew install gcc graphviz ruby
         - brew install libmagic
+    - python: "2.7"
+    - python: "3.4"
+    - python: "3.5"
+    - python: "3.6"
 
   allow_failures:
     - os: osx
-    - python:
-        - '3.5'
-        - '3.6'
+    - python: "3.4"
+    - python: "3.5"
+    - python: "3.6"
 
 install:
   - pip install -r requirements.txt

@@ -470,10 +470,18 @@ class ApiYaraTests(ApiTestCase):
                                content_type="application/json")
         self.assertEqual(retval.status_code, 400)
 
-        retval = self.get('/api/1.0/family/1/export/1/detection/yara')
+        retval = self.get('/api/1.0/family/1/export/3/detection/yara')
         self.assertEqual(retval.status_code, 200)
         self.assertIn(b"TESTYARA", retval.data)
         self.assertIn(b"4D 5A", retval.data)
+
+        # test with an inferior tlp level
+        retval = self.get('/api/1.0/family/1/export/1/detection/yara')
+        self.assertEqual(retval.status_code, 200)
+        self.assertNotIn(b"TESTYARA", retval.data)
+        self.assertNotIn(b"4D 5A", retval.data)
+
+
 
     def test_remove_from_family(self):
         """

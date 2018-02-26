@@ -202,7 +202,7 @@ class WebUIBaseTests(WebUIBaseClass):
         retval = self.app.post("/signatures/", data=data)
         self.assertEqual(retval.status_code, 200)
         self.assertIn(
-            u"<h3 class=\"panel-title\">TEST_YARA_RENAMED</h3>", retval.data)
+            b"<h3 class=\"panel-title\">TEST_YARA_RENAMED</h3>", retval.data)
 
         # test wrong yara format
 
@@ -630,7 +630,7 @@ class WebUISampleManagementTests(WebUIBaseClass):
 
         self.assertEqual(retval.status_code, 200)
         self.assertIn(
-            u'<!DOCTYPE svg PUBLIC "-//W3C//DTD SVG 1.1//EN"', retval.data)
+            b'<!DOCTYPE svg PUBLIC "-//W3C//DTD SVG 1.1//EN"', retval.data)
         self.assertIn(b"40100fh mov dx, 2", retval.data)
         self.assertIn(b"401000h mov eax, 1 ; Top function : entry", retval.data)
 

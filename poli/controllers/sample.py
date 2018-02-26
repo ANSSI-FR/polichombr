@@ -1054,7 +1054,8 @@ def disassemble_sample(sample_id, address):
     out_file = disassemble_it(filename, address)
     if out_file is False:
         return False
-    data = open(out_file, "rb").read()
+    with open(out_file, "rb") as mfile:
+        data = mfile.read().decode("utf-8")
     return data
 
 
@@ -1070,7 +1071,8 @@ def disassemble_sample_get_svg(sample_id, address):
         out_file += hex(address)
     out_file = data.render(out_file)
     beautify_svg(out_file)
-    svg_data = open(out_file, 'rb').read()
+    with open(out_file, 'rb') as mfile:
+        svg_data = mfile.read().decode("utf-8")
     elements = re.findall("func_<!-- -->[0-9a-f]{3,}h", svg_data)
     for e in elements:
         et = e[13:-1]

@@ -32,7 +32,7 @@ def plain_text(data):
 
 
 @apiview.route(
-    '/family/<family_id>/export/<tlp_level>/detection/yara',
+    '/family/<family_id>/export/<int:tlp_level>/detection/yara',
     methods=['GET'])
 @login_required
 def api_family_export_detection_yara(family_id, tlp_level):
