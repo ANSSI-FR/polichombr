@@ -115,10 +115,11 @@ def dl_skelenox():
         skel_config["debug_http"] = current_app.config['HTTP_DEBUG']
         skel_config["poli_apikey"] = g.user.api_key
         skel_config["save_timeout"] = 10 * 60
-        skel_config["sync_frequency"] = 1.0 * 100
+        skel_config["sync_frequency"] = 1 * 100
         skel_config["debug_level"] = "info"
         skel_config["notepad_font_name"] = "Courier New"
         skel_config["notepad_font_size"] = 9
+        skel_config["use_ui"] = True
         skel_json = json.dumps(skel_config, sort_keys=True, indent=4)
         myzip.writestr("skelsettings.json", skel_json)
         myzip.close()
