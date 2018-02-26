@@ -51,7 +51,7 @@ def api_500_handler(error):
     """
     return jsonify({'error': 500,
                     'error_description': error.description,
-                    'error_message': error.message}), 500
+                    }), 500
 
 
 @apiview.errorhandler(400)
@@ -61,7 +61,7 @@ def api_400_handler(error):
     """
     return jsonify({'error': 400,
                     'error_description': error.description,
-                    'error_message': error.message}), 400
+                    }), 400
 
 
 @apiview.errorhandler(401)
@@ -71,7 +71,7 @@ def api_401_handler(error):
     """
     return jsonify({'error': 401,
                     'error_description': error.description,
-                    'error_message': error.message}), 401
+                    }), 401
 
 
 @apiview.route("/<path:invalid_path>", methods=['GET', 'POST', 'PATCH'])
@@ -136,7 +136,7 @@ def api_create_yara():
     data = request.json
     name = data["name"]
     rule = data["rule"]
-    if 'tlp_level' in data.keys():
+    if 'tlp_level' in list(data.keys()):
         tlp_level = data["tlp_level"]
 
     if tlp_level is None:

@@ -36,11 +36,11 @@ class AnalysisFactory(object):
         """
         app.logger.info("Loading tasks")
         srcre = re.compile('.py$', re.IGNORECASE)
-        tasks_files = filter(srcre.search,
-                             os.listdir(app.config['TASKS_PATH']))
+        tasks_files = list(filter(srcre.search,
+                             os.listdir(app.config['TASKS_PATH'])))
 
         def form_module(fp): return os.path.splitext(fp)[0]
-        tasks_modules = map(form_module, tasks_files)
+        tasks_modules = list(map(form_module, tasks_files))
         for task_filename in tasks_modules:
             if not task_filename.startswith('__'):
                 try:

@@ -93,7 +93,7 @@ def api_post_samples():
     if len(samples) == 0:
         abort(500, "Cannot create sample")
 
-    if tlp_level not in range(1, 6):
+    if tlp_level not in list(range(1, 6)):
         current_app.logger.warning("Incorrect TLP level, defaulting to AMBER")
         tlp_level = TLPLevel.TLPAMBER
 
@@ -156,10 +156,10 @@ def api_post_sample_family(sid):
     if request.json is None:
         abort(400, "JSON not provided")
     fam = None
-    if "family_id" in request.json.keys():
+    if "family_id" in list(request.json.keys()):
         fid = request.json['family_id']
         fam = api.get_elem_by_type("family", fid)
-    elif "family_name" in request.json.keys():
+    elif "family_name" in list(request.json.keys()):
         fname = request.json['family_name']
         fam = api.familycontrol.get_by_name(fname)
     else:
@@ -176,7 +176,7 @@ def api_set_sample_abstract(sid):
         @arg: abstract Markdown for the abstract
     """
     data = request.json
-    if data is None or 'abstract' not in data.keys():
+    if data is None or 'abstract' not in list(data.keys()):
         abort(400, 'Invalid JSON data provided')
     abstract = data['abstract']
     samp = api.get_elem_by_type("sample", sid)

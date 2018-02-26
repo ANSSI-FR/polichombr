@@ -15,7 +15,7 @@ from poli import app, db
 from poli.models.user import User
 from poli import user_datastore
 
-from flask_security.utils import encrypt_password, verify_and_update_password
+from flask_security.utils import hash_password, verify_and_update_password
 
 
 class UserController(object):
@@ -30,7 +30,7 @@ class UserController(object):
         """
         if User.query.filter_by(nickname=username).count() != 0:
             return False
-        password = encrypt_password(password)
+        password = hash_password(password)
         user_datastore.create_user(nickname=username,
                                    password=password,
                                    completename=completename,
@@ -54,7 +54,8 @@ class UserController(object):
             Generate a random API key for the user
         """
         seed = str(uuid.uuid4())
-        api_key = sha256(seed + username + password).hexdigest()
+        seed = u'%s%s%s' % (seed, username, password)
+        api_key = sha256(seed.encode('utf-8')).hexdigest()
 
         return api_key
 
@@ -85,6 +86,9 @@ class UserController(object):
 
     @classmethod
     def renew_api_key(cls, user):
+        """
+            Generate a new api_key for the user
+        """
         new_key = cls.generate_api_key(user.nickname, user.password)
         user.api_key = new_key
         db.session.commit()
@@ -141,7 +145,7 @@ class UserController(object):
         """
             Regenerate an user's password hash.
         """
-        user.password = encrypt_password(passw)
+        user.password = hash_password(passw)
         db.session.commit()
         return True
 
@@ -183,6 +187,9 @@ class UserController(object):
 
     @staticmethod
     def activate(user_id):
+        """
+            Toggle user activation status
+        """
         user = User.query.get(int(user_id))
         if user is not None:
             user_datastore.activate_user(user)

@@ -32,7 +32,7 @@ def plain_text(data):
 
 
 @apiview.route(
-    '/family/<family_id>/export/<tlp_level>/detection/yara',
+    '/family/<family_id>/export/<int:tlp_level>/detection/yara',
     methods=['GET'])
 @login_required
 def api_family_export_detection_yara(family_id, tlp_level):
@@ -125,6 +125,9 @@ def api_post_families():
     tlp_level = TLPLevel.TLPAMBER
     try:
         tlp_level = data['tlp_level']
+        if tlp_level is None:
+            tlp_level = TLPLevel.TLPAMBER
+
     except KeyError:
         current_app.logger.warning("No TLP for family, default to AMBER")
 

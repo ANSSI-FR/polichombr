@@ -24,7 +24,7 @@ def execute_task(mqueue):
         m_analysis = mqueue.get(True)
         if m_analysis is None:
             return False
-        m_analysis.tasks.sort()
+        m_analysis.tasks.sort(key=lambda task: task[0])
         for level, mtask in m_analysis.tasks:
             # TRY/CATCH block to avoid blocking tasks
             try:

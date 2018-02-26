@@ -39,7 +39,7 @@ class DetectionType(CustomEnum):
         CUSTOM,     # raw text
         OPENIOC,    # open ioc format
         SNORT       # snort rule(set)
-    ) = range(1, 4)
+    ) = list(range(1, 4))
 
 
 class FamilyDataFile(db.Model):
@@ -63,7 +63,7 @@ class FamilyStatus(CustomEnum):
         FINISHED,
         CURRENTLY_ANALYZED,
         NOT_STARTED
-    ) = range(1, 4)
+    ) = list(range(1, 4))
 
 
 # Yara signatures relationship (auto-classification).

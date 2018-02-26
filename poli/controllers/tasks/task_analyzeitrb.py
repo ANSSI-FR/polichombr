@@ -61,7 +61,7 @@ class task_analyzeitrb(Task):
             0xd3fa94a,
         ]
 
-        for func in functions.keys():
+        for func in list(functions.keys()):
             if functions[func]["machoc"] in blacklisted:
                 functions.pop(func)
         return functions
@@ -164,6 +164,6 @@ class task_analyzeitrb(Task):
         fname = self.storage_file + '.txt'
         if os.path.exists(fname):
             data = open(fname, 'rb').read()
-            self.txt_report = re.sub(r'[^\x00-\x7F]', '', data).decode('utf-8')
+            self.txt_report = re.sub(b'[^\x00-\x7F]', '', bytes(data)).decode('utf-8')
 
         return True
