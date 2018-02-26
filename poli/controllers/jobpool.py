@@ -63,8 +63,8 @@ def execute_yara_task(mqueue):
         except Exception as e:
             with app.app_context():
                 db.session.rollback()
-                app.logger.error("Exception executing yara task: %s" % (e))
-                app.logger.exception(e)
+            app.logger.error("Exception executing yara task: %s" % (e))
+            app.logger.exception(e)
             continue
     return True
 

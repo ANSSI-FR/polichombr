@@ -190,7 +190,7 @@ def ui_search():
         hneedle = hform.hneedle.data
         samples_results, functions_results = api.samplecontrol.search_hash(
             hneedle)
-        if len(samples_results) == 0:
+        if not samples_results:
             flash("Hash not found...", "error")
     if tform.validate_on_submit():
         tneedle = tform.fneedle.data
@@ -230,7 +230,7 @@ def ui_yara():
             create_yara_form.yara_name.data,
             create_yara_form.yara_raw.data,
             create_yara_form.yara_tlp.data)
-        if ret is None:
+        if not ret:
             flash("Error during yara creation", "error")
         else:
             flash("Created yara " + ret.name, "success")
