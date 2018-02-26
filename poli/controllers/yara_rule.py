@@ -38,8 +38,9 @@ def run_simple_yara(raw_rule, sample):
         matches = yara_obj.match(data=open(sample_filepath, "rb").read())
     except Exception as e:
         app.logger.exception("YARA RULE FAILED: %s" % (e))
-    if len(matches) != 0:
+    if matches:
         return True
+    return False
 
 
 def filter_funcs_infos(sid, hashes):
@@ -55,6 +56,17 @@ def filter_funcs_infos(sid, hashes):
     return funcs
 
 
+def search_by_yara_regexp(raw_rule, sid, pattern):
+    """
+        Search for a pattern in the extended yara
+        and return corresponding functions
+    """
+    matches = re.findall(pattern, raw_rule)
+    if pattern:
+        funcs = filter_funcs_infos(sid, matches)
+    return funcs
+
+
 def run_extended_yara(raw_rule, sample):
     '''
 
@@ -65,17 +77,18 @@ def run_extended_yara(raw_rule, sample):
         Machoc hashes must have been set in the sample, obviously.
 
     '''
-    machoc_prematchs = re.findall("machoc==[0-9a-fA-F]{8}", raw_rule)
-    machoc_noprematchs = re.findall("machoc!=[0-9a-fA-F]{8}", raw_rule)
-    if len(machoc_noprematchs) != 0:
-        funcs = filter_funcs_infos(sample.id, machoc_noprematchs)
-        if funcs.count() > 0:
-            return False
+    prematchs = search_by_yara_regexp(raw_rule,
+                                      sample.id,
+                                      "machoc==[0-9a-fA-F]{8}")
+    if prematchs.count() == 0:
+        return False
 
-    if len(machoc_prematchs) != 0:
-        funcs = filter_funcs_infos(sample.id, machoc_prematchs)
-        if funcs.count() == 0:
-            return False
+    noprematchs = search_by_yara_regexp(raw_rule,
+                                        sample.id,
+                                        "machoc!=[0-9a-fA-F]{8}")
+    if noprematchs.count() > 0:
+        return False
+
     return run_simple_yara(raw_rule, sample)
 
 
@@ -95,12 +108,13 @@ class YaraSingleTask(object):
         """
         Get the objects, and run the extended yara.
         """
-        yar = YaraRule.query.get(self.yara_id)
-        sample = Sample.query.get(self.sample_id)
-        if yar in sample.yaras:
-            return True
-        if run_extended_yara(yar.raw_rule, sample) is True:
-            self.matched = True
+        with app.app_context():
+            yar = YaraRule.query.get(self.yara_id)
+            sample = Sample.query.get(self.sample_id)
+            if yar in sample.yaras:
+                return True
+            if run_extended_yara(yar.raw_rule, sample) is True:
+                self.matched = True
         return True
 
     def apply_result(self):
@@ -114,9 +128,9 @@ class YaraSingleTask(object):
         if yar in sample.yaras:
             return True
         sample.yaras.append(yar)
-        for f in yar.families:
-            if f not in sample.families:
-                sample.families.append(f)
+        for family in yar.families:
+            if family not in sample.families:
+                sample.families.append(family)
         db.session.commit()
         return True
 
@@ -159,18 +173,20 @@ class YaraController(object):
         if TLPLevel.tostring(tlp_level) is None:
             return False
         if YaraRule.query.filter_by(name=name).count() != 0:
-            return None
+            app.logger.error("This rule already exists")
+            return False
         try:
             yara.compile(source=raw_data)
-        except Exception as e:
-            app.logger.exception(e)
-            return None
+        except yara.SyntaxError as error:
+            app.logger.error("Failed to compile rule %s", name)
+            app.logger.exception(error)
+            return False
         yar = YaraRule(name, raw_data, tlp_level)
         yar.version = 1
         db.session.add(yar)
         db.session.commit()
-        for s in Sample.query.all():
-            self.execute_on_sample(s, yar)
+        for sample in Sample.query.all():
+            self.execute_on_sample(sample, yar)
         return yar
 
     @staticmethod
@@ -198,6 +214,7 @@ class YaraController(object):
         if yar in item.yaras:
             return True
         item.yaras.append(yar)
+        return True
 
     @classmethod
     def add_to_sample(cls, sample, yar):
