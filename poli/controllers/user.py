@@ -15,7 +15,7 @@ from poli import app, db
 from poli.models.user import User
 from poli import user_datastore
 
-from flask_security.utils import encrypt_password, verify_and_update_password
+from flask_security.utils import hash_password, verify_and_update_password
 
 
 class UserController(object):
@@ -30,7 +30,7 @@ class UserController(object):
         """
         if User.query.filter_by(nickname=username).count() != 0:
             return False
-        password = encrypt_password(password)
+        password = hash_password(password)
         user_datastore.create_user(nickname=username,
                                    password=password,
                                    completename=completename,
@@ -145,7 +145,7 @@ class UserController(object):
         """
             Regenerate an user's password hash.
         """
-        user.password = encrypt_password(passw)
+        user.password = hash_password(passw)
         db.session.commit()
         return True
 

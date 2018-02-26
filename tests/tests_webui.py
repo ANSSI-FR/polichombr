@@ -155,12 +155,12 @@ class WebUIBaseTests(WebUIBaseClass):
         self.assertEqual(retval.status_code, 200)
         data = io.BytesIO(retval.data)
 
-        toto = ZipFile(data)
-        self.assertEqual("skelenox.py", toto.namelist()[0])
-        self.assertEqual("skelsettings.json", toto.namelist()[1])
+        mzipfile = ZipFile(data)
+        self.assertEqual("skelenox.py", mzipfile.namelist()[0])
+        self.assertEqual("skelsettings.json", mzipfile.namelist()[1])
 
-        skel_config = toto.open("skelsettings.json")
-        skel_config = json.loads(skel_config.read())
+        skel_config = mzipfile.open("skelsettings.json")
+        skel_config = json.loads(skel_config.read().decode("utf-8"))
 
         self.assertEqual("localhost", skel_config["poli_server"])
         # XXX activate after 08c1dfa0ea4d6f783a452777fca64e65ec0b4c11
@@ -602,7 +602,7 @@ class WebUISampleManagementTests(WebUIBaseClass):
         retval = self.app.post("/samples/1/machexport/", data=data)
         self.assertEqual(retval.status_code, 200)
 
-        data = json.loads(retval.data)
+        data = json.loads(retval.get_data(as_text=True))
 
         self.assertIn(u"0f6f0c6b818f072a7a6f02441d00ac69", data["md5"])
         self.assertEqual(12361, data["size"])
