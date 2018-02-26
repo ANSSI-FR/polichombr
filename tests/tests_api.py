@@ -14,7 +14,7 @@ import tempfile
 import json
 import datetime
 from time import sleep
-from StringIO import StringIO
+from io import BytesIO
 from zipfile import ZipFile
 import io
 
@@ -87,9 +87,9 @@ class ApiTestCase(unittest.TestCase):
 
     def _create_sample(self):
         with open("tests/example_pe.bin", "rb") as hfile:
-            data = StringIO(hfile.read())
+            data = BytesIO(hfile.read())
         retval = self.post("/api/1.0/samples/",
-                           data=dict({'file': (data, u"toto"),
+                           data=dict({'file': (data, "toto"),
                                       'filename': "toto"},
                                      tlp_level=1, family=0),
                            follow_redirects=True)
@@ -131,9 +131,9 @@ class ApiSampleTests(ApiTestCase):
         with ZipFile(zipout, "w") as myzip:
             myzip.write("tests/example_pe.bin")
             myzip.close()
-        data = StringIO(zipout.getvalue())
+        data = BytesIO(zipout.getvalue())
         retval = self.post("/api/1.0/samples/",
-                           data=dict({'file': (data, u"toto"),
+                           data=dict({'file': (data, "toto"),
                                       'filename': "toto.zip"},
                                      tlp_level=1, family=0),
                            follow_redirects=True)
@@ -201,7 +201,7 @@ class ApiSampleTests(ApiTestCase):
 
         data = json.loads(retval.data)
 
-        self.assertIn('analysis', data.keys())
+        self.assertIn('analysis', list(data.keys()))
 
     def test_get_analyzeit_data(self):
         """
@@ -236,7 +236,7 @@ class ApiSampleTests(ApiTestCase):
         """
         data = json.dumps(dict(abstract="This is a test for abstract"))
         retval = self.post('/api/1.0/samples/1/abstract/', data=data,
-                               content_type="application/json")
+                           content_type="application/json")
         self.assertEqual(retval.status_code, 200)
         result = json.loads(retval.data)
         self.assertTrue(result['result'])
@@ -244,7 +244,7 @@ class ApiSampleTests(ApiTestCase):
         retval = self.get('/api/1.0/samples/1/abstract/')
         self.assertEqual(retval.status_code, 200)
         result = json.loads(retval.data)
-        self.assertIn(result['abstract'], 'This is a test for abstract')
+        self.assertIn(result['abstract'], u'This is a test for abstract')
 
     def test_machoc_funcinfos(self):
         retval = self.get('/api/1.0/machoc/123456')
@@ -277,7 +277,7 @@ class ApiSampleTests(ApiTestCase):
         self.assertEqual(retval.status_code, 200)
         data = json.loads(retval.data)
         func = data["functions"]
-        self.assertEqual(str(type(func)), "<type 'list'>")
+        self.assertIsInstance(func, list)
         self.assertEqual(len(func), 3)
         self.assertIn("test_function", func[0]["proposed_names"])
         self.assertIn("proposed_name", func[0]["proposed_names"])
@@ -331,7 +331,7 @@ class ApiFamilyTests(ApiTestCase):
         self._create_family("TESTFAMILY1")
         data = json.dumps(dict(abstract="Test abstract"))
         retval = self.post("/api/1.0/family/1/abstract/", data=data,
-                               content_type="application/json")
+                           content_type="application/json")
         self.assertEqual(retval.status_code, 200)
         self.assertTrue(json.loads(retval.data)["result"])
 
@@ -363,8 +363,8 @@ class ApiFamilyTests(ApiTestCase):
         self._create_family("TESTFAMILY")
 
         retval = self.post("/api/1.0/samples/1/families/",
-                               data=json.dumps(dict(family_name="TESTFAMILY")),
-                               content_type="application/json")
+                           data=json.dumps(dict(family_name="TESTFAMILY")),
+                           content_type="application/json")
         self.assertEqual(retval.status_code, 200)
         data = json.loads(retval.data)
         self.assertTrue(data["result"])
@@ -381,7 +381,8 @@ class ApiFamilyTests(ApiTestCase):
         self._create_family("TESTFAMILY")
         retval = self.get("/api/1.0/family/1/export/4/detection/openioc/")
         self.assertEqual(retval.status_code, 200)
-        self.assertIn("ioc", retval.data)
+        self.assertIn(b"ioc", retval.data)
+
 
 class ApiYaraTests(ApiTestCase):
     """
@@ -389,18 +390,18 @@ class ApiYaraTests(ApiTestCase):
     """
     def _create_yara(self, name, rule, tlp_level=None):
         retval = self.post('/api/1.0/yaras/',
-                               data=json.dumps(dict(name=name,
-                                                    rule=rule,
-                                                    tlp_level=tlp_level)),
-                               content_type="application/json")
+                           data=json.dumps(dict(name=name,
+                                                rule=rule,
+                                                tlp_level=tlp_level)),
+                           content_type="application/json")
         return retval
 
     def _update_yara(self, name, rule, tlp_level=None):
         retval = self.patch('/api/1.0/yaras/',
-                                data=json.dumps(dict(name=name,
-                                                     rule=rule,
-                                                     tlp_level=tlp_level)),
-                                content_type="application/json")
+                            data=json.dumps(dict(name=name,
+                                                 rule=rule,
+                                                 tlp_level=tlp_level)),
+                            content_type="application/json")
         return retval
 
     def test_yara_creation(self):
@@ -469,16 +470,14 @@ class ApiYaraTests(ApiTestCase):
                                content_type="application/json")
         self.assertEqual(retval.status_code, 400)
 
-
         retval = self.get('/api/1.0/family/1/export/1/detection/yara')
         self.assertEqual(retval.status_code, 200)
-        self.assertIn("TESTYARA", retval.data)
-        self.assertIn("4D 5A", retval.data)
-
+        self.assertIn(b"TESTYARA", retval.data)
+        self.assertIn(b"4D 5A", retval.data)
 
     def test_remove_from_family(self):
         """
-            XXX, this is actually in the web UI, should be migrated in the API...
+            XXX, this is actually in the web UI, should be migrated in the API
         """
         rule_text = """rule toto{
             strings:
@@ -494,11 +493,11 @@ class ApiYaraTests(ApiTestCase):
         retval = self.get("/family/1/deleteyara/1")
         # are we redirected to the family view?
         self.assertEqual(retval.status_code, 302)
-        self.assertIn("href=\"/family/1", retval.data)
+        self.assertIn(b"href=\"/family/1", retval.data)
 
         # is the user flashed with success?
         retval = self.get("/index/")
-        self.assertIn("Removed yara TESTYARA from family TESTFAMILY", retval.data)
+        self.assertIn(b"Removed yara TESTYARA from family TESTFAMILY", retval.data)
 
 
 #     def test_yara_update(self):
@@ -647,14 +646,14 @@ class ApiIDAActionsTests(ApiTestCase):
 
         # {"timestamp": , "idaactions":}
         self.assertEqual(len(actions), 2)
-        self.assertIn("timestamp", actions.keys())
-        self.assertIn("idaactions", actions.keys())
+        self.assertIn("timestamp", list(actions.keys()))
+        self.assertIn("idaactions", list(actions.keys()))
         self.assertEqual(len(actions["idaactions"]), 5)
         for action in actions["idaactions"]:
-            self.assertIn("timestamp", action.keys())
-            self.assertIn("type", action.keys())
-            self.assertIn("data", action.keys())
-            self.assertIn("address", action.keys())
+            self.assertIn("timestamp", list(action.keys()))
+            self.assertIn("type", list(action.keys()))
+            self.assertIn("data", list(action.keys()))
+            self.assertIn("address", list(action.keys()))
 
         self.assertIn(actions["idaactions"][0]["type"], "idacomments")
         self.assertEqual(actions["idaactions"][0]["address"], 0xDEADBEEF)
@@ -697,7 +696,7 @@ class ApiIDAActionsTests(ApiTestCase):
         retval = self._get_comment(address=0xDEADBEEF)
         self.assertEqual(retval.status_code, 200)
         data = json.loads(retval.data)
-        self.assertIn(data['comments'][0]["data"], "TESTCOMMENT1")
+        self.assertIn(data['comments'][0]["data"], u"TESTCOMMENT1")
         self.assertEqual(data['comments'][0]["address"], 0xDEADBEEF)
 
     def test_get_multiple_comments(self):
@@ -715,9 +714,9 @@ class ApiIDAActionsTests(ApiTestCase):
         self.assertEqual(retval.status_code, 200)
         data = json.loads(retval.data)
         self.assertEqual(len(data['comments']), 2)
-        self.assertIn(data['comments'][0]["data"], "TESTCOMMENT1")
+        self.assertIn(data['comments'][0]["data"], u"TESTCOMMENT1")
         self.assertEqual(data['comments'][0]["address"], 0xDEADBEEF)
-        self.assertIn(data['comments'][1]["data"], "TESTCOMMENT2")
+        self.assertIn(data['comments'][1]["data"], u"TESTCOMMENT2")
         self.assertEqual(data['comments'][1]["address"], 0xBADF00D)
 
     def test_action_timestamp(self):
@@ -786,7 +785,7 @@ class ApiIDAActionsTests(ApiTestCase):
         retval = self._get_name(address=0xDEADBEEF)
         self.assertEqual(retval.status_code, 200)
         data = json.loads(retval.data)
-        self.assertIn(data['names'][0]["data"], "TESTNAME1")
+        self.assertIn(data['names'][0]["data"], u"TESTNAME1")
         self.assertEqual(data['names'][0]["address"], 0xDEADBEEF)
 
     def test_create_struct(self):
@@ -830,10 +829,10 @@ class ApiIDAActionsTests(ApiTestCase):
         retval = self.get("/api/1.0/samples/1/structs/StructName1/")
         self.assertEqual(retval.status_code, 200)
         data = json.loads(retval.data)
-        self.assertIn(data["structs"]["name"], "StructName1")
+        self.assertIn(data["structs"]["name"], u"StructName1")
         retval = self.get("/api/1.0/samples/1/structs/XXX/")
         data = json.loads(retval.data)
-        self.assertEqual(len(data["structs"].keys()), 0)
+        self.assertEqual(len(list(data["structs"].keys())), 0)
 
     def test_delete_struct(self):
         self._create_struct(sid=1, name="StructName1")
@@ -1021,7 +1020,6 @@ class ApiIDAActionsTests(ApiTestCase):
         self.assertIn(types[0]["data"], 'void *')
         self.assertIn(types[1]["data"], 'int testtype(int dwTest, char cType)')
 
-
     def test_struct_member_update(self):
         """
             Update size, name or offset
@@ -1076,7 +1074,6 @@ class ApiIDAActionsTests(ApiTestCase):
         member = mstruct['members'][1]
         self.assertEqual(member['size'], 1)
         self.assertEqual(mstruct['size'], 5)
-
 
         # test when upgrading the last member size
         retval = self._update_struct_member_size(struct_id=1,
