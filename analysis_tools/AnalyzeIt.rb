@@ -193,7 +193,6 @@ class MachocHash
       @treefunc.each do |bloc|
         currFunc += "#{i}:"
         dasm.di_at(bloc[0]).block.list.each do |di|
-          currFunc += ',' if (di.opcode.name == 'call') && (currFunc[-1] == 'c')
           currFunc += 'c' if di.opcode.name == 'call'
         end
         refs = bloc[1]
@@ -636,7 +635,7 @@ def printSubCallTree(fromaddr, toaddr, indent, cnt)
     i += 1
     indent.each do |id, iscontinue|
       space1 = ''
-      indent.each do |_id, iscontinue|
+      indent.each do |_id, _iscontinue|
         space1 += '       '
         space1 += if iscontinue
                     '|'
@@ -715,21 +714,13 @@ title = 'Static analyze of binary'
 title += "\n" + ('=' * title.length) + "\n\n"
 log(title)
 
-# the entrypoints to obfuscated functions
-entrypoints = ARGV.map do |ep|
-  begin
-    Integer(ep)
-  rescue
-    ep
-  end
-end
-
 # load binary
 decodedfile = AutoExe.decode_file(target)
-entrypoints = decodedfile.get_default_entrypoints if entrypoints.empty?
+entrypoints = decodedfile.get_default_entrypoints
 dasm = decodedfile.disassembler
 $gdasm = dasm
-# disassemble obfuscated code
+
+# disassemble the code
 
 puts '  [*] Fast disassemble of binary...' if defined?($VERBOSEOPT)
 dasm.disassemble_fast_deep(*entrypoints)
@@ -851,11 +842,6 @@ dasm.xrefs.each do |addr, _info|
 
   if funcname =~ /^[0-9]+$/
     next
-    dasm.each_xref(addr) do |a|
-      di = dasm.di_at(a.origin)
-      pp di if defined?(di.opcode) && (di.opcode.name == 'jmp')
-      next
-    end
   else
     if @functionsDecoders.keys.include? funcname
       log("### API &lt;&lt; #{funcname} &gt;&gt; :")
