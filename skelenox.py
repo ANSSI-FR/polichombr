@@ -206,7 +206,7 @@ class SkelConnection(object):
         json_data = json.dumps(data)
         try:
             self.h_conn.request(method, endpoint, json_data, headers)
-        except httplib.CannotSendRequest as e:
+        except (httplib.CannotSendRequest, httplib.BadStatusLine) as e:
             g_logger.error("Error during request, retrying")
             self.close_connection()
             self.get_online()
@@ -1121,6 +1121,11 @@ class SkelFunctionInfosList(QtWidgets.QTableWidget):
     """
         Simple list widget to display proposed names
     """
+    ADDR_COLINDEX = 0
+    CURNAME_COLINDEX = 1
+    MACHOC_COLINDEX = 2
+    PNAME_COLINDEX = 3
+
     class SkelFuncListItem(object):
         def __init__(self,
                      address=None,
@@ -1154,6 +1159,38 @@ class SkelFunctionInfosList(QtWidgets.QTableWidget):
         self.init_table()
         self.populate_table()
 
+    def extract_names(self, ranges):
+        renames = []
+        for rows in ranges:
+            for row in range(rows.topRow(), rows.bottomRow()+1):
+                addr = self.item(row, self.ADDR_COLINDEX).text()
+                name = self.item(row, self.PNAME_COLINDEX).text()
+                renames.append({"addr": int(addr, 16),
+                                "name": name.encode("ascii")})
+        return renames
+
+    def import_names(self, ranges):
+        renames = self.extract_names(ranges)
+        for new_name in renames:
+            idc.MakeName(new_name["addr"], new_name["name"])
+
+    def contextMenuEvent(self, event):
+        """
+            Two supported actions:
+                - Refresh (get a new list of proposed names)
+                - Import (rename selected subs with the proposed names)
+        """
+        menu = QtWidgets.QMenu(self)
+        importAction = menu.addAction("Import selection in database")
+        refreshAction = menu.addAction("Refresh from server")
+        action = menu.exec_(self.mapToGlobal(event.pos()))
+        if action == importAction:
+            ranges = self.selectedRanges()
+            self.import_names(ranges)
+        elif action == refreshAction:
+            self.clearContents()
+            self.populate_table()
+
     def init_table(self):
         """
         Set the initial header
@@ -1182,30 +1219,31 @@ class SkelFunctionInfosList(QtWidgets.QTableWidget):
 
         for item_index, item in enumerate(items):
             widgets = item.get_widgets()
-            self.setItem(item_index, 0, widgets["address"])
-            self.setItem(item_index, 1, widgets["curname"])
-            self.setItem(item_index, 2, widgets["machoc"])
-            self.setItem(item_index, 3, widgets["proposed"])
+            self.setItem(item_index,
+                         self.ADDR_COLINDEX,
+                         widgets["address"])
+            self.setItem(item_index,
+                         self.CURNAME_COLINDEX,
+                         widgets["curname"])
+            self.setItem(item_index,
+                         self.MACHOC_COLINDEX,
+                         widgets["machoc"])
+            self.setItem(item_index,
+                         self.PNAME_COLINDEX,
+                         widgets["proposed"])
 
 
 class SkelFunctionInfos(QtWidgets.QWidget):
     """
         Widgets that displays machoc names for the current sample
     """
-    skel_conn = None
     skel_settings = None
-    editor = None
+    funcinfos_table = None
 
     def __init__(self, parent, settings_filename):
         super(SkelFunctionInfos, self).__init__()
-
         self.skel_settings = SkelConfig(settings_filename)
         self.settings_filename = settings_filename
-
-        self.skel_conn = SkelConnection(self.skel_settings)
-        self.skel_conn.get_online()
-
-        self.choose = None
         self.PopulateForm()
 
     def PopulateForm(self):
@@ -1214,10 +1252,10 @@ class SkelFunctionInfos(QtWidgets.QWidget):
         label.setText("Proposed function names for sample %s" %
                       idc.GetInputMD5())
 
-        self.funcinfos = SkelFunctionInfosList(self.settings_filename)
+        self.funcinfos_table = SkelFunctionInfosList(self.settings_filename)
 
         layout.addWidget(label)
-        layout.addWidget(self.funcinfos)
+        layout.addWidget(self.funcinfos_table)
         self.setLayout(layout)
 
 
@@ -1365,11 +1403,11 @@ class SkelCore(object):
         if self.skel_settings.initial_sync:
             init_sync = 0
             if idc.AskYN(init_sync,
-                         "Do you want to synchronize defined names?") == 1:
+                         "Do you want to push defined names?") == 1:
                 self.send_names()
 
             if idc.AskYN(init_sync,
-                         "Do you want to synchronize defined comments?") == 1:
+                         "Do you want to push defined comments?") == 1:
                 self.send_comments()
 
         self.skel_ui.Show()
