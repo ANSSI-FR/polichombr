@@ -374,6 +374,26 @@ class ApiFamilyTests(ApiTestCase):
         self.assertEqual(len(data["family"]["samples"]), 1)
         self.assertEqual(data["family"]["samples"][0]["id"], 1)
 
+    def test_export_family_sample_archive(self):
+        self._create_family("TESTFAMILY")
+
+        retval = self.post("/api/1.0/samples/1/families/",
+                           data=json.dumps(dict(family_name="TESTFAMILY")),
+                           content_type="application/json")
+
+        for tlp in range(1, 6):
+            retval = self.get("/api/1.0/family/1/export/" + str(tlp) + "/samplesarchive/")
+            self.assertEqual(retval.status_code, 200)
+            self.assertIn("application/x-tar", retval.headers["Content-Type"])
+            self.assertIn("attachment; filename=export.tar.gz",
+                          retval.headers["Content-Disposition"])
+
+            if tlp >= 3:
+                self.assertEqual(int(retval.headers["Content-Length"]), 455)
+            else:
+                # tlp is < to the sample tlp, it should not be exported
+                self.assertEqual(int(retval.headers["Content-Length"]), 127)
+
     def test_export_openioc(self):
         """
             Can we export an openIOC for a given family

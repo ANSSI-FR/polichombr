@@ -37,53 +37,35 @@ def view_families():
     if familycreationform.validate_on_submit():
         api.familycontrol.create(name=familycreationform.familyname.data)
     return render_template("families.html",
-                           myfamilies=api.familycontrol.get_all(),
                            form=familycreationform)
 
 
 def family_manage_export_form(family_id, export_form):
     """
-        TODO
+        Parse the export form and redirects to the correct api endpoint
     """
     exptype = export_form.datatype.data
-    lvl = export_form.level.data
+    lvl = export_form.export_level.data
+    url = None
+
     if exptype == 1:
-        return redirect(
-            url_for(
-                "apiview.api_family_export_detection_yara",
-                family_id=family_id,
-                tlp_level=lvl))
+        url = "apiview.api_family_export_detection_yara"
     elif exptype == 2:
-        return redirect(
-            url_for(
-                "apiview.api_family_export_samplesioc",
-                family_id=family_id,
-                tlp_level=lvl))
+        url = "apiview.api_family_export_samplesioc"
     elif exptype == 3:
-        return redirect(
-            url_for(
-                "apiview.api_family_export_detection_openioc",
-                family_id=family_id,
-                tlp_level=lvl))
+        url = "apiview.api_family_export_detection_openioc"
     elif exptype == 4:
-        return redirect(
-            url_for(
-                "apiview.api_family_export_detection_snort",
-                family_id=family_id,
-                tlp_level=lvl))
+        url = "apiview.api_family_export_detection_snort"
     elif exptype == 5:
-        return redirect(
-            url_for(
-                "apiview.api_family_export_detection_custom_elements",
-                family_id=family_id,
-                tlp_level=lvl))
+        url = "apiview.api_family_export_detection_custom_elements"
     elif exptype == 6:
-        return redirect(
-            url_for(
-                "apiview.api_family_export_sampleszip",
-                family_id=family_id,
-                tlp_level=lvl))
-    return abort("Not implemented", 500)
+        url = "apiview.api_family_export_sampleszip"
+    if url:
+        return redirect(url_for(url,
+                                family_id=family_id,
+                                tlp_level=lvl))
+    flash("Export type not implemented")
+    return redirect(url_for("webui.view_family"), family_id=family_id)
 
 
 @webuiview.route('/family/<int:family_id>/', methods=['GET', 'POST'])
@@ -115,7 +97,7 @@ def view_family(family_id):
             abort(500)
 
     if export_form.validate_on_submit():
-        family_manage_export_form(family.id, export_form)
+        return family_manage_export_form(family.id, export_form)
     if add_yara_form.validate_on_submit():
         yar = api.get_elem_by_type("yara", add_yara_form.yaraid.data)
         api.yaracontrol.add_to_family(family, yar)
@@ -127,7 +109,8 @@ def view_family(family_id):
         family_abstract_form.abstract.data = family.abstract
     if change_tlp_form.validate_on_submit():
         level = change_tlp_form.level.data
-        api.familycontrol.set_tlp_level(family, level)
+        if not api.familycontrol.set_tlp_level(family, level):
+            flash("Cannot change family TLP level")
     if change_status_form.validate_on_submit():
         status = change_status_form.newstatus.data
         api.familycontrol.set_status(family, status)

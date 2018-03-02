@@ -251,7 +251,7 @@ class ExportFamilyForm(FlaskForm):
     """
     Export family data.
     """
-    level = SelectField('Maximum sensibility', choices=TLPLevelChoices,
+    export_level = SelectField('Maximum sensibility', choices=TLPLevelChoices,
                         coerce=int, validators=[DataRequired()])
     choices = [
         (1, "Yara rules (RULESET)"),
