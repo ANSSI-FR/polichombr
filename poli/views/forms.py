@@ -1,7 +1,7 @@
 """
     This file is part of Polichombr.
 
-    (c) 2017 ANSSI-FR
+    (c) 2018 ANSSI-FR
 
 
     Description:
@@ -116,13 +116,6 @@ class YaraForm(FlaskForm):
     createyara = SubmitField('Submit')
 
 
-"""
-
-    FAMILIES forms.
-
-"""
-
-
 class FamilyForm(FlaskForm):
 
     """
@@ -227,7 +220,7 @@ class AddYaraToFamilyForm(FlaskForm):
 
 class RenameForm(FlaskForm):
     """
-    Rename.
+    Rename
     """
     newname = StringField('Name', validators=[DataRequired()])
     item_id = HiddenField('item_id')

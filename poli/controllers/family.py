@@ -48,6 +48,19 @@ class FamilyController(object):
         db.session.commit()
         return family
 
+    @classmethod
+    def rename(cls, family_id, newname):
+        fam = cls.get_by_id(family_id)
+        if fam.parent_id:
+            name = cls.get_by_id(fam.parent_id).name
+            name += "." + newname
+        else:
+            name = newname
+
+        app.logger.debug("Renaming a family from %s to %s", fam.name, name)
+        fam.name = name
+        db.session.commit()
+
     @staticmethod
     def get_by_id(fid):
         """

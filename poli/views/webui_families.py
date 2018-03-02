@@ -21,7 +21,7 @@ from poli.views.forms import FamilyForm, ExportFamilyForm
 from poli.views.forms import FamilyAbstractForm, AddYaraToFamilyForm
 from poli.views.forms import AddSubFamilyForm, UploadFamilyFileForm
 from poli.views.forms import ChangeTLPForm, ChangeStatusForm
-from poli.views.forms import CreateDetectionItemForm
+from poli.views.forms import CreateDetectionItemForm, RenameForm
 
 from poli.views.webui import webuiview
 
@@ -115,6 +115,11 @@ class FamilyFormCheckers(object):
             form.item_type.data,
             family)
 
+    @staticmethod
+    def family_parse_rename(family, form):
+        newname = form.newname
+        api.familycontrol.rename(family.id, newname.data)
+
 
 @webuiview.route('/families/', methods=['GET', 'POST'])
 @login_required
@@ -149,6 +154,11 @@ def view_family(family_id):
     change_status_form = ChangeStatusForm()
     change_tlp_form = ChangeTLPForm()
     add_attachment_form = UploadFamilyFileForm()
+    rename_form = RenameForm()
+
+    FamilyFormCheckers.check_form(family,
+                                  rename_form,
+                                  FamilyFormCheckers.family_parse_rename)
 
     FamilyFormCheckers.check_form(family,
                                   add_subfamily_form,
@@ -187,6 +197,7 @@ def view_family(family_id):
                            changestatusform=change_status_form,
                            changetlpform=change_tlp_form,
                            famusers=family_users,
+                           renameform=rename_form,
                            yaraform=add_yara_form)
 
 

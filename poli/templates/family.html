@@ -46,6 +46,22 @@
             </div>
         </div>
     </div>
+    <div class="modal fade" id="rename" tabindex="-1" role="dialog">
+        <div class="modal-dialog" role="document">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <button type="button" class="close" data-dismiss="modal" aria-label="Close">
+                        <span aria-hidden="true">&times;</span>
+                    </button>
+                    <h4 class="modal-title">Rename family</h4>
+                </div>
+                <div class="modal-body">
+                        {{wtf.quick_form(renameform)}}
+                </div>
+            </div>
+        </div>
+    </div>
+
     <div class="modal fade" id="addsubfam" tabindex="-1" role="dialog">
         <div class="modal-dialog" role="document">
             <div class="modal-content">
@@ -76,8 +92,7 @@
                             {% endif %}
                         {% endif %}
                     {% endfor %}
-                    {{family.name}}
-                    &nbsp;
+					<a data-toggle="modal" data-target="#rename" class="text-primary">{{family.name}}</a>&nbsp;
                 <a data-toggle="modal" data-target="#changestatus" class="btn btn-{{familycolorbystatus(family)}}">
                 {% if family.status == 1 %}
                     Finished
