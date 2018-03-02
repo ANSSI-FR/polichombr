@@ -1,7 +1,7 @@
 """
     This file is part of Polichombr.
 
-    (c) 2016 ANSSI-FR
+    (c) 2018 ANSSI-FR
 
 
     Description:
@@ -24,7 +24,6 @@ from poli.models.models import TLPLevel
 
 
 class FamilyController(object):
-
     """
         Family object controller.
     """
@@ -48,6 +47,19 @@ class FamilyController(object):
             family.TLP_sensibility = parentfamily.TLP_sensibility
         db.session.commit()
         return family
+
+    @classmethod
+    def rename(cls, family_id, newname):
+        fam = cls.get_by_id(family_id)
+        if fam.parent_id:
+            name = cls.get_by_id(fam.parent_id).name
+            name += "." + newname
+        else:
+            name = newname
+
+        app.logger.debug("Renaming a family from %s to %s", fam.name, name)
+        fam.name = name
+        db.session.commit()
 
     @staticmethod
     def get_by_id(fid):
@@ -211,19 +223,18 @@ class FamilyController(object):
             if sample.TLP_sensibility <= tlp_level:
                 zipname += sample.sha256
         zip_fname = family.name + "-" + \
-            str(tlp_level) + "-" + sha256(zipname).hexdigest()
+            str(tlp_level) + "-" + sha256(zipname.encode("utf-8")).hexdigest()
         zip_fname += ".tar.gz"
 
         zip_path = os.path.join(app.config['STORAGE_PATH'], zip_fname)
         if os.path.exists(zip_path):
             return zip_path
 
-        tarf = tarfile.open(zip_path, "w:gz")
-        for x in family.samples:
-            if x.TLP_sensibility <= tlp_level:
-                if os.path.exists(x.storage_file):
-                    tarf.add(x.storage_file, arcname=x.sha256)
-        tarf.close()
+        with tarfile.open(zip_path, "w:gz") as tarf:
+            for x in family.samples:
+                if x.TLP_sensibility <= tlp_level:
+                    if os.path.exists(x.storage_file):
+                        tarf.add(x.storage_file, arcname=x.sha256)
         return zip_path
 
     @staticmethod
@@ -259,7 +270,7 @@ class FamilyController(object):
                     generated_output += '<short_description>' + family.name + \
                         ' custom IOC #' + str(item.id) + \
                         '</short_description>\n'
-                    generated_output += '<description>Cutom IOC for ' + \
+                    generated_output += '<description>Custom IOC for ' + \
                         family.name + ' samples family</description>\n'
                     generated_output += '<tlp_sensibility>' + \
                         TLPLevel.tostring(
@@ -307,7 +318,7 @@ class FamilyController(object):
     @staticmethod
     def export_samplesioc(family, tlp_level):
         """
-            Exports the family's samples OPENIONC (auto-generated).
+            Exports the family's samples OPENIOC (auto-generated).
 
             TODO: I'm pretty sure this code can be cleaned...
         """

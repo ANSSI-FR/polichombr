@@ -78,7 +78,8 @@ def ui_import():
         sample = api.samplecontrol.create_sample_from_json_machex(
             machex_data, tlp_level)
         if sample:
-            return redirect(url_for('webuiview.view_sample', sample_id=sample.id))
+            return redirect(url_for('webuiview.view_sample',
+                                    sample_id=sample.id))
     return redirect(url_for('webuiview.index'))
 
 
@@ -124,7 +125,8 @@ def gen_sample_view(sample_id, graph=None, fctaddr=None):
         set_sample_abstract_form.abstract.data = sample.abstract
     if change_tlp_level_form.validate_on_submit():
         level = change_tlp_level_form.level.data
-        api.samplecontrol.set_tlp_level(sample, level)
+        if not api.samplecontrol.set_tlp_level(sample, level):
+            flash("Cannot change sample TLP level")
     machoc_comparison_results = None
     if machoc_form.validate_on_submit():
         machoc_comparison_results = parse_machoc_form(sample, machoc_form)
@@ -212,7 +214,7 @@ def machexport(sample_id):
 
 
 @webuiview.route('/machocdiff/<int:sample_id>/<int:sample2_id>/',
-           methods=['GET', 'POST'])
+                 methods=['GET'])
 @login_required
 def diff_samples(sample_id, sample2_id):
     """
@@ -223,27 +225,36 @@ def diff_samples(sample_id, sample2_id):
     sample2 = api.get_elem_by_type("sample", sample2_id)
     sdiff = []
     # POST request means that the samples names sharing has been submitted.
-    if request.method == "POST":
-        if not request.form.getlist("selectl"):
-            abort(500)
-        items = []
-        for i in request.form.getlist("selectl"):
-            n = i.split("_")
-            if len(n) == 2:
-                items.append((n[0], n[1]))
-        if not api.samplecontrol.sample_rename_from_diff(
-                items, sample1, sample2):
-            abort(500)
-        if not api.add_actions_fromfunc_infos(items, sample1, sample2):
-            abort(500)
-        return redirect("/sample/" + str(sample1.id) + "#poli_infos")
-    else:
-        sdiff = api.samplecontrol.machoc_get_similar_functions(
-            sample1, sample2)
+    sdiff = api.samplecontrol.machoc_get_similar_functions(
+        sample1, sample2)
     return render_template("diff.html",
                            sample1=sample1,
                            sample2=sample2,
                            sdiff=sdiff)
+
+
+@webuiview.route('/machocdiff/<int:sid1>/<int:sid2>/',
+                 methods=['POST'])
+@login_required
+def do_diff_samples(sid1, sid2):
+    """
+        Diff form has been submitted
+    """
+    sample1 = api.get_elem_by_type("sample", sid1)
+    sample2 = api.get_elem_by_type("sample", sid2)
+    if not request.form.getlist("selectl"):
+        abort(500)
+    items = []
+    for i in request.form.getlist("selectl"):
+        item = i.split("_")
+        if len(item) == 2:
+            items.append((item[0], item[1]))
+    if not api.samplecontrol.sample_rename_from_diff(
+            items, sample1, sample2):
+        abort(500)
+    if not api.add_actions_fromfunc_infos(items, sample1, sample2):
+        abort(500)
+    return redirect("/sample/" + str(sid1) + "#poli_infos")
 
 
 @webuiview.route("/sample/<int:sample_id>/checkfield/<int:checklist_id>/")

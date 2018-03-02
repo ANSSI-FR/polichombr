@@ -1,7 +1,7 @@
 """
     This file is part of Polichombr.
 
-    (c) 2017 ANSSI-FR
+    (c) 2018 ANSSI-FR
 
 
     Description:
@@ -116,13 +116,6 @@ class YaraForm(FlaskForm):
     createyara = SubmitField('Submit')
 
 
-"""
-
-    FAMILIES forms.
-
-"""
-
-
 class FamilyForm(FlaskForm):
 
     """
@@ -139,7 +132,7 @@ class AddSubFamilyForm(FlaskForm):
     """
     Create sub-family.
     """
-    familyname = StringField('Sub-family name', validators=[DataRequired()])
+    subfamilyname = StringField('Sub-family name', validators=[DataRequired()])
     subfamily = SubmitField('Create')
 
 
@@ -227,7 +220,7 @@ class AddYaraToFamilyForm(FlaskForm):
 
 class RenameForm(FlaskForm):
     """
-    Rename.
+    Rename
     """
     newname = StringField('Name', validators=[DataRequired()])
     item_id = HiddenField('item_id')
@@ -247,12 +240,11 @@ class FamilyAbstractForm(FlaskForm):
 
 
 class ExportFamilyForm(FlaskForm):
-
     """
     Export family data.
     """
-    level = SelectField('Maximum sensibility', choices=TLPLevelChoices,
-                        coerce=int, validators=[DataRequired()])
+    export_level = SelectField('Maximum sensibility', choices=TLPLevelChoices,
+                               coerce=int, validators=[DataRequired()])
     choices = [
         (1, "Yara rules (RULESET)"),
         (2, "Samples auto-generated indicators (OPENIOC)"),

@@ -57,7 +57,7 @@ class WebUIBaseClass(unittest.TestCase):
         return self.app.get("/logout/",
                             follow_redirects=True)
 
-    def create_family(self, fname="TOTO", level=1, parent_family=0):
+    def create_family(self, fname="TOTO", level=1, parent_family=None):
         return self.app.post('/families/',
                              data=dict(familyname=fname,
                                        level=level,
@@ -146,6 +146,7 @@ class WebUIBaseTests(WebUIBaseClass):
     def test_running(self):
         retval = self.app.get('/')
 
+        self.assertEqual(retval.status_code, 200)
         self.assertIn(b"<body>", retval.data)
         self.assertIn(b"</body>", retval.data)
 
@@ -291,6 +292,18 @@ class WebUIFamilyTestCase(WebUIBaseClass):
         retval = self.get_family(5)
         self.assertIn(b'TLP BLACK', retval.data)
 
+    def test_subfamily(self):
+        self.login("john", "password")
+        self.create_family("PARENT")
+
+        retval = self.app.post("/family/1/",
+                               data=dict(subfamilyname="CHILD"))
+
+        self.assertEqual(retval.status_code, 200)
+
+        # display subfamilies with their parent names
+        self.assertIn("PARENT.CHILD", retval.data)
+
     def test_family_abstract(self):
         self.login("john", "password")
         self.create_family()
@@ -326,6 +339,55 @@ class WebUIFamilyTestCase(WebUIBaseClass):
         retval = self.app.get('/family/1/')
         self.assertIn(b'0f6f0c6b818f072a7a6f02441d00ac69', retval.data)
 
+    def test_family_export(self):
+        self.login("john", "password")
+        self.create_family(fname="TEST FAMILY FOR SAMPLE")
+        self.create_sample()
+
+        retval = self.add_sample_to_family()
+
+        exports = {
+                1: "yara",
+                2: "ioc",
+                3: "openioc",
+                4: "snort",
+                5: "custom",
+                6: "samples",
+        }
+
+        for export_type in exports.keys():
+            for tlp_level in range(1, 6):
+
+                data = {"datatype": export_type,
+                        "export_level": tlp_level}
+                retval = self.app.post("/family/1/", data=data)
+                self.assertEqual(retval.status_code, 302)
+                self.assertIn("/api/1.0/family/1/export",
+                              retval.headers["Location"])
+                self.assertIn(exports[export_type], retval.headers["Location"])
+                self.assertIn(str(tlp_level), retval.headers["Location"])
+
+    def test_add_user_to_family(self):
+        self.login("john", "password")
+        self.create_family(fname="TEST FAMILY FOR USER")
+
+        retval = self.app.get("/family/1/addreme/")
+        self.assertEqual(retval.status_code, 302)
+        self.assertIn("/family/1/", retval.headers["Location"])
+
+        retval = self.app.get("/family/1/")
+        self.assertIn(b'<a class="btn btn-info" href="/user/1">john</a>&nbsp;',
+                      retval.data)
+
+        # test removing
+        retval = self.app.get("/family/1/addreme/")
+        self.assertEqual(retval.status_code, 302)
+        self.assertIn("/family/1/", retval.headers["Location"])
+
+        retval = self.app.get("/family/1/")
+        self.assertNotIn(b'<a class="btn btn-info" href="/user/1">john</a>',
+                         retval.data)
+
     def test_sample_multiple_family(self):
         self.login("john", "password")
         self.create_family(fname="TEST FAMILY FOR SAMPLE")
@@ -348,6 +410,31 @@ class WebUIFamilyTestCase(WebUIBaseClass):
 
         retval = self.get_family(2)
         self.assertIn(b'0f6f0c6b818f072a7a6f02441d00ac69', retval.data)
+
+    def test_renaming(self):
+        self.login("john", "password")
+        self.create_family(fname="TEST FAMILY")
+        retval = self.app.post("/family/1/",
+                               data=dict(newname="RENAMED FAMILY",
+                                         item_id=0))
+        self.assertEqual(retval.status_code, 200)
+        self.assertIn(b"RENAMED FAMILY", retval.data)
+
+    def test_renaming_subfamily(self):
+        self.login("john", "password")
+        self.create_family(fname="PARENTFAMILY")
+        retval = self.app.post("/family/1/",
+                               data=dict(subfamilyname="CHILD"))
+
+        retval = self.app.post("/family/2/",
+                               data=dict(newname="RENAMED",
+                                         item_id=0))
+
+        self.assertEqual(retval.status_code, 200)
+        self.assertIn(b"PARENTFAMILY.RENAMED", retval.data)
+
+        retval = self.app.get("/family/1/")
+        self.assertIn(b"PARENTFAMILY.RENAMED", retval.data)
 
 
 class WebUIUserManagementTestCase(WebUIBaseClass):
