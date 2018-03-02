@@ -43,26 +43,22 @@ class FamilyFormCheckers(object):
         """
         exptype = export_form.datatype.data
         lvl = export_form.export_level.data
-        url = None
 
-        if exptype == 1:
-            url = "apiview.api_family_export_detection_yara"
-        elif exptype == 2:
-            url = "apiview.api_family_export_samplesioc"
-        elif exptype == 3:
-            url = "apiview.api_family_export_detection_openioc"
-        elif exptype == 4:
-            url = "apiview.api_family_export_detection_snort"
-        elif exptype == 5:
-            url = "apiview.api_family_export_detection_custom_elements"
-        elif exptype == 6:
-            url = "apiview.api_family_export_sampleszip"
-        if url:
-            return redirect(url_for(url,
-                                    family_id=family.id,
-                                    tlp_level=lvl))
-        flash("Export type not implemented")
-        return redirect(url_for("webui.view_family"), family_id=family.id)
+        exptypes = {
+            1: "apiview.api_family_export_detection_yara",
+            2: "apiview.api_family_export_samplesioc",
+            3: "apiview.api_family_export_detection_openioc",
+            4: "apiview.api_family_export_detection_snort",
+            5: "apiview.api_family_export_detection_custom_elements",
+            6: "apiview.api_family_export_sampleszip",
+            }
+
+        if exptype not in exptypes.keys():
+            flash("Export type not implemented")
+            return redirect(url_for("webui.view_family"), family_id=family.id)
+        return redirect(url_for(exptypes[exptype],
+                                family_id=family.id,
+                                tlp_level=lvl))
 
     @staticmethod
     def family_parse_attachment(family, form):
