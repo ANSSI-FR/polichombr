@@ -57,7 +57,7 @@ class WebUIBaseClass(unittest.TestCase):
         return self.app.get("/logout/",
                             follow_redirects=True)
 
-    def create_family(self, fname="TOTO", level=1, parent_family=0):
+    def create_family(self, fname="TOTO", level=1, parent_family=None):
         return self.app.post('/families/',
                              data=dict(familyname=fname,
                                        level=level,
@@ -292,6 +292,18 @@ class WebUIFamilyTestCase(WebUIBaseClass):
         retval = self.get_family(5)
         self.assertIn(b'TLP BLACK', retval.data)
 
+    def test_subfamily(self):
+        self.login("john", "password")
+        self.create_family("PARENT")
+
+        retval = self.app.post("/family/1/",
+                               data=dict(subfamilyname="CHILD"))
+
+        self.assertEqual(retval.status_code, 200)
+
+        # display subfamilies with their parent names
+        self.assertIn("PARENT.CHILD", retval.data)
+
     def test_family_abstract(self):
         self.login("john", "password")
         self.create_family()
@@ -350,7 +362,8 @@ class WebUIFamilyTestCase(WebUIBaseClass):
                         "export_level": tlp_level}
                 retval = self.app.post("/family/1/", data=data)
                 self.assertEqual(retval.status_code, 302)
-                self.assertIn("/api/1.0/family/1/export", retval.headers["Location"])
+                self.assertIn("/api/1.0/family/1/export",
+                              retval.headers["Location"])
                 self.assertIn(exports[export_type], retval.headers["Location"])
                 self.assertIn(str(tlp_level), retval.headers["Location"])
 
@@ -363,8 +376,17 @@ class WebUIFamilyTestCase(WebUIBaseClass):
         self.assertIn("/family/1/", retval.headers["Location"])
 
         retval = self.app.get("/family/1/")
-        self.assertIn(b'<a class="btn btn-info" href="/user/1">john</a>&nbsp;', retval.data)
+        self.assertIn(b'<a class="btn btn-info" href="/user/1">john</a>&nbsp;',
+                      retval.data)
 
+        # test removing
+        retval = self.app.get("/family/1/addreme/")
+        self.assertEqual(retval.status_code, 302)
+        self.assertIn("/family/1/", retval.headers["Location"])
+
+        retval = self.app.get("/family/1/")
+        self.assertNotIn(b'<a class="btn btn-info" href="/user/1">john</a>',
+                         retval.data)
 
     def test_sample_multiple_family(self):
         self.login("john", "password")

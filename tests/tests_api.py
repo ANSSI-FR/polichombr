@@ -403,6 +403,10 @@ class ApiFamilyTests(ApiTestCase):
         self.assertEqual(retval.status_code, 200)
         self.assertIn("ioc", retval.get_data(as_text=True))
 
+        retval = self.get("/api/1.0/family/1/export/4/samplesioc/")
+        self.assertEqual(retval.status_code, 200)
+        self.assertIn("ioc", retval.get_data(as_text=True))
+
 
 class ApiYaraTests(ApiTestCase):
     """
