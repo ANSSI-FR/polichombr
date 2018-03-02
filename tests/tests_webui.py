@@ -411,6 +411,31 @@ class WebUIFamilyTestCase(WebUIBaseClass):
         retval = self.get_family(2)
         self.assertIn(b'0f6f0c6b818f072a7a6f02441d00ac69', retval.data)
 
+    def test_renaming(self):
+        self.login("john", "password")
+        self.create_family(fname="TEST FAMILY")
+        retval = self.app.post("/family/1/",
+                               data=dict(newname="RENAMED FAMILY",
+                                         item_id=0))
+        self.assertEqual(retval.status_code, 200)
+        self.assertIn(b"RENAMED FAMILY", retval.data)
+
+    def test_renaming_subfamily(self):
+        self.login("john", "password")
+        self.create_family(fname="PARENTFAMILY")
+        retval = self.app.post("/family/1/",
+                               data=dict(subfamilyname="CHILD"))
+
+        retval = self.app.post("/family/2/",
+                               data=dict(newname="RENAMED",
+                                         item_id=0))
+
+        self.assertEqual(retval.status_code, 200)
+        self.assertIn(b"PARENTFAMILY.RENAMED", retval.data)
+
+        retval = self.app.get("/family/1/")
+        self.assertIn(b"PARENTFAMILY.RENAMED", retval.data)
+
 
 class WebUIUserManagementTestCase(WebUIBaseClass):
     """
