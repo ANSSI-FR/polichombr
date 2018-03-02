@@ -10,7 +10,6 @@
 
 
 from flask import render_template, g, redirect, url_for, flash
-from flask import abort
 from flask_security import login_required
 from werkzeug import secure_filename
 
@@ -27,6 +26,96 @@ from poli.views.forms import CreateDetectionItemForm
 from poli.views.webui import webuiview
 
 
+class FamilyFormCheckers(object):
+    """
+        Parses  the form checkers and family callbacks
+    """
+
+    @staticmethod
+    def check_form(family, form, callback):
+        if form.validate_on_submit():
+            callback(family, form)
+
+    @staticmethod
+    def family_parse_export_form(family, export_form):
+        """
+            Parse the export form and redirects to the correct api endpoint
+        """
+        exptype = export_form.datatype.data
+        lvl = export_form.export_level.data
+        url = None
+
+        if exptype == 1:
+            url = "apiview.api_family_export_detection_yara"
+        elif exptype == 2:
+            url = "apiview.api_family_export_samplesioc"
+        elif exptype == 3:
+            url = "apiview.api_family_export_detection_openioc"
+        elif exptype == 4:
+            url = "apiview.api_family_export_detection_snort"
+        elif exptype == 5:
+            url = "apiview.api_family_export_detection_custom_elements"
+        elif exptype == 6:
+            url = "apiview.api_family_export_sampleszip"
+        if url:
+            return redirect(url_for(url,
+                                    family_id=family.id,
+                                    tlp_level=lvl))
+        flash("Export type not implemented")
+        return redirect(url_for("webui.view_family"), family_id=family.id)
+
+    @staticmethod
+    def family_parse_attachment(family, form):
+        data = form.file.data.read()
+        fname = secure_filename(form.file.data.filename)
+        api.familycontrol.add_file(data,
+                                   fname,
+                                   form.description.data,
+                                   form.level.data,
+                                   family)
+
+    @staticmethod
+    def family_parse_subfamily(family, form):
+        newname = form.subfamilyname.data
+        newname = family.name + "." + newname
+        fid = api.familycontrol.create(name=newname, parentfamily=family)
+        if not fid:
+            flash("Error could not create sub family")
+
+    @staticmethod
+    def family_parse_yara(family, form):
+        yar = api.get_elem_by_type("yara", form.yaraid.data)
+        api.yaracontrol.add_to_family(family, yar)
+
+    @staticmethod
+    def family_parse_abstract(family, form):
+        abstract = form.abstract.data
+        api.familycontrol.set_abstract(family, abstract)
+        if family.abstract is not None:
+                form.abstract.default = family.abstract
+                form.abstract.data = family.abstract
+
+    @staticmethod
+    def family_parse_tlp(family, form):
+        level = form.level.data
+        if not api.familycontrol.set_tlp_level(family, level):
+            flash("Cannot change family TLP level")
+
+    @staticmethod
+    def family_parse_status(family, form):
+        status = form.newstatus.data
+        api.familycontrol.set_status(family, status)
+
+    @staticmethod
+    def family_parse_detection(family, form):
+        api.familycontrol.create_detection_item(
+            form.item_abstract.data,
+            form.name.data,
+            form.tlp_level.data,
+            form.item_type.data,
+            family)
+
+
 @webuiview.route('/families/', methods=['GET', 'POST'])
 @login_required
 def view_families():
@@ -38,34 +127,6 @@ def view_families():
         api.familycontrol.create(name=familycreationform.familyname.data)
     return render_template("families.html",
                            form=familycreationform)
-
-
-def family_manage_export_form(family_id, export_form):
-    """
-        Parse the export form and redirects to the correct api endpoint
-    """
-    exptype = export_form.datatype.data
-    lvl = export_form.export_level.data
-    url = None
-
-    if exptype == 1:
-        url = "apiview.api_family_export_detection_yara"
-    elif exptype == 2:
-        url = "apiview.api_family_export_samplesioc"
-    elif exptype == 3:
-        url = "apiview.api_family_export_detection_openioc"
-    elif exptype == 4:
-        url = "apiview.api_family_export_detection_snort"
-    elif exptype == 5:
-        url = "apiview.api_family_export_detection_custom_elements"
-    elif exptype == 6:
-        url = "apiview.api_family_export_sampleszip"
-    if url:
-        return redirect(url_for(url,
-                                family_id=family_id,
-                                tlp_level=lvl))
-    flash("Export type not implemented")
-    return redirect(url_for("webui.view_family"), family_id=family_id)
 
 
 @webuiview.route('/family/<int:family_id>/', methods=['GET', 'POST'])
@@ -89,46 +150,32 @@ def view_family(family_id):
     change_tlp_form = ChangeTLPForm()
     add_attachment_form = UploadFamilyFileForm()
 
-    if add_subfamily_form.validate_on_submit():
-        newname = add_subfamily_form.familyname.data
-        newname = family.name + "." + newname
-        fid = api.familycontrol.create(name=newname, parentfamily=family)
-        if not fid:
-            abort(500)
+    FamilyFormCheckers.check_form(family,
+                                  add_subfamily_form,
+                                  FamilyFormCheckers.family_parse_subfamily)
+    FamilyFormCheckers.check_form(family,
+                                  add_yara_form,
+                                  FamilyFormCheckers.family_parse_yara)
+
+    FamilyFormCheckers.check_form(family,
+                                  family_abstract_form,
+                                  FamilyFormCheckers.family_parse_abstract)
+
+    FamilyFormCheckers.check_form(family,
+                                  change_tlp_form,
+                                  FamilyFormCheckers.family_parse_tlp)
+    FamilyFormCheckers.check_form(family,
+                                  change_status_form,
+                                  FamilyFormCheckers.family_parse_status)
+    FamilyFormCheckers.check_form(family,
+                                  add_detection_item_form,
+                                  FamilyFormCheckers.family_parse_detection)
+    FamilyFormCheckers.check_form(family, add_attachment_form,
+                                  FamilyFormCheckers.family_parse_attachment)
 
     if export_form.validate_on_submit():
-        return family_manage_export_form(family.id, export_form)
-    if add_yara_form.validate_on_submit():
-        yar = api.get_elem_by_type("yara", add_yara_form.yaraid.data)
-        api.yaracontrol.add_to_family(family, yar)
-    if family_abstract_form.validate_on_submit():
-        abstract = family_abstract_form.abstract.data
-        api.familycontrol.set_abstract(family, abstract)
-    elif family.abstract is not None:
-        family_abstract_form.abstract.default = family.abstract
-        family_abstract_form.abstract.data = family.abstract
-    if change_tlp_form.validate_on_submit():
-        level = change_tlp_form.level.data
-        if not api.familycontrol.set_tlp_level(family, level):
-            flash("Cannot change family TLP level")
-    if change_status_form.validate_on_submit():
-        status = change_status_form.newstatus.data
-        api.familycontrol.set_status(family, status)
-    if add_detection_item_form.validate_on_submit():
-        api.familycontrol.create_detection_item(
-            add_detection_item_form.item_abstract.data,
-            add_detection_item_form.name.data,
-            add_detection_item_form.tlp_level.data,
-            add_detection_item_form.item_type.data,
-            family)
-    if add_attachment_form.validate_on_submit():
-        data = add_attachment_form.file.data.read()
-        fname = secure_filename(add_attachment_form.file.data.filename)
-        api.familycontrol.add_file(data,
-                                   fname,
-                                   add_attachment_form.description.data,
-                                   add_attachment_form.level.data,
-                                   family)
+        return FamilyFormCheckers.family_parse_export_form(family,
+                                                           export_form)
 
     return render_template("family.html",
                            family=family,

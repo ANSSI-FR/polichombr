@@ -139,7 +139,7 @@ class AddSubFamilyForm(FlaskForm):
     """
     Create sub-family.
     """
-    familyname = StringField('Sub-family name', validators=[DataRequired()])
+    subfamilyname = StringField('Sub-family name', validators=[DataRequired()])
     subfamily = SubmitField('Create')
 
 

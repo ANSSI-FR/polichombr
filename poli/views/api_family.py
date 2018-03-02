@@ -79,7 +79,7 @@ def api_family_export_detection_custom_elements(family_id, tlp_level):
 
 @apiview.route(
         '/family/<int:family_id>/export/<int:tlp_level>/samplesarchive/',
-    methods=['GET'])
+        methods=['GET'])
 @login_required
 def api_family_export_sampleszip(family_id, tlp_level):
     my_family = api.get_elem_by_type("family", family_id)
@@ -91,7 +91,7 @@ def api_family_export_sampleszip(family_id, tlp_level):
 
 
 @apiview.route(
-    '/family/<family_id>/export/<tlp_level>/samplesioc',
+    '/family/<family_id>/export/<tlp_level>/samplesioc/',
     methods=['GET'])
 @login_required
 def api_family_export_samplesioc(family_id, tlp_level):
