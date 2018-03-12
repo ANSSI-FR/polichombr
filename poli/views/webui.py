@@ -26,7 +26,7 @@ from poli.models.family import Family
 from poli.models.sample import Sample, SampleMetadataType
 
 from poli.views.forms import YaraForm, ChangeTLPForm
-from poli.views.forms import ImportForm, RenameForm
+from poli.views.forms import RenameForm
 from poli.views.forms import FullTextSearchForm, HashSearchForm
 from poli.views.forms import CreateCheckListForm, MachocHashSearchForm
 from poli.views.forms import UploadSampleForm
@@ -75,7 +75,6 @@ def index():
     Index. Distinction between logged-in users and guests is performed
     in the template.
     """
-    machex_import_form = ImportForm()
     upload_sample_form = UploadSampleForm()
     families_choices = [(0, "None")]
     families_choices += [(f.id, f.name) for f in Family.query.order_by('name')]
@@ -86,7 +85,6 @@ def index():
             g.user)
     return render_template('index.html',
                            families=api.familycontrol.get_all(),
-                           impform=machex_import_form,
                            uncategorized=uncategorized,
                            form=upload_sample_form)
 

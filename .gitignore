@@ -9,3 +9,4 @@ db_repository
 skelsettings.json
 pylintrc
 .coveragerc
+poliapi.cfg

@@ -1,21 +1,6 @@
 {% extends "main.html" %}
 {% block content %}
     {{super()}}
-    <div class="modal fade" id="uploadmachex" tabindex="-1" role="dialog">
-        <div class="modal-dialog" role="document">
-            <div class="modal-content">
-                <div class="modal-header">
-                    <button type="button" class="close" data-dismiss="modal" aria-label="Close">
-                        <span aria-hidden="true">&times;</span>
-                    </button>
-                    <h4 class="modal-title">Upload a MACHEX file</h4>
-                </div>
-                <div class="modal-body">
-		            {{wtf.quick_form(impform, method='POST', action='/import/', button_map={'submit':'primary'})}}
-                </div>
-            </div>
-        </div>
-    </div>
     <div class="modal fade" id="uploadnewfile" tabindex="-1" role="dialog">
         <div class="modal-dialog" role="document">
             <div class="modal-content">
@@ -31,14 +16,13 @@
             </div>
         </div>
     </div>
-    
+
 	<div class="page-header">
 		<h1> Welcome to Polichombr </h1>
 	</div>
 
 	{% if current_user.id %}
         <a data-toggle="modal" data-target="#uploadnewfile" class="btn btn-default">Upload sample</a>
-        <a data-toggle="modal" data-target="#uploadmachex" class="btn btn-default">Machex import</a>
         <br />
         <br />
 	    <div class="row">

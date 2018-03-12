@@ -1,13 +1,41 @@
 """
     This file is part of Polichombr
-        (c) 2016 ANSSI-FR
+        (c) 2018 ANSSI-FR
     Published without any garantee under CeCill v2 license.
 
     This file contains the module to use the external polichombr REST API.
 """
 
 import logging
+import ConfigParser
+
 import requests
+
+TLP_WHITE = 1
+TLP_GREEN = 2
+TLP_AMBER = 3
+TLP_RED = 4
+TLP_BLACK = 5
+
+class PoliConfig(object):
+    """
+        Wrapper to store the config values
+    """
+    server = None
+    server_port = None
+    base_uri = None
+    api_key = None
+    logging_level = None
+    config = None
+
+    def __init__(self, filename="poliapi.cfg"):
+        parser = ConfigParser.ConfigParser()
+        parser.read(filename)
+        self.server = parser.get("server", "address")
+        self.server_port = parser.get("server", "port")
+        self.base_uri = parser.get("server", "base_uri")
+        self.api_key = parser.get("user", "api_key")
+        self.logging_level = parser.get("logging", "level")
 
 
 class MainModule(object):
@@ -15,36 +43,30 @@ class MainModule(object):
         This module provides the main utils
         that are used by the children classes
     """
-    server = None
-    server_port = None
-    base_uri = None
-
-    api_key = None
-    auth_token = None
     logger = None
+    config = None
+    auth_token = None
 
-    def __init__(self, server="127.0.0.1", server_port=5000,
-                 base_uri='/api/1.0/', api_key=''):
-        self.server, self.server_port = server, server_port
-        self.base_uri = base_uri
-        self.api_key = api_key
-        self.logger = logging.getLogger(__name__)
-        self.logger.setLevel(logging.DEBUG)
+    def __init__(self, configfile="poliapi.cfg"):
+        self.config = PoliConfig(configfile)
+        self.init_logging()
+
+        self.login()
+
+    def init_logging(self):
         handler = logging.StreamHandler()
-        handler.setLevel(logging.DEBUG)
-
+        handler.setLevel(self.config.logging_level)
+        self.logger = logging.getLogger(__name__)
         log_format = logging.Formatter(
             '%(asctime)s - %(name)s - %(levelname)s - %(message)s')
         handler.setFormatter(log_format)
         self.logger.addHandler(handler)
 
-        self.login()
-
     def login(self):
         """
             Initialize the auth token by issuing a call to the API
         """
-        data = dict(api_key=self.api_key)
+        data = dict(api_key=self.config.api_key)
         ept = self.prepare_endpoint(root="auth_token")
         token = self.post(ept, json=data)["token"]
         self.auth_token = token
@@ -54,11 +76,11 @@ class MainModule(object):
             Wrapper for requests.post
         """
         json_data, data, files = None, None, None
-        if 'json' in kwargs.keys():
+        if 'json' in list(kwargs.keys()):
             json_data = kwargs['json']
-        if 'data' in kwargs.keys():
+        if 'data' in list(kwargs.keys()):
             data = kwargs['data']
-        if 'files' in kwargs.keys():
+        if 'files' in list(kwargs.keys()):
             files = kwargs['files']
         headers = {"X-Api-Key": self.auth_token}
         answer = requests.post(endpoint,
@@ -101,9 +123,10 @@ class MainModule(object):
         """
             Return a string suitable for requesting the API
         """
-        endp = "http://" + self.server + ':' + str(self.server_port)
-        endp += self.base_uri
-        if 'root' in kwargs.keys():
+        endp = "http://" + self.config.server
+        endp += ':' + str(self.config.server_port)
+        endp += self.config.base_uri
+        if 'root' in list(kwargs.keys()):
             endp += kwargs['root'] + '/'
         return endp
 
@@ -112,7 +135,9 @@ class SampleModule(MainModule):
     """
         Uses the sample endpoint
     """
-    def send_sample(self, filename, tlp):
+    sid = None
+
+    def send_sample(self, filename, tlp=TLP_AMBER):
         """
             Upload a sample to the polichombr service
             @arg filename: the sample file to upload
@@ -136,7 +161,8 @@ class SampleModule(MainModule):
                            files=files,
                            data=payload)
 
-        return answer["sample"][0]["id"]
+        self.sid = answer["sample"][0]["id"]
+        return self.sid
 
     def assign_to_family(self, sid, fname):
         """

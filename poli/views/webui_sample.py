@@ -22,7 +22,6 @@ from poli.models.family import Family
 
 from poli.views.forms import SampleAbstractForm, UploadSampleForm
 from poli.views.forms import AddSampleToFamilyForm, ChangeTLPForm
-from poli.views.forms import ImportForm, ExportMachexForm
 from poli.views.forms import CompareMachocForm
 
 from poli.controllers.sample import disassemble_sample_get_svg
@@ -65,24 +64,6 @@ def ui_sample_upload():
     return redirect(url_for('webuiview.index'))
 
 
-@webuiview.route('/import/', methods=['GET', 'POST'])
-@login_required
-def ui_import():
-    """
-    Sample creation from MACHEX data.
-    """
-    machex_import_form = ImportForm()
-    if machex_import_form.validate_on_submit():
-        machex_data = machex_import_form.file.data.read()
-        tlp_level = machex_import_form.level.data
-        sample = api.samplecontrol.create_sample_from_json_machex(
-            machex_data, tlp_level)
-        if sample:
-            return redirect(url_for('webuiview.view_sample',
-                                    sample_id=sample.id))
-    return redirect(url_for('webuiview.index'))
-
-
 def parse_machoc_form(sample, form):
     """
         Returns the matches results
@@ -105,7 +86,6 @@ def gen_sample_view(sample_id, graph=None, fctaddr=None):
     not "by default".
     """
     sample = api.get_elem_by_type("sample", sample_id)
-    machex_export_form = ExportMachexForm(sampleid=sample.id)
     set_sample_abstract_form = SampleAbstractForm()
     add_family_form = AddSampleToFamilyForm()
     families_choices = [(f.id, f.name) for f in Family.query.order_by('name')]
@@ -137,7 +117,6 @@ def gen_sample_view(sample_id, graph=None, fctaddr=None):
                            checklists=api.samplecontrol.get_all_checklists(),
                            changetlpform=change_tlp_level_form,
                            compareform=machoc_form,
-                           expform=machex_export_form,
                            hresults=machoc_comparison_results,
                            addfamilyform=add_family_form,
                            graph=graph,
@@ -169,48 +148,6 @@ def ui_disassemble_sample(sid, address):
     """
     svg_data = disassemble_sample_get_svg(sid, integer_address)
     return gen_sample_view(sid, graph=svg_data, fctaddr=hex(integer_address))
-
-
-@webuiview.route('/samples/<int:sample_id>/machexport/', methods=['POST'])
-@login_required
-def machexport(sample_id):
-    """
-    Machex export form handling.
-    """
-    machex_export_form = ExportMachexForm()
-    sample = api.get_elem_by_type("sample", sample_id)
-    if machex_export_form.validate_on_submit():
-        fnamexp = False
-        fmachexp = False
-        fstringexp = False
-        fmeta = False
-        aabstract = False
-        sabstract = False
-        fullmachoc = False
-        if machex_export_form.machocfull.data:
-            fullmachoc = True
-        if machex_export_form.estrings.data:
-            fstringexp = True
-        if machex_export_form.metadata.data:
-            fmeta = True
-        if machex_export_form.fnames.data:
-            fnamexp = True
-        if machex_export_form.fmachoc.data:
-            fmachexp = True
-        if machex_export_form.abstracts.data:
-            sabstract = True
-        if machex_export_form.analysis_data.data:
-            aabstract = True
-        retv = api.samplecontrol.machexport(sample,
-                                            machocfull=fullmachoc,
-                                            strings=fstringexp,
-                                            metadata=fmeta,
-                                            fmachoc=fmachexp,
-                                            fname=fnamexp,
-                                            sabstract=sabstract,
-                                            aabstracts=aabstract)
-        return jsonify(retv)
-    return abort(400)
 
 
 @webuiview.route('/machocdiff/<int:sample_id>/<int:sample2_id>/',
