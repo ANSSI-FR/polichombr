@@ -7,11 +7,20 @@
 """
 
 import logging
-import requests
 import ConfigParser
 
+import requests
+
+TLP_WHITE = 1
+TLP_GREEN = 2
+TLP_AMBER = 3
+TLP_RED = 4
+TLP_BLACK = 5
 
 class PoliConfig(object):
+    """
+        Wrapper to store the config values
+    """
     server = None
     server_port = None
     base_uri = None
@@ -22,7 +31,6 @@ class PoliConfig(object):
     def __init__(self, filename="poliapi.cfg"):
         parser = ConfigParser.ConfigParser()
         parser.read(filename)
-        print parser
         self.server = parser.get("server", "address")
         self.server_port = parser.get("server", "port")
         self.base_uri = parser.get("server", "base_uri")
@@ -127,7 +135,9 @@ class SampleModule(MainModule):
     """
         Uses the sample endpoint
     """
-    def send_sample(self, filename, tlp):
+    sid = None
+
+    def send_sample(self, filename, tlp=TLP_AMBER):
         """
             Upload a sample to the polichombr service
             @arg filename: the sample file to upload
@@ -151,7 +161,8 @@ class SampleModule(MainModule):
                            files=files,
                            data=payload)
 
-        return answer["sample"][0]["id"]
+        self.sid = answer["sample"][0]["id"]
+        return self.sid
 
     def assign_to_family(self, sid, fname):
         """
