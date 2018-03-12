@@ -307,32 +307,6 @@ class CompareMachocForm(FlaskForm):
     compare = SubmitField('Compare!')
 
 
-class ExportMachexForm(FlaskForm):
-
-    """
-    Export MACHEX data.
-    """
-    machocfull = BooleanField('Machoc hash')
-    fmachoc = BooleanField('Functions: machoc hashes')
-    fnames = BooleanField('Functions: names')
-    analysis_data = BooleanField('Analysis data')
-    abstracts = BooleanField('Abstract')
-    metadata = BooleanField('File metadata (PE, ELF...)')
-    estrings = BooleanField('Strings')
-    export = SubmitField('Submit')
-
-
-class ImportForm(FlaskForm):
-
-    """
-    Import MACHEX data.
-    """
-    file = FileField('MACHEX File', validators=[DataRequired()])
-    level = SelectField('Sensibility', choices=TLPLevelChoices,
-                        coerce=int, validators=[DataRequired()])
-    importform = SubmitField('Submit')
-
-
 class FullTextSearchForm(FlaskForm):
 
     """

@@ -102,18 +102,6 @@ class WebUIBaseClass(unittest.TestCase):
         sleep(2)
         return retval
 
-    def create_sample_from_machex(self):
-        with open("tests/example_pe.machex", "rb") as hfile:
-            data = BytesIO(hfile.read())
-
-        self.login("john", "password")
-        retval = self.app.post("/import/",
-                               data=dict(
-                                   {'file': (data, "toto")},
-                                   level=1, family=0),
-                               follow_redirects=True)
-        return retval
-
     def add_sample_to_family(self, sid=1, fid=1):
         self.login("john", "password")
         retval = self.app.post("/sample/" + str(sid) + "/",
@@ -666,34 +654,6 @@ class WebUISampleManagementTests(WebUIBaseClass):
 
         retval = self.app.get("/sample/1/delete/")
         self.assertEqual(404, retval.status_code)
-
-#     def test_machex_import(self):
-        # """
-        # XXX This will crash.
-        # """
-        # retval = self.create_sample_from_machex()
-        # self.assertEqual(retval.status_code, 200)
-
-    def test_machex_export(self):
-        self.login("john", "password")
-        self.create_sample()
-
-        data = dict(machocfull=True,
-                    fmachoc=True,
-                    fnames=True,
-                    analysis_data=True,
-                    abstracts=True,
-                    metadata=True,
-                    estrings=True)
-
-        retval = self.app.post("/samples/1/machexport/", data=data)
-        self.assertEqual(retval.status_code, 200)
-
-        data = json.loads(retval.get_data(as_text=True))
-
-        self.assertIn(u"0f6f0c6b818f072a7a6f02441d00ac69", data["md5"])
-        self.assertEqual(12361, data["size"])
-        self.assertEqual(len(data["filenames"]), 1)
 
     def test_remove_sample_from_family(self):
         self.login("john", "password")
