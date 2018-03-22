@@ -588,7 +588,8 @@ class SkelHooks(object):
                     pass
                 else:
                     auto = idaapi.has_auto_name(idaapi.get_flags(ea))
-                    if not idaapi.has_dummy_name(ea) and not auto:
+                    dummy = idaapi.has_dummy_name(idaapi.get_flags(ea))
+                    if not dummy and not auto:
                         self.skel_conn.push_name(ea, new_name)
             else:
                 g_logger.warning("ea outside program...")
@@ -750,7 +751,8 @@ class SkelHooks(object):
                     pass
                 else:
                     auto = idaapi.has_auto_name(idaapi.get_flags(ea))
-                    if not idaapi.has_dummy_name(ea) and not auto:
+                    dummy = idaapi.has_dummy_name(idaapi.get_flags(ea))
+                    if not dummy and not auto:
                         self.skel_conn.push_name(ea, new_name)
             else:
                 g_logger.warning("ea outside program...")
@@ -913,7 +915,7 @@ class SkelUtils(object):
             return idaapi.execute_sync(
                 sync_ask_rename,
                 idaapi.MFF_FAST)
-        if get_name().startswith("sub_"):
+        if idaapi.has_dummy_name(idaapi.get_flags(name["address"])):
             make_name(force=True)
 
         if get_name() != name["data"]:
@@ -1347,7 +1349,7 @@ class SkelCore(object):
             Usecase: Previously analyzed IDB
         """
         for head in idautils.Names():
-            if not idaapi.has_dummy_name(head[0]):
+            if not idaapi.has_dummy_name(idaapi.get_flags(head[0])):
                 self.skel_conn.push_name(head[0], head[1])
 
     def get_comment(self, ea):
