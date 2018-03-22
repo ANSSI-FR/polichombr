@@ -2,7 +2,7 @@
     Skelenox: the collaborative IDA Pro Agent
 
     This file is part of Polichombr
-        (c) ANSSI-FR 2017
+        (c) ANSSI-FR 2018
 """
 
 import os
@@ -587,7 +587,9 @@ class SkelHooks(object):
                     g_logger.warning("Local names are unimplemented")
                     pass
                 else:
-                    if not SkelUtils.name_blacklist(new_name):
+                    auto = idaapi.has_auto_name(idaapi.get_flags(ea))
+                    dummy = idaapi.has_dummy_name(idaapi.get_flags(ea))
+                    if not dummy and not auto:
                         self.skel_conn.push_name(ea, new_name)
             else:
                 g_logger.warning("ea outside program...")
@@ -748,7 +750,9 @@ class SkelHooks(object):
                     g_logger.warning("Local names are unimplemented")
                     pass
                 else:
-                    if not SkelUtils.name_blacklist(new_name):
+                    auto = idaapi.has_auto_name(idaapi.get_flags(ea))
+                    dummy = idaapi.has_dummy_name(idaapi.get_flags(ea))
+                    if not dummy and not auto:
                         self.skel_conn.push_name(ea, new_name)
             else:
                 g_logger.warning("ea outside program...")
@@ -787,37 +791,6 @@ class SkelUtils(object):
     """
         Utils functions
     """
-
-    @staticmethod
-    def name_blacklist(name):
-        """
-            Standard name blacklist
-            return True if blacklisted
-        """
-        default_values = ['sub_', "dword_", "unk_", "byte_", "word_", "loc_"]
-        for value in default_values:
-            if value in name[:len(value) + 1]:
-                return True
-        return False
-
-    @staticmethod
-    def func_name_blacklist(name):
-        """
-            Blacklist for common function names
-            Includes:
-                sub_*,
-                ?*,
-                nullsub*,
-                unknown*,
-                SEH*
-        """
-        if name is not None:
-            default_values = ['sub_', 'nullsub', 'unknown', 'SEH_',
-                              '__imp', 'j_', '__IMP', '@', '?']
-            for val in default_values:
-                if name.startswith(val):
-                    return True
-        return False
 
     @staticmethod
     def prepare_parse_type(typestr, addr):
@@ -859,7 +832,7 @@ class SkelUtils(object):
         print("-*" * 40)
         print("                 SKELENOX ")
         print("        This plugin is part of Polichombr")
-        print("             (c) ANSSI-FR 2017")
+        print("             (c) ANSSI-FR 2018")
         print("-" * 80)
         print("\t Collaborative reverse engineering framework")
         print("Help:")
@@ -935,13 +908,14 @@ class SkelUtils(object):
                                    get_name(),
                                    name["address"],
                                    name["data"])
-                    idc.MakeName(
+                    idaapi.set_name(
                         name["address"], name["data"].encode(
-                            'ascii', 'ignore'))
+                            'ascii', 'ignore'),
+                        idaapi.SN_AUTO)
             return idaapi.execute_sync(
                 sync_ask_rename,
                 idaapi.MFF_FAST)
-        if get_name().startswith("sub_"):
+        if idaapi.has_dummy_name(idaapi.get_flags(name["address"])):
             make_name(force=True)
 
         if get_name() != name["data"]:
@@ -1173,7 +1147,9 @@ class SkelFunctionInfosList(QtWidgets.QTableWidget):
     def import_names(self, ranges):
         renames = self.extract_names(ranges)
         for new_name in renames:
-            idc.MakeName(new_name["addr"], new_name["name"])
+            idaapi.set_name(new_name["addr"],
+                            new_name["name"],
+                            idaapi.SN_AUTO)
 
     def contextMenuEvent(self, event):
         """
@@ -1373,29 +1349,31 @@ class SkelCore(object):
             Usecase: Previously analyzed IDB
         """
         for head in idautils.Names():
-            if not SkelUtils.func_name_blacklist(head[1]):
-                mtype = idc.GetType(head[0])
-                if mtype and not mtype.lower().startswith("char["):
-                    self.skel_conn.push_name(head[0], head[1])
+            if not idaapi.has_dummy_name(idaapi.get_flags(head[0])):
+                self.skel_conn.push_name(head[0], head[1])
+
+    def get_comment(self, ea):
+        """
+            Wrapper to get both the Cmt and RptCmt
+        """
+        cmt_types = [idc.Comment, idc.RptCmt]  # Maybe GetFunctionCmt also?
+        calculated_cmt = ""
+        for cmt_type in cmt_types:
+            cmt = None
+            cmt = cmt_type(ea)
+            if cmt and not SkelUtils.filter_coms_blacklist(cmt):
+                if cmt not in calculated_cmt:
+                    calculated_cmt += cmt
+        return calculated_cmt
 
     def send_comments(self):
         """
             Initial sync of comments
         """
-        cmt_types = [idc.Comment, idc.RptCmt]  # Maybe GetFunctionCmt also?
         for head in idautils.Heads():
-            send_cmt = ""
-            for cmt_type in cmt_types:
-                cmt = None
-                cmt = cmt_type(head)
-                if cmt and not SkelUtils.filter_coms_blacklist(cmt):
-                    if cmt not in send_cmt:
-                        send_cmt += cmt
-            if len(send_cmt) > 0:
-                try:
-                    self.skel_conn.push_comment(head, send_cmt)
-                except Exception as e:
-                    g_logger.exception(e)
+            cmt = self.get_comment(head)
+            if len(cmt) > 0:
+                self.skel_conn.push_comment(head, cmt)
 
     def run(self):
         """

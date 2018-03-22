@@ -290,7 +290,7 @@ class WebUIFamilyTestCase(WebUIBaseClass):
         self.assertEqual(retval.status_code, 200)
 
         # display subfamilies with their parent names
-        self.assertIn("PARENT.CHILD", retval.data)
+        self.assertIn(b"PARENT.CHILD", retval.data)
 
     def test_family_abstract(self):
         self.login("john", "password")
