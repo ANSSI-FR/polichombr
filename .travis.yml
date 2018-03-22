@@ -11,6 +11,7 @@ addons:
 language: python
 
 matrix:
+  fast_finish: true
   include:
     - os: linux
       sudo: false

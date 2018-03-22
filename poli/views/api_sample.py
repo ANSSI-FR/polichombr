@@ -15,7 +15,7 @@ from poli.models.sample import Sample, SampleSchema
 from poli.models.models import TLPLevel
 from poli.models.sample import FunctionInfoSchema
 
-from flask import jsonify, request, send_file, abort, current_app
+from flask import jsonify, request, send_file, abort, current_app, g
 from flask_security import login_required
 
 
@@ -89,7 +89,7 @@ def api_post_samples():
         current_app.logger.debug("No filename provided")
         orig_filename = ""
 
-    samples = api.dispatch_sample_creation(mfile, orig_filename)
+    samples = api.dispatch_sample_creation(mfile, orig_filename, g.user)
     if len(samples) == 0:
         abort(500, "Cannot create sample")
 

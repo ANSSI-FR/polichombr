@@ -14,7 +14,8 @@ from poli.models.models import TLPLevel
 from poli.models.user import User
 
 from flask import jsonify, request, abort, make_response
-from flask import Blueprint, current_app
+from flask import Blueprint, current_app, g
+from flask_security import current_user, login_required
 
 apiview = Blueprint('apiview', __name__,
                     url_prefix=app.config['API_PATH'])
@@ -25,14 +26,12 @@ from poli.views.api_idaactions import *
 from poli.views.api_sample import *
 
 
-def plain_text(data):
+@apiview.before_request
+def before_request():
     """
-        Return as plaintext data,
-        useful for IOCs, Yaras, abstracts...
+        Affects global variables for each request
     """
-    response = make_response(data)
-    response.headers['Content-Type'] = 'text/plain'
-    return response
+    g.user = current_user
 
 
 @apiview.app_errorhandler(404)
@@ -92,7 +91,8 @@ def api_help():
     text = """
         See docs/API.md for more informations
     """
-    return plain_text(text)
+    response = make_response(text)
+    return response
 
 
 @apiview.route('/auth_token/', methods=["POST"])

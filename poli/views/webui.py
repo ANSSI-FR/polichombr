@@ -11,6 +11,7 @@
 
 import json
 import io
+import glob
 
 from zipfile import ZipFile
 
@@ -104,6 +105,9 @@ def dl_skelenox():
     zipout = io.BytesIO()
     with ZipFile(zipout, "w") as myzip:
         myzip.write("skelenox.py")
+        myzip.write("skelenox_plugin")
+        for module in glob.glob("skelenox_plugin/*.py"):
+            myzip.write(module)
         skel_config = {}
         skel_config["edit_flag"] = True
         skel_config["initial_sync"] = True
