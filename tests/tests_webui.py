@@ -146,7 +146,7 @@ class WebUIBaseTests(WebUIBaseClass):
 
         mzipfile = ZipFile(data)
         self.assertEqual("skelenox.py", mzipfile.namelist()[0])
-        self.assertEqual("skelsettings.json", mzipfile.namelist()[1])
+        self.assertIn(u"skelsettings.json", mzipfile.namelist())
 
         skel_config = mzipfile.open("skelsettings.json")
         skel_config = json.loads(skel_config.read().decode("utf-8"))
