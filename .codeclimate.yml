@@ -1,4 +1,4 @@
-engines:
+plugins:
   csslint:
     enabled: true
   duplication:
@@ -22,14 +22,8 @@ engines:
     enabled: true
   markdownlint:
     enabled: true
-ratings:
-  paths:
-  - "poli/**"
-  - "**.py"
-  - "**.rb"
-  - "poli/static/js/*.js"
 
-exclude_paths:
+exclude_patterns:
 - "tests/**"
 - "poli/static/*.js"
 - "poli/static/*.css"
