@@ -19,7 +19,7 @@ import idautils
 from .utils import SkelUtils
 from .sync_agent import SkelSyncAgent
 from .config import SkelConfig
-from .connection import SkelConnection
+from .connection import SkelIDAConnection
 from .hooks import SkelHooks
 from .ui import SkelUI
 
@@ -52,7 +52,7 @@ class SkelCore(object):
         # Load settings
         self.skel_settings = SkelConfig(settings_filename)
 
-        self.skel_conn = SkelConnection(self.skel_settings)
+        self.skel_conn = SkelIDAConnection(self.skel_settings)
 
         # If having 3 idbs in your current path bother you, change this
         self.crit_backup_file = idc.GetIdbPath()[:-4] + "_backup_preskel_.idb"
@@ -98,27 +98,12 @@ class SkelCore(object):
             if not idaapi.has_dummy_name(idaapi.get_flags(head[0])):
                 self.skel_conn.push_name(head[0], head[1])
 
-    @staticmethod
-    def get_comment(ea):
-        """
-            Wrapper to get both the Cmt and RptCmt
-        """
-        cmt_types = [idc.Comment, idc.RptCmt]  # Maybe GetFunctionCmt also?
-        calculated_cmt = ""
-        for cmt_type in cmt_types:
-            cmt = None
-            cmt = cmt_type(ea)
-            if cmt and not SkelUtils.filter_coms_blacklist(cmt):
-                if cmt not in calculated_cmt:
-                    calculated_cmt += cmt
-        return calculated_cmt
-
     def send_comments(self):
         """
             Initial sync of comments
         """
         for head in idautils.Heads():
-            cmt = self.get_comment(head)
+            cmt = SkelUtils.get_comment(head)
             if cmt:
                 self.skel_conn.push_comment(head, cmt)
 
