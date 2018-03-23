@@ -35,7 +35,7 @@ matrix:
 
 install:
   - pip install -r requirements.txt
-  - pip install coverage==4.3
+  - pip install coverage
   - pip install codeclimate-test-reporter
   - echo "import coverage;coverage.process_startup()" > sitecustomize.py
   - echo "[run]\nconcurrency = multiprocessing\nbranch = true\nparallel = True" > .coveragerc
