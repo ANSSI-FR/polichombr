@@ -14,6 +14,7 @@ import httplib
 import json
 import datetime
 import logging
+import ssl
 
 from StringIO import StringIO
 from string import lower
@@ -21,6 +22,7 @@ from string import lower
 import idc
 
 logger = logging.getLogger(__name__)
+
 
 class SkelConnection(object):
     """
@@ -69,10 +71,15 @@ class SkelConnection(object):
         """
         if self.http_debug is True:
             logger.info("Connecting using simple HTTP")
+            self.h_conn = httplib.HTTPConnection(self.poli_server,
+                                                 self.poli_port)
         else:
-            logger.error("HTTPS is not managed at the moment...")
+            logger.info("Connecting using HTTPS")
+            ssl_context = ssl._create_unverified_context()
+            self.h_conn = httplib.HTTPSConnection(self.poli_server,
+                                                  self.poli_port,
+                                                  context=ssl_context)
 
-        self.h_conn = httplib.HTTPConnection(self.poli_server, self.poli_port)
         self.h_conn.connect()
         self.login()
         self.is_online = True
@@ -89,6 +96,9 @@ class SkelConnection(object):
         self.sample_id = None
 
     def login(self):
+        """
+            Get an authentication token from the server
+        """
         data = json.dumps({'api_key': self.api_key})
         headers = {"Accept-encoding": "gzip, deflate",
                    "Content-type": "application/json",
@@ -138,7 +148,7 @@ class SkelConnection(object):
         elif res.status != 200:
             logger.error("The %s request didn't go as expected", method)
             logger.debug("Status code was %d and content was %s",
-                           res.status, res.read())
+                         res.status, res.read())
             return None
         content_type = res.getheader("Content-Encoding")
         if content_type == "gzip":
@@ -170,53 +180,6 @@ class SkelConnection(object):
     def poli_patch(self, endpoint='/', data=None):
         result = self.poli_request(endpoint, data, method='PATCH')
         return result
-
-    def push_comment(self, address=0, comment=None):
-        """
-            Push a standard comment
-        """
-        if comment is None:
-            return False
-        data = {"address": address,
-                "comment": comment}
-        endpoint = self.prepare_endpoint('comments')
-        res = self.poli_post(endpoint, data)
-        if res["result"]:
-            logger.debug(
-                "Comment %s sent for address 0x%x",
-                comment,
-                address)
-        else:
-            logger.error("Cannot send comment %s ( 0x%x )", comment, address)
-        return res["result"]
-
-    def push_type(self, address, mtype=None):
-        """
-            Push defined types, parsed with prepare_parse_type
-        """
-        data = {"address": address,
-                "type": mtype}
-        endpoint = self.prepare_endpoint('types')
-        res = self.poli_post(endpoint, data)
-        if res["result"]:
-            logger.debug("New type %s sent for address 0x%x", mtype, address)
-        else:
-            logger.error("Cannot send type %s ( 0x%x )", mtype, address)
-        return res["result"]
-
-    def get_abstract(self):
-        endpoint = self.prepare_endpoint("abstract")
-        abstract = self.poli_get(endpoint)
-        return abstract["abstract"]
-
-    def push_abstract(self, abstract):
-        endpoint = self.prepare_endpoint("abstract")
-        data = {"abstract": abstract}
-        res = self.poli_post(endpoint, data)
-        if res["result"]:
-            logger.debug("Abstract sent!")
-        else:
-            logger.error("Cannot send abstract...\n Error %s", res)
 
     def send_sample(self, filedata):
         """
@@ -283,6 +246,55 @@ class SkelConnection(object):
                 self.send_sample(open(idc.GetInputFile(), 'rb'))
                 self.sample_id = self.get_sample_id()
                 logger.info("Sample ID: %d", self.sample_id)
+
+
+class SkelIDAConnection(SkelConnection):
+    def push_comment(self, address=0, comment=None):
+        """
+            Push a standard comment
+        """
+        if comment is None:
+            return False
+        data = {"address": address,
+                "comment": comment}
+        endpoint = self.prepare_endpoint('comments')
+        res = self.poli_post(endpoint, data)
+        if res["result"]:
+            logger.debug(
+                "Comment %s sent for address 0x%x",
+                comment,
+                address)
+        else:
+            logger.error("Cannot send comment %s ( 0x%x )", comment, address)
+        return res["result"]
+
+    def push_type(self, address, mtype=None):
+        """
+            Push defined types, parsed with prepare_parse_type
+        """
+        data = {"address": address,
+                "type": mtype}
+        endpoint = self.prepare_endpoint('types')
+        res = self.poli_post(endpoint, data)
+        if res["result"]:
+            logger.debug("New type %s sent for address 0x%x", mtype, address)
+        else:
+            logger.error("Cannot send type %s ( 0x%x )", mtype, address)
+        return res["result"]
+
+    def get_abstract(self):
+        endpoint = self.prepare_endpoint("abstract")
+        abstract = self.poli_get(endpoint)
+        return abstract["abstract"]
+
+    def push_abstract(self, abstract):
+        endpoint = self.prepare_endpoint("abstract")
+        data = {"abstract": abstract}
+        res = self.poli_post(endpoint, data)
+        if res["result"]:
+            logger.debug("Abstract sent!")
+        else:
+            logger.error("Cannot send abstract...\n Error %s", res)
 
     def get_comments(self, timestamp=None):
         endpoint = self.prepare_endpoint('comments')

@@ -17,7 +17,7 @@ import idaapi
 
 from .config import SkelConfig
 from .utils import SkelUtils
-from .connection import SkelConnection
+from .connection import SkelIDAConnection
 
 logger = logging.getLogger(__name__)
 
@@ -50,7 +50,7 @@ class SkelSyncAgent(threading.Thread):
         """
         self.skel_settings = SkelConfig(settings_filename)
         self.delay = self.skel_settings.sync_frequency
-        self.skel_conn = SkelConnection(self.skel_settings)
+        self.skel_conn = SkelIDAConnection(self.skel_settings)
         self.skel_conn.get_online()
 
     def update_timestamp(self, timestamp_str):

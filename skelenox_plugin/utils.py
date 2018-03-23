@@ -5,7 +5,8 @@
         (c) ANSSI-FR 2018
 
     Description:
-        Contains various utility functions for
+        Contains various utility functions for interacting
+        with IDA database
 """
 
 import logging
@@ -154,3 +155,18 @@ class SkelUtils(object):
 
         if get_name() != name["data"]:
             make_name()
+
+    @staticmethod
+    def get_comment(address):
+        """
+            Wrapper to get both the Cmt and RptCmt
+        """
+        cmt_types = [idc.Comment, idc.RptCmt]  # Maybe GetFunctionCmt also?
+        calculated_cmt = ""
+        for cmt_type in cmt_types:
+            cmt = None
+            cmt = cmt_type(address)
+            if cmt and not SkelUtils.filter_coms_blacklist(cmt):
+                if cmt not in calculated_cmt:
+                    calculated_cmt += cmt
+        return calculated_cmt

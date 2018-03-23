@@ -15,7 +15,7 @@ import idc
 import idaapi
 
 from .config import SkelConfig
-from .connection import SkelConnection
+from .connection import SkelIDAConnection
 
 
 class SkelNotePad(QtWidgets.QWidget):
@@ -31,7 +31,7 @@ class SkelNotePad(QtWidgets.QWidget):
 
         self.skel_settings = SkelConfig(settings_filename)
 
-        self.skel_conn = SkelConnection(self.skel_settings)
+        self.skel_conn = SkelIDAConnection(self.skel_settings)
         self.skel_conn.get_online()
 
         self.counter = 0
@@ -106,7 +106,7 @@ class SkelFunctionInfosList(QtWidgets.QTableWidget):
         super(SkelFunctionInfosList, self).__init__()
 
         self.config = SkelConfig(settings_filename)
-        self.skel_conn = SkelConnection(self.config)
+        self.skel_conn = SkelIDAConnection(self.config)
         self.skel_conn.get_online()
 
     def showEvent(self, event):
@@ -157,6 +157,22 @@ class SkelFunctionInfosList(QtWidgets.QTableWidget):
         labels = ["Address", "Current Name", "machoc", "proposed name"]
         self.setHorizontalHeaderLabels(labels)
 
+    def add_items_to_table(self, items):
+        for item_index, item in enumerate(items):
+            widgets = item.get_widgets()
+            self.setItem(item_index,
+                         self.ADDR_COLINDEX,
+                         widgets["address"])
+            self.setItem(item_index,
+                         self.CURNAME_COLINDEX,
+                         widgets["curname"])
+            self.setItem(item_index,
+                         self.MACHOC_COLINDEX,
+                         widgets["machoc"])
+            self.setItem(item_index,
+                         self.PNAME_COLINDEX,
+                         widgets["proposed"])
+
     def populate_table(self):
         """
             Download the list of proposed names and display it
@@ -173,21 +189,7 @@ class SkelFunctionInfosList(QtWidgets.QTableWidget):
                     name)
                 items.append(item)
         self.setRowCount(len(items))
-
-        for item_index, item in enumerate(items):
-            widgets = item.get_widgets()
-            self.setItem(item_index,
-                         self.ADDR_COLINDEX,
-                         widgets["address"])
-            self.setItem(item_index,
-                         self.CURNAME_COLINDEX,
-                         widgets["curname"])
-            self.setItem(item_index,
-                         self.MACHOC_COLINDEX,
-                         widgets["machoc"])
-            self.setItem(item_index,
-                         self.PNAME_COLINDEX,
-                         widgets["proposed"])
+        self.add_items_to_table(items)
 
 
 class SkelFunctionInfos(QtWidgets.QWidget):
