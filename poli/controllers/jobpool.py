@@ -9,21 +9,28 @@
 """
 
 import atexit
-from multiprocessing import Pool, Queue
+from multiprocessing import Pool, Queue, Event
+from queue import Empty
 
 from poli import app
 from poli import db
 
 
-def execute_task(mqueue):
+def execute_task(mqueue, kill_event):
     """
     Simple worker wich will execute the tasks analyses. It ends on setting the
     analysis status as finished.
     """
+
     while True:
-        m_analysis = mqueue.get(True)
+        try:
+            m_analysis = mqueue.get(True, 0.5)
+        except Empty:
+            m_analysis = None
         if m_analysis is None:
-            return False
+            if kill_event.is_set():
+                break
+            continue
         m_analysis.tasks.sort(key=lambda task: task[0])
         for level, mtask in m_analysis.tasks:
             # TRY/CATCH block to avoid blocking tasks
@@ -79,7 +86,9 @@ class JobPool(object):
 
     def __init__(self, max_instances=4):
         self.message_queue = Queue()
-        self.pool = Pool(max_instances, execute_task, (self.message_queue,))
+        self.kill_event = Event()
+        self.pool = Pool(max_instances, execute_task, (self.message_queue,
+                                                       self.kill_event))
         atexit.register(self.clear)
 
     def add_analysis(self, analysis):
@@ -93,7 +102,8 @@ class JobPool(object):
         """
         Pool cleanup.
         """
-        self.pool.terminate()
+        self.kill_event.set()
+        self.pool.close()
         self.pool.join()
 
 
