@@ -196,7 +196,7 @@ class SkelConnection(object):
         body += "\r\n"
         body += "Content-Disposition: form-data; name=\"filename\"\r\n"
         body += "\r\n"
-        body += idc.GetInputFile()
+        body += idc.get_root_filename()
         body += "\r\n\r\n"
         body += "--" + boundary + "\r\n"
 
@@ -223,7 +223,7 @@ class SkelConnection(object):
             Query the server for the sample ID
         """
         endpoint = "/api/1.0/samples/"
-        endpoint += lower(idc.GetInputMD5())
+        endpoint += lower(idc.retrieve_input_file_md5())
         endpoint += "/"
         try:
             data = self.poli_get(endpoint)
@@ -243,7 +243,7 @@ class SkelConnection(object):
             self.sample_id = self.get_sample_id()
             if not self.sample_id:
                 logger.warning("Sample not found on server, uploading it")
-                self.send_sample(open(idc.GetInputFile(), 'rb'))
+                self.send_sample(open(idc.get_root_filename(), 'rb'))
                 self.sample_id = self.get_sample_id()
                 logger.info("Sample ID: %d", self.sample_id)
 
@@ -273,7 +273,7 @@ class SkelIDAConnection(SkelConnection):
             Push defined types, parsed with prepare_parse_type
         """
         data = {"address": address,
-                "type": mtype}
+                "typedef": mtype}
         endpoint = self.prepare_endpoint('types')
         res = self.poli_post(endpoint, data)
         if res["result"]:

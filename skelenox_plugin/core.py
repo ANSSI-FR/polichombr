@@ -55,16 +55,16 @@ class SkelCore(object):
         self.skel_conn = SkelIDAConnection(self.skel_settings)
 
         # If having 3 idbs in your current path bother you, change this
-        self.crit_backup_file = idc.GetIdbPath()[:-4] + "_backup_preskel_.idb"
-        self.backup_file = idc.GetIdbPath()[:-4] + "_backup_.idb"
+        self.crit_backup_file = idc.get_idb_path()[:-4] + "_backup_preskel.idb"
+        self.backup_file = idc.get_idb_path()[:-4] + "_backup.idb"
 
         atexit.register(self.end_skelenox)
 
         logger.info(
-            "Backuping IDB before any intervention (_backup_preskel_)")
-        idc.SaveBase(self.crit_backup_file, idaapi.DBFL_TEMP)
-        logger.info("Creating regular backup file IDB (_backup_)")
-        idc.SaveBase(self.backup_file, idaapi.DBFL_TEMP)
+            "Backuping IDB before any intervention (_backup_preskel)")
+        idc.save_database(self.crit_backup_file, idaapi.DBFL_TEMP)
+        logger.info("Creating regular backup file IDB (_backup)")
+        idc.save_database(self.backup_file, idaapi.DBFL_TEMP)
         self.last_saved = time.time()
 
         if self.skel_hooks is not None:
@@ -113,12 +113,9 @@ class SkelCore(object):
         """
         idaapi.disable_script_timeout()
         init_sync = 0
-        if idc.AskYN(init_sync,
-                     "Do you want to push defined names?") == 1:
+        if idc.ask_yn(init_sync,
+                      "Do you want to push your names and comments") == 1:
             self.send_names()
-
-        if idc.AskYN(init_sync,
-                     "Do you want to push defined comments?") == 1:
             self.send_comments()
 
         if self.skel_settings.use_ui:

@@ -13,6 +13,8 @@ import logging
 
 import idc
 import idaapi
+import ida_bytes
+import ida_name
 
 logger = logging.getLogger(__name__)
 
@@ -29,7 +31,7 @@ class SkelUtils(object):
             as exported by default GetType
             this is an ugly hack to fix it
         """
-        lname = idc.GetTrueName(addr)
+        lname = idc.get_name(addr)
         if lname is None:
             lname = "Default"
 
@@ -105,19 +107,20 @@ class SkelUtils(object):
             """
                 Inserting a comment
             """
-            idc.MakeRptCmt(
+            ida_bytes.set_cmt(
                 comment["address"],
                 comment["data"].encode(
                     'ascii',
-                    'replace'))
-        cmt = idc.Comment(comment["address"])
-        if cmt != comment["data"] and idc.RptCmt(
-                comment["address"]) != comment["data"]:
+                    'replace'),
+                1)
+        cmt = idc.get_cmt(comment["address"], 0)
+        if cmt != comment["data"] and idc.get_cmt(
+                comment["address"], 1) != comment["data"]:
             logger.debug(
                 "[x] Adding comment %s @ 0x%x ",
                 comment["data"],
                 comment["address"])
-            return idaapi.execute_sync(make_rpt, idaapi.MFF_WRITE)
+            return idaapi.execute_sync(make_rpt, idaapi.MFF_FAST)
         return None
 
     @staticmethod
@@ -126,7 +129,7 @@ class SkelUtils(object):
             This is a wrapper to execute the renaming synchronously
         """
         def get_name():
-            return idc.GetTrueName(name["address"])
+            return idc.get_name(name["address"])
 
         def make_name(force=False):
             """
@@ -137,23 +140,25 @@ class SkelUtils(object):
                     Dialog asking renaming confirmation to the user
                 """
                 rename_flag = 0
-                if force or idc.AskYN(rename_flag, "Replace %s by %s" %
-                                      (get_name(), name["data"])) == 1:
+                if force or idc.ask_yn(rename_flag, "Replace %s by %s" %
+                                       (get_name(), name["data"])) == 1:
                     logger.debug("[x] renaming %s @ 0x%x as %s",
                                  get_name(),
                                  name["address"],
                                  name["data"])
-                    idaapi.set_name(
+                    ida_name.set_name(
                         name["address"], name["data"].encode(
                             'ascii', 'ignore'),
-                        idaapi.SN_AUTO)
+                        ida_name.SN_AUTO)
             return idaapi.execute_sync(
                 sync_ask_rename,
                 idaapi.MFF_FAST)
-        if idaapi.has_dummy_name(idaapi.get_flags(name["address"])):
+        old_name = get_name()
+        if not name["data"]:
+            return
+        elif idaapi.has_dummy_name(idaapi.get_flags(name["address"])) or not old_name:
             make_name(force=True)
-
-        if get_name() != name["data"]:
+        elif get_name() != name["data"]:
             make_name()
 
     @staticmethod
@@ -161,11 +166,11 @@ class SkelUtils(object):
         """
             Wrapper to get both the Cmt and RptCmt
         """
-        cmt_types = [idc.Comment, idc.RptCmt]  # Maybe GetFunctionCmt also?
+        cmt_types = [idc.get_cmt, idc.get_func_cmt]  # TODO: RPT CMT
         calculated_cmt = ""
         for cmt_type in cmt_types:
             cmt = None
-            cmt = cmt_type(address)
+            cmt = cmt_type(address, 0)
             if cmt and not SkelUtils.filter_coms_blacklist(cmt):
                 if cmt not in calculated_cmt:
                     calculated_cmt += cmt

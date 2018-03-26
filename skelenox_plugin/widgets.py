@@ -41,7 +41,7 @@ class SkelNotePad(QtWidgets.QWidget):
     def PopulateForm(self):
         layout = QVBoxLayout()
         label = QtWidgets.QLabel()
-        label.setText("Notes about sample %s" % idc.GetInputMD5())
+        label.setText("Notes about sample %s" % idc.retrieve_input_file_md5())
 
         self.editor = QtWidgets.QTextEdit()
 
@@ -180,7 +180,7 @@ class SkelFunctionInfosList(QtWidgets.QTableWidget):
         functions = self.skel_conn.get_proposed_names()
         items = []
         for func in functions:
-            func_name = idc.GetTrueName(func["address"])
+            func_name = idc.get_name(func["address"])
             for name in func["proposed_names"]:
                 item = self.SkelFuncListItem(
                     hex(func["address"]),
@@ -209,7 +209,7 @@ class SkelFunctionInfos(QtWidgets.QWidget):
         layout = QVBoxLayout()
         label = QtWidgets.QLabel()
         label.setText("Proposed function names for sample %s" %
-                      idc.GetInputMD5())
+                      idc.retrieve_input_file_md5())
 
         self.funcinfos_table = SkelFunctionInfosList(self.settings_filename)
 

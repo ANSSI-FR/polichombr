@@ -33,6 +33,7 @@ class SkelUI(idaapi.PluginForm):
 
         self.notepad = None
         self.funcinfos = None
+        self.tabs = None
 
     def OnCreate(self, form):
         logger.debug("Called UI initialization")
@@ -40,9 +41,9 @@ class SkelUI(idaapi.PluginForm):
         self.PopulateForm()
 
     def Show(self):
-        options = idaapi.PluginForm.FORM_CLOSE_LATER
-        options = options | idaapi.PluginForm.FORM_RESTORE
-        options = options | idaapi.PluginForm.FORM_SAVE
+        options = idaapi.PluginForm.WCLS_CLOSE_LATER
+        options = options | idaapi.PluginForm.WOPN_RESTORE
+        options = options | idaapi.PluginForm.WCLS_SAVE
         return idaapi.PluginForm.Show(self, "Skelenox UI", options=options)
 
     def PopulateForm(self):
@@ -60,6 +61,7 @@ class SkelUI(idaapi.PluginForm):
 
     def OnClose(self, form):
         logger.debug("UI is terminating")
+        self.tabs = None
 
-    def Close(self, options=idaapi.PluginForm.FORM_SAVE):
+    def Close(self, options=idaapi.PluginForm.WCLS_SAVE):
         idaapi.PluginForm.Close(self, options)
