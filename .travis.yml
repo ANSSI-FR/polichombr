@@ -41,7 +41,7 @@ install:
   - echo "[run]\nconcurrency = multiprocessing\nbranch = true\nparallel = True" > .coveragerc
 
 before_script:
-  - python utils/db_create.py
+  - python examples/db_create.py
 
 after_success:
   - coverage combine

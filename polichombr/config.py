@@ -35,8 +35,8 @@ SECURITY_PASSWORD_SALT = 'CHANGEMEINPRODUCTION'
 SECURITY_TRACKABLE = True
 
 # polichombr options
-STORAGE_PATH = "poli/storage"
-TASKS_PATH = "poli/controllers/tasks"
+STORAGE_PATH = "polichombr/storage"
+TASKS_PATH = "polichombr/controllers/tasks"
 ANALYSIS_PROCESS_POOL_SIZE = 3
 API_PATH = "/api/1.0"
 
