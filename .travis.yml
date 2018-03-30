@@ -48,6 +48,7 @@ before_script:
 
 after_script:
   - coverage combine
+  - coverage xml
   - ./cc-test-reporter after-build -t coverage.py --exit-code $TRAVIS_TEST_RESULT
 
 script: coverage run --parallel-mode -m unittest discover tests/
