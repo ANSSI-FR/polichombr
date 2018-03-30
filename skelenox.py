@@ -39,7 +39,7 @@ def PLUGIN_ENTRY():
     """
         IDAPython plugin wrapper
     """
-    idaapi.autoWait()
+    idaapi.auto_wait()
     return SkelenoxPlugin()
 
 
@@ -77,7 +77,7 @@ class SkelenoxPlugin(idaapi.plugin_t):
 
 if __name__ == '__main__':
     # run as a script
-    idaapi.autoWait()
+    idaapi.auto_wait()
     if "skel" in globals() and skel is not None:
         g_logger.info("Previous instance found, killing it")
         skel.end_skelenox()
