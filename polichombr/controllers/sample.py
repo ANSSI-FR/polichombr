@@ -10,24 +10,24 @@
 
 import os
 import re
-import datetime
-import magic
 import time
-import json
-
-from sqlalchemy import func
-import sqlalchemy
-from hashlib import md5, sha1, sha256
+import datetime
 from collections import Counter
 from subprocess import Popen
+from hashlib import md5, sha1, sha256
+
+import sqlalchemy
+import magic
+
+from sqlalchemy import func
 from graphviz import Source
 
 from polichombr import app
 from polichombr import db
 from polichombr.models.sample import SampleSchema, SampleMetadata, FunctionInfo
 from polichombr.models.sample import SampleMetadataType, StringsItem
-from polichombr.models.sample import FileName, Sample, AnalysisStatus, CheckList
-from polichombr.models.sample import SampleMatch
+from polichombr.models.sample import FileName, Sample, AnalysisStatus
+from polichombr.models.sample import SampleMatch, CheckList
 from polichombr.models.analysis import AnalysisResult
 from polichombr.models.models import TLPLevel
 from polichombr.models.idaactions import IDAAction
@@ -315,10 +315,10 @@ class SampleController(object):
         if not re.match("[0-9a-f]{5,}", needle):
             return []
 
-        a = Sample.query.filter_by(sha256=needle).all()
-        b = Sample.query.filter_by(sha1=needle).all()
-        c = Sample.query.filter_by(md5=needle).all()
-        results = list(set(a + b + c))
+        sha2_search = Sample.query.filter_by(sha256=needle).all()
+        sha1_search = Sample.query.filter_by(sha1=needle).all()
+        md5_search = Sample.query.filter_by(md5=needle).all()
+        results = list(set(sha2_search + sha1_search + md5_search))
         function_results = None
         # XXX fix this
         # if re.match("[0-9a-f]{8}", needle):
@@ -382,7 +382,7 @@ class SampleController(object):
 
         for s in Sample.query.all():
             s2_hashes = self.get_functions_hashes(s)
-            if len(s2_hashes) > 0:
+            if s2_hashes:
                 hitlvl = self.machoc_diff_hashes(s1_hashes, s2_hashes)
                 if hitlvl >= limit:
                     hits.append((s, hitlvl))
@@ -502,7 +502,7 @@ class SampleController(object):
         """
             Diff two sample hashes. Thanks DLE :].
         """
-        if len(sample1_hashes) == 0 or len(sample2_hashes) == 0:
+        if sample1_hashes or sample2_hashes:
             return 0
         maxlen = max(len(sample1_hashes), len(sample2_hashes))
         c1, c2 = list(map(Counter, (sample1_hashes, sample2_hashes)))
@@ -549,7 +549,7 @@ class SampleController(object):
                     matches.append(match)
             except sqlalchemy.orm.exc.MultipleResultsFound:
                 pass
-        app.logger.debug("Got %d direct machoc matches" % len(matches))
+        app.logger.debug("Got %d direct machoc matches", len(matches))
         return matches
 
     @classmethod
@@ -603,7 +603,7 @@ class SampleController(object):
             # Avoid unique matches wich are already calculated
             if src_hashes.count(
                     src_ngram[ngram_mid]) == 1 and dst_hashes.count(
-                    src_ngram[ngram_mid]) == 1:
+                        src_ngram[ngram_mid]) == 1:
                 continue
             # Is the ngram unique in the other sample
             if dst_ngrams_hashes.count(src_ngram) == 1:
@@ -619,10 +619,10 @@ class SampleController(object):
         src_cpt = len(src_funcs) - len(retv)
         dst_cpt = len(dst_funcs) - len(retv)
 
-        app.logger.debug("USING " + str(ngrams_length) + "-GRAMS")
+        app.logger.debug("USING %d-GRAMS", ngrams_length)
         app.logger.debug("%d functions not found in source sample", src_cpt)
         app.logger.debug("%d functions not found in dest sample", dst_cpt)
-        app.logger.debug("TOOK " + str(time.time() - start) + " seconds")
+        app.logger.debug("TOOK %d seconds", time.time() - start)
         return retv
 
     @staticmethod
@@ -696,8 +696,7 @@ class SampleController(object):
             sample_id=sample.id, address=address)
         if obj.count() != 0:
             return obj.first()
-        else:
-            return None
+        return None
 
     @classmethod
     def add_function(cls, sample, address, machoc_hash,
@@ -800,8 +799,8 @@ class SampleController(object):
         functions = FunctionInfo.query.filter_by(sample_id=samp.id)
         functions = functions.filter_by(address=address)
 
-        func = functions.first()
-        return func
+        function = functions.first()
+        return function
 
     @staticmethod
     def get_functions_hashes(sample):
@@ -833,11 +832,11 @@ class SampleController(object):
         app.logger.debug("Got %d funcs to compare for sample %d",
                          len(funcs),
                          sample.id)
-        for func in funcs:
+        for function in funcs:
             matches = FunctionInfo.query.with_entities(FunctionInfo.name)
-            matches = matches.filter_by(machoc_hash=func["machoc_hash"])
+            matches = matches.filter_by(machoc_hash=function["machoc_hash"])
             matches = matches.filter(FunctionInfo.name.notlike("sub_%")).all()
-            func["proposed_names"] = [match[0] for match in matches]
+            function["proposed_names"] = [match[0] for match in matches]
         return funcs
 
     @staticmethod
@@ -861,13 +860,12 @@ class SampleController(object):
     @classmethod
     def rename_func_from_action(cls, sid, address, name):
         sample = cls.get_by_id(sid)
-        func = cls.get_function_by_address(sample, address)
-        if func is not None:
-            app.logger.debug("Renaming func 0x%X as %s" % (address, name))
+        function = cls.get_function_by_address(sample, address)
+        if function is not None:
+            app.logger.debug("Renaming func 0x%X as %s", address, name)
             cls.rename_function(func, name)
             return True
-        else:
-            return False
+        return False
 
     @staticmethod
     def get_by_id(sid):
