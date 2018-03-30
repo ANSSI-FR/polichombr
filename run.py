@@ -9,7 +9,7 @@
         Wrapper for running the application
 """
 
-from poli import app
+from polichombr import app
 
 if __name__ == "__main__":
 

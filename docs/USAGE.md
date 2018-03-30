@@ -1,6 +1,6 @@
 ## Sample submissions
 You can submit samples from the web interface,
-or using the script provided in ``tests/send_sample.py``
+or using the script provided in ``examples/send_sample.py``
 
 
 ## Users management
@@ -11,4 +11,4 @@ Further users registration will need to be activated by an administrator.
 When new models are added (as in polichombr#29 for example ),
 the database needs to be upgraded with the following command:
 
-  `python utils/db_migrate.py`
+  `python examples/db_migrate.py`

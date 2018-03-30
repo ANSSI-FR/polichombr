@@ -17,8 +17,8 @@ import os
 import io
 import json
 
-import poli
-from poli.controllers.api import APIControl
+import polichombr
+from polichombr.controllers.api import APIControl
 
 from zipfile import ZipFile
 
@@ -29,20 +29,20 @@ class WebUIBaseClass(unittest.TestCase):
     """
     def setUp(self):
         self.db_fd, self.fname = tempfile.mkstemp()
-        poli.app.config['SQLALCHEMY_DATABASE_URI'] = "sqlite:///" + self.fname
-        poli.app.config['TESTING'] = True
-        poli.app.config['WTF_CSRF_ENABLED'] = False
+        polichombr.app.config['SQLALCHEMY_DATABASE_URI'] = "sqlite:///" + self.fname
+        polichombr.app.config['TESTING'] = True
+        polichombr.app.config['WTF_CSRF_ENABLED'] = False
 
-        self.app = poli.app.test_client()
-        with poli.app.app_context():
-            poli.db.create_all()
+        self.app = polichombr.app.test_client()
+        with polichombr.app.app_context():
+            polichombr.db.create_all()
             api = APIControl()
             api.usercontrol.create("john", "password")
 
     def tearDown(self):
-        with poli.app.app_context():
-            poli.db.session.remove()
-            poli.db.drop_all()
+        with polichombr.app.app_context():
+            polichombr.db.session.remove()
+            polichombr.db.drop_all()
         os.close(self.db_fd)
         os.unlink(self.fname)
 

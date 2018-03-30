@@ -2,7 +2,7 @@
 import sys
 from time import sleep
 
-from poli.controllers.api import APIControl
+from polichombr.controllers.api import APIControl
 api = APIControl()
 
 for i in sys.argv[1:]:
