@@ -40,7 +40,7 @@ ADD https://github.com/jjyg/metasm/tarball/master metasm.tar.gz
 RUN tar xzf metasm.tar.gz && mv jjyg-metasm-*/* metasm && rm metasm.tar.gz
 
 VOLUME "/opt/data/"
-RUN mv utils/db_create.py db_create.py
+RUN mv examples/db_create.py db_create.py
 
 EXPOSE 5000
 CMD flask/bin/python db_create.py && flask/bin/python run.py

@@ -8,9 +8,9 @@
     and to establish a blacklist of machoc hashes.
 """
 
-from poli.models.sample import FunctionInfo
+from polichombr.models.sample import FunctionInfo
 from sqlalchemy import desc, func
-from poli import db
+from polichombr import db
 from pprint import pprint
 
 functions = db.session.query(FunctionInfo.machoc_hash, func.count(1).label("count"))

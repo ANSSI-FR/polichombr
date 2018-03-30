@@ -25,5 +25,5 @@ plugins:
 
 exclude_patterns:
 - "tests/**"
-- "poli/static/*.js"
-- "poli/static/*.css"
+- "polichombr/static/*.js"
+- "polichombr/static/*.css"

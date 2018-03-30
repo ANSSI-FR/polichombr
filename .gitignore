@@ -4,7 +4,7 @@ flask
 *.pyc
 *.db
 *.db-journal
-poli/storage/*
+polichombr/storage/*
 db_repository
 skelsettings.json
 pylintrc

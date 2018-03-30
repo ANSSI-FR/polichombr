@@ -18,8 +18,8 @@ from io import BytesIO
 from zipfile import ZipFile
 import io
 
-import poli
-from poli.controllers.api import APIControl
+import polichombr
+from polichombr.controllers.api import APIControl
 
 
 class ApiTestCase(unittest.TestCase):
@@ -28,18 +28,18 @@ class ApiTestCase(unittest.TestCase):
     """
     def setUp(self):
         self.db_fd, self.fname = tempfile.mkstemp()
-        poli.app.config['SQLALCHEMY_DATABASE_URI'] = "sqlite:///"+self.fname
-        poli.app.config['TESTING'] = False
-        poli.app.config["LOGIN_DISABLED"] = True
-        poli.app.config['WTF_CSRF_ENABLED'] = False
-        self.app = poli.app.test_client()
+        polichombr.app.config['SQLALCHEMY_DATABASE_URI'] = "sqlite:///"+self.fname
+        polichombr.app.config['TESTING'] = False
+        polichombr.app.config["LOGIN_DISABLED"] = True
+        polichombr.app.config['WTF_CSRF_ENABLED'] = False
+        self.app = polichombr.app.test_client()
         self.auth_token = None
 
-        with poli.app.app_context():
-            poli.db.create_all()
+        with polichombr.app.app_context():
+            polichombr.db.create_all()
             api = APIControl()
             api.usercontrol.create("john", "password")
-            poli.db.session.commit()
+            polichombr.db.session.commit()
             key = api.usercontrol.get_by_id(1).api_key
 
         self.auth_token = None
@@ -48,9 +48,9 @@ class ApiTestCase(unittest.TestCase):
         self._create_sample()
 
     def tearDown(self):
-        poli.db.session.remove()
-        with poli.app.app_context():
-            poli.db.drop_all()
+        polichombr.db.session.remove()
+        with polichombr.app.app_context():
+            polichombr.db.drop_all()
         os.close(self.db_fd)
         os.unlink(self.fname)
 
@@ -253,9 +253,9 @@ class ApiSampleTests(ApiTestCase):
         self.assertEqual(len(res), 0)
 
     def test_sample_functions(self):
-        with poli.app.app_context():
-            sample = poli.models.sample.Sample.query.get(1)
-            poli.api.samplecontrol.add_function(sample, 0xDEAD, 0x7357BEEF, "test_function")
+        with polichombr.app.app_context():
+            sample = polichombr.models.sample.Sample.query.get(1)
+            polichombr.api.samplecontrol.add_function(sample, 0xDEAD, 0x7357BEEF, "test_function")
         retval = self.get('/api/1.0/samples/1/functions/')
         self.assertEqual(retval.status_code, 200)
         data = json.loads(retval.get_data(as_text=True))
@@ -268,11 +268,11 @@ class ApiSampleTests(ApiTestCase):
         """
             Test that we return correct names
         """
-        with poli.app.app_context():
-            sample = poli.models.sample.Sample.query.get(1)
-            poli.api.samplecontrol.add_function(sample, 0xDEAD, 0x7357BEEF, "test_function")
-            poli.api.samplecontrol.add_function(sample, 0xBEEF, 0x7357BEEF, "proposed_name")
-            poli.api.samplecontrol.add_function(sample, 0xF00D, 0x7357BEEF, "sub_not_shown")
+        with polichombr.app.app_context():
+            sample = polichombr.models.sample.Sample.query.get(1)
+            polichombr.api.samplecontrol.add_function(sample, 0xDEAD, 0x7357BEEF, "test_function")
+            polichombr.api.samplecontrol.add_function(sample, 0xBEEF, 0x7357BEEF, "proposed_name")
+            polichombr.api.samplecontrol.add_function(sample, 0xF00D, 0x7357BEEF, "sub_not_shown")
         retval = self.get('/api/1.0/samples/1/functions/proposednames/')
         self.assertEqual(retval.status_code, 200)
         data = json.loads(retval.get_data(as_text=True))
