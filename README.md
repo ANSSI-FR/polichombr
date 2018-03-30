@@ -13,7 +13,7 @@ This tool aim to provide a collaborative malware analysis framework.
 A more detailed documentation is placed in the [docs](https://github.com/ANSSI-FR/polichombr/tree/dev/docs) folder
 
 ## Features
-
+* Sample storage and documentation
 * Semi automated malware analysis
 * IDA Pro collaboration
 * Online disassembly
