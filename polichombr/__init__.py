@@ -11,10 +11,10 @@ from flask import Flask, abort
 
 
 from flask_sqlalchemy import SQLAlchemy
-from flask_bootstrap import Bootstrap
 from flask_marshmallow import Marshmallow
 from flask_misaka import Misaka
 from flask_security import Security, SQLAlchemyUserDatastore
+from flask_bootstrap import Bootstrap
 from flask_bootstrap import StaticCDN
 
 
@@ -65,4 +65,3 @@ from .views import webui
 
 app.register_blueprint(apiview.apiview)
 app.register_blueprint(webui.webuiview)
-

@@ -9,9 +9,9 @@
 """
 
 
-from flask import render_template, g, redirect, url_for, flash
 from flask_security import login_required
 from werkzeug import secure_filename
+from flask import render_template, g, redirect, url_for, flash
 
 from polichombr import api
 

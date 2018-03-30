@@ -50,174 +50,16 @@ class task_peinfo(Task):
         self.compile_timestamp = datetime.datetime.fromtimestamp(
             pe.FILE_HEADER.TimeDateStamp)
         self.import_hash = pe.get_imphash()
+
+        metadata = self.generate_metadata(pe)
+
         self.metadata_extracted.append((
             SampleMetadataType.PE_import_hash,
             self.import_hash))
-        self.metadata_extracted.append((
-            SampleMetadataType.PE_DOS_HEADER_e_magic,
-            pe.DOS_HEADER.e_magic))
-        self.metadata_extracted.append((
-            SampleMetadataType.PE_DOS_HEADER_e_cblp,
-            pe.DOS_HEADER.e_cblp))
-        self.metadata_extracted.append((
-            SampleMetadataType.PE_DOS_HEADER_e_cp,
-            pe.DOS_HEADER.e_cp))
-        self.metadata_extracted.append((
-            SampleMetadataType.PE_DOS_HEADER_e_crlc,
-            pe.DOS_HEADER.e_crlc))
-        self.metadata_extracted.append((
-            SampleMetadataType.PE_DOS_HEADER_e_cparhdr,
-            pe.DOS_HEADER.e_cparhdr))
-        self.metadata_extracted.append((
-            SampleMetadataType.PE_DOS_HEADER_e_minalloc,
-            pe.DOS_HEADER.e_minalloc))
-        self.metadata_extracted.append((
-            SampleMetadataType.PE_DOS_HEADER_e_maxalloc,
-            pe.DOS_HEADER.e_maxalloc))
-        self.metadata_extracted.append((
-            SampleMetadataType.PE_DOS_HEADER_e_ss,
-            pe.DOS_HEADER.e_ss))
-        self.metadata_extracted.append((
-            SampleMetadataType.PE_DOS_HEADER_e_sp,
-            pe.DOS_HEADER.e_sp))
-        self.metadata_extracted.append((
-            SampleMetadataType.PE_DOS_HEADER_e_csum,
-            pe.DOS_HEADER.e_csum))
-        self.metadata_extracted.append((
-            SampleMetadataType.PE_DOS_HEADER_e_ip,
-            pe.DOS_HEADER.e_ip))
-        self.metadata_extracted.append((
-            SampleMetadataType.PE_DOS_HEADER_e_cs,
-            pe.DOS_HEADER.e_cs))
-        self.metadata_extracted.append((
-            SampleMetadataType.PE_DOS_HEADER_e_lfarlc,
-            pe.DOS_HEADER.e_lfarlc))
-        self.metadata_extracted.append((
-            SampleMetadataType.PE_DOS_HEADER_e_ovno,
-            pe.DOS_HEADER.e_ovno))
-        self.metadata_extracted.append((
-            SampleMetadataType.PE_DOS_HEADER_e_res,
-            pe.DOS_HEADER.e_res))
-        self.metadata_extracted.append((
-            SampleMetadataType.PE_DOS_HEADER_e_oemid,
-            pe.DOS_HEADER.e_oemid))
-        self.metadata_extracted.append((
-            SampleMetadataType.PE_DOS_HEADER_e_oeminfo,
-            pe.DOS_HEADER.e_oeminfo))
-        self.metadata_extracted.append((
-            SampleMetadataType.PE_DOS_HEADER_e_res2,
-            pe.DOS_HEADER.e_res2))
-        self.metadata_extracted.append((
-            SampleMetadataType.PE_DOS_HEADER_e_lfanew,
-            pe.DOS_HEADER.e_lfanew))
-        self.metadata_extracted.append((
-            SampleMetadataType.PE_FILE_HEADER_Machine,
-            pe.FILE_HEADER.Machine))
-        self.metadata_extracted.append((
-            SampleMetadataType.PE_FILE_HEADER_NumberOfSections,
-            pe.FILE_HEADER.NumberOfSections))
-        self.metadata_extracted.append((
-            SampleMetadataType.PE_FILE_HEADER_TimeDateStamp,
-            pe.FILE_HEADER.TimeDateStamp))
-        self.metadata_extracted.append((
-            SampleMetadataType.PE_FILE_HEADER_PointerToSymbolTable,
-            pe.FILE_HEADER.PointerToSymbolTable))
-        self.metadata_extracted.append((
-            SampleMetadataType.PE_FILE_HEADER_NumberOfSymbols,
-            pe.FILE_HEADER.NumberOfSymbols))
-        self.metadata_extracted.append((
-            SampleMetadataType.PE_FILE_HEADER_SizeOfOptionalHeader,
-            pe.FILE_HEADER.SizeOfOptionalHeader))
-        self.metadata_extracted.append((
-            SampleMetadataType.PE_FILE_HEADER_Characteristics,
-            pe.FILE_HEADER.Characteristics))
-        self.metadata_extracted.append((
-            SampleMetadataType.PE_OPTIONAL_HEADER_Magic,
-            pe.OPTIONAL_HEADER.Magic))
-        self.metadata_extracted.append((
-            SampleMetadataType.PE_OPTIONAL_HEADER_MajorLinkerVersion,
-            pe.OPTIONAL_HEADER.MajorLinkerVersion))
-        self.metadata_extracted.append((
-            SampleMetadataType.PE_OPTIONAL_HEADER_MinorLinkerVersion,
-            pe.OPTIONAL_HEADER.MinorLinkerVersion))
-        self.metadata_extracted.append((
-            SampleMetadataType.PE_OPTIONAL_HEADER_SizeOfCode,
-            pe.OPTIONAL_HEADER.SizeOfCode))
-        self.metadata_extracted.append((
-            SampleMetadataType.PE_OPTIONAL_HEADER_SizeOfInitializedData,
-            pe.OPTIONAL_HEADER.SizeOfInitializedData))
-        self.metadata_extracted.append((
-            SampleMetadataType.PE_OPTIONAL_HEADER_SizeOfUninitializedData,
-            pe.OPTIONAL_HEADER.SizeOfUninitializedData))
-        self.metadata_extracted.append((
-            SampleMetadataType.PE_OPTIONAL_HEADER_AddressOfEntryPoint,
-            pe.OPTIONAL_HEADER.AddressOfEntryPoint))
-        self.metadata_extracted.append((
-            SampleMetadataType.PE_OPTIONAL_HEADER_BaseOfCode,
-            pe.OPTIONAL_HEADER.BaseOfCode))
-        self.metadata_extracted.append((
-            SampleMetadataType.PE_OPTIONAL_HEADER_ImageBase,
-            pe.OPTIONAL_HEADER.ImageBase))
-        self.metadata_extracted.append((
-            SampleMetadataType.PE_OPTIONAL_HEADER_SectionAlignment,
-            pe.OPTIONAL_HEADER.SectionAlignment))
-        self.metadata_extracted.append((
-            SampleMetadataType.PE_OPTIONAL_HEADER_FileAlignment,
-            pe.OPTIONAL_HEADER.FileAlignment))
-        self.metadata_extracted.append((
-            SampleMetadataType.PE_OPTIONAL_HEADER_MajorOperatingSystemVersion,
-            pe.OPTIONAL_HEADER.MajorOperatingSystemVersion))
-        self.metadata_extracted.append((
-            SampleMetadataType.PE_OPTIONAL_HEADER_MinorOperatingSystemVersion,
-            pe.OPTIONAL_HEADER.MinorOperatingSystemVersion))
-        self.metadata_extracted.append((
-            SampleMetadataType.PE_OPTIONAL_HEADER_MajorImageVersion,
-            pe.OPTIONAL_HEADER.MajorImageVersion))
-        self.metadata_extracted.append((
-            SampleMetadataType.PE_OPTIONAL_HEADER_MinorImageVersion,
-            pe.OPTIONAL_HEADER.MinorImageVersion))
-        self.metadata_extracted.append((
-            SampleMetadataType.PE_OPTIONAL_HEADER_MajorSubsystemVersion,
-            pe.OPTIONAL_HEADER.MajorSubsystemVersion))
-        self.metadata_extracted.append((
-            SampleMetadataType.PE_OPTIONAL_HEADER_MinorSubsystemVersion,
-            pe.OPTIONAL_HEADER.MinorSubsystemVersion))
-        self.metadata_extracted.append((
-            SampleMetadataType.PE_OPTIONAL_HEADER_Reserved1,
-            pe.OPTIONAL_HEADER.Reserved1))
-        self.metadata_extracted.append((
-            SampleMetadataType.PE_OPTIONAL_HEADER_SizeOfImage,
-            pe.OPTIONAL_HEADER.SizeOfImage))
-        self.metadata_extracted.append((
-            SampleMetadataType.PE_OPTIONAL_HEADER_SizeOfHeaders,
-            pe.OPTIONAL_HEADER.SizeOfHeaders))
-        self.metadata_extracted.append((
-            SampleMetadataType.PE_OPTIONAL_HEADER_CheckSum,
-            pe.OPTIONAL_HEADER.CheckSum))
-        self.metadata_extracted.append((
-            SampleMetadataType.PE_OPTIONAL_HEADER_Subsystem,
-            pe.OPTIONAL_HEADER.Subsystem))
-        self.metadata_extracted.append((
-            SampleMetadataType.PE_OPTIONAL_HEADER_DllCharacteristics,
-            pe.OPTIONAL_HEADER.DllCharacteristics))
-        self.metadata_extracted.append((
-            SampleMetadataType.PE_OPTIONAL_HEADER_SizeOfStackReserve,
-            pe.OPTIONAL_HEADER.SizeOfStackReserve))
-        self.metadata_extracted.append((
-            SampleMetadataType.PE_OPTIONAL_HEADER_SizeOfStackCommit,
-            pe.OPTIONAL_HEADER.SizeOfStackCommit))
-        self.metadata_extracted.append((
-            SampleMetadataType.PE_OPTIONAL_HEADER_SizeOfHeapReserve,
-            pe.OPTIONAL_HEADER.SizeOfHeapReserve))
-        self.metadata_extracted.append((
-            SampleMetadataType.PE_OPTIONAL_HEADER_SizeOfHeapCommit,
-            pe.OPTIONAL_HEADER.SizeOfHeapCommit))
-        self.metadata_extracted.append((
-            SampleMetadataType.PE_OPTIONAL_HEADER_LoaderFlags,
-            pe.OPTIONAL_HEADER.LoaderFlags))
-        self.metadata_extracted.append((
-            SampleMetadataType.PE_OPTIONAL_HEADER_NumberOfRvaAndSizes,
-            pe.OPTIONAL_HEADER.NumberOfRvaAndSizes))
+
+        for item in metadata.items:
+            self.metadata_extracted.append(item)
+
         return True
 
     def apply_result(self):
@@ -225,10 +67,72 @@ class task_peinfo(Task):
         with app.app_context():
             sample = s_controller.get_by_id(self.sid)
             app.logger.debug(self.tmessage + "APPLY_RESULT")
-            # Compilation timestamp (even when faked) IS a file date, so update it.
             s_controller.add_multiple_metadata(sample, self.metadata_extracted)
+
+            # Compilation timestamp IS a file date, so update it.
             s_controller.set_file_date(sample, self.compile_timestamp)
             s_controller.set_import_hash(sample, self.import_hash)
         app.logger.debug(self.tmessage + "END - TIME %i" %
                          (int(time.time()) - self.tstart))
         return True
+
+    @staticmethod
+    def generate_metadata(pe):
+        pe_metadata = {
+            SampleMetadataType.PE_DOS_HEADER_e_magic: pe.DOS_HEADER.e_magic,
+            SampleMetadataType.PE_DOS_HEADER_e_cblp: pe.DOS_HEADER.e_cblp,
+            SampleMetadataType.PE_DOS_HEADER_e_cp: pe.DOS_HEADER.e_cp,
+            SampleMetadataType.PE_DOS_HEADER_e_crlc: pe.DOS_HEADER.e_crlc,
+            SampleMetadataType.PE_DOS_HEADER_e_cparhdr: pe.DOS_HEADER.e_cparhdr,
+            SampleMetadataType.PE_DOS_HEADER_e_minalloc: pe.DOS_HEADER.e_minalloc,
+            SampleMetadataType.PE_DOS_HEADER_e_maxalloc: pe.DOS_HEADER.e_maxalloc,
+            SampleMetadataType.PE_DOS_HEADER_e_ss: pe.DOS_HEADER.e_ss,
+            SampleMetadataType.PE_DOS_HEADER_e_sp: pe.DOS_HEADER.e_sp,
+            SampleMetadataType.PE_DOS_HEADER_e_csum: pe.DOS_HEADER.e_csum,
+            SampleMetadataType.PE_DOS_HEADER_e_ip: pe.DOS_HEADER.e_ip,
+            SampleMetadataType.PE_DOS_HEADER_e_cs: pe.DOS_HEADER.e_cs,
+            SampleMetadataType.PE_DOS_HEADER_e_lfarlc: pe.DOS_HEADER.e_lfarlc,
+            SampleMetadataType.PE_DOS_HEADER_e_ovno: pe.DOS_HEADER.e_ovno,
+            SampleMetadataType.PE_DOS_HEADER_e_res: pe.DOS_HEADER.e_res,
+            SampleMetadataType.PE_DOS_HEADER_e_oemid: pe.DOS_HEADER.e_oemid,
+            SampleMetadataType.PE_DOS_HEADER_e_oeminfo: pe.DOS_HEADER.e_oeminfo,
+            SampleMetadataType.PE_DOS_HEADER_e_res2: pe.DOS_HEADER.e_res2,
+            SampleMetadataType.PE_DOS_HEADER_e_lfanew: pe.DOS_HEADER.e_lfanew,
+            SampleMetadataType.PE_FILE_HEADER_Machine: pe.FILE_HEADER.Machine,
+            SampleMetadataType.PE_FILE_HEADER_NumberOfSections: pe.FILE_HEADER.NumberOfSections,
+            SampleMetadataType.PE_FILE_HEADER_TimeDateStamp: pe.FILE_HEADER.TimeDateStamp,
+            SampleMetadataType.PE_FILE_HEADER_PointerToSymbolTable: pe.FILE_HEADER.PointerToSymbolTable,
+            SampleMetadataType.PE_FILE_HEADER_NumberOfSymbols: pe.FILE_HEADER.NumberOfSymbols,
+            SampleMetadataType.PE_FILE_HEADER_SizeOfOptionalHeader: pe.FILE_HEADER.SizeOfOptionalHeader,
+            SampleMetadataType.PE_FILE_HEADER_Characteristics: pe.FILE_HEADER.Characteristics,
+            SampleMetadataType.PE_OPTIONAL_HEADER_Magic: pe.OPTIONAL_HEADER.Magic,
+            SampleMetadataType.PE_OPTIONAL_HEADER_MajorLinkerVersion: pe.OPTIONAL_HEADER.MajorLinkerVersion,
+            SampleMetadataType.PE_OPTIONAL_HEADER_MinorLinkerVersion: pe.OPTIONAL_HEADER.MinorLinkerVersion,
+            SampleMetadataType.PE_OPTIONAL_HEADER_SizeOfCode: pe.OPTIONAL_HEADER.SizeOfCode,
+            SampleMetadataType.PE_OPTIONAL_HEADER_SizeOfInitializedData: pe.OPTIONAL_HEADER.SizeOfInitializedData,
+            SampleMetadataType.PE_OPTIONAL_HEADER_SizeOfUninitializedData: pe.OPTIONAL_HEADER.SizeOfUninitializedData,
+            SampleMetadataType.PE_OPTIONAL_HEADER_AddressOfEntryPoint: pe.OPTIONAL_HEADER.AddressOfEntryPoint,
+            SampleMetadataType.PE_OPTIONAL_HEADER_BaseOfCode: pe.OPTIONAL_HEADER.BaseOfCode,
+            SampleMetadataType.PE_OPTIONAL_HEADER_ImageBase: pe.OPTIONAL_HEADER.ImageBase,
+            SampleMetadataType.PE_OPTIONAL_HEADER_SectionAlignment: pe.OPTIONAL_HEADER.SectionAlignment,
+            SampleMetadataType.PE_OPTIONAL_HEADER_FileAlignment: pe.OPTIONAL_HEADER.FileAlignment,
+            SampleMetadataType.PE_OPTIONAL_HEADER_MajorOperatingSystemVersion: pe.OPTIONAL_HEADER.MajorOperatingSystemVersion,
+            SampleMetadataType.PE_OPTIONAL_HEADER_MinorOperatingSystemVersion: pe.OPTIONAL_HEADER.MinorOperatingSystemVersion,
+            SampleMetadataType.PE_OPTIONAL_HEADER_MajorImageVersion: pe.OPTIONAL_HEADER.MajorImageVersion,
+            SampleMetadataType.PE_OPTIONAL_HEADER_MinorImageVersion: pe.OPTIONAL_HEADER.MinorImageVersion,
+            SampleMetadataType.PE_OPTIONAL_HEADER_MajorSubsystemVersion: pe.OPTIONAL_HEADER.MajorSubsystemVersion,
+            SampleMetadataType.PE_OPTIONAL_HEADER_MinorSubsystemVersion: pe.OPTIONAL_HEADER.MinorSubsystemVersion,
+            SampleMetadataType.PE_OPTIONAL_HEADER_Reserved1: pe.OPTIONAL_HEADER.Reserved1,
+            SampleMetadataType.PE_OPTIONAL_HEADER_SizeOfImage: pe.OPTIONAL_HEADER.SizeOfImage,
+            SampleMetadataType.PE_OPTIONAL_HEADER_SizeOfHeaders: pe.OPTIONAL_HEADER.SizeOfHeaders,
+            SampleMetadataType.PE_OPTIONAL_HEADER_CheckSum: pe.OPTIONAL_HEADER.CheckSum,
+            SampleMetadataType.PE_OPTIONAL_HEADER_Subsystem: pe.OPTIONAL_HEADER.Subsystem,
+            SampleMetadataType.PE_OPTIONAL_HEADER_DllCharacteristics: pe.OPTIONAL_HEADER.DllCharacteristics,
+            SampleMetadataType.PE_OPTIONAL_HEADER_SizeOfStackReserve: pe.OPTIONAL_HEADER.SizeOfStackReserve,
+            SampleMetadataType.PE_OPTIONAL_HEADER_SizeOfStackCommit: pe.OPTIONAL_HEADER.SizeOfStackCommit,
+            SampleMetadataType.PE_OPTIONAL_HEADER_SizeOfHeapReserve: pe.OPTIONAL_HEADER.SizeOfHeapReserve,
+            SampleMetadataType.PE_OPTIONAL_HEADER_SizeOfHeapCommit: pe.OPTIONAL_HEADER.SizeOfHeapCommit,
+            SampleMetadataType.PE_OPTIONAL_HEADER_LoaderFlags: pe.OPTIONAL_HEADER.LoaderFlags,
+            SampleMetadataType.PE_OPTIONAL_HEADER_NumberOfRvaAndSizes: pe.OPTIONAL_HEADER.NumberOfRvaAndSizes
+        }
+        return pe_metadata
