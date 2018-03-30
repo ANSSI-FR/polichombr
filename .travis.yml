@@ -41,10 +41,13 @@ install:
   - echo "[run]\nconcurrency = multiprocessing\nbranch = true\nparallel = True" > .coveragerc
 
 before_script:
+  - curl -L https://codeclimate.com/downloads/test-reporter/test-reporter-latest-linux-amd64 > ./cc-test-reporter
+  - chmod +x ./cc-test-reporter
   - python examples/db_create.py
+  - ./cc-test-reporter before-build
 
-after_success:
+after_script:
   - coverage combine
-  - codeclimate-test-reporter
+  - ./cc-test-reporter after-build --exit-code $TRAVIS_TEST_RESULT
 
 script: coverage run --parallel-mode -m unittest discover tests/
